@@ -1,0 +1,11 @@
+*.lib
+*.so
+*.a
+*.o
+
+.*.sw*
+.dub
+*.log
+*.def
+*.lst
+*.sh

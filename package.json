@@ -1,0 +1,12 @@
+{
+	"name": "des",
+    "description": "D Extended Set",
+    "authors": ["Oleg Butko(deviator)", "Anton Akzhigitov(Akzwar)"],
+    "license": "MIT",
+	"targetType": "sourceLibrary",
+	"importPaths": [ "import" ],
+	"sourcePaths": [ "import" ],
+	"dependencies": {
+        "derelict": "~master"
+	}
+}
