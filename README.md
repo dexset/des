@@ -20,7 +20,6 @@ Image Library
 
 DevIL read/write image for working with desil
 
-
 ## desgl ##
 
 some OpenGL essential wraps:
