@@ -25,7 +25,7 @@ The MIT License (MIT)
 module desgui.base.glcontext;
 
 public import desgui.core.context;
-public import desgl.shader;
+public import desgl.base.shader;
 
 import desgui.base.gldraw;
 
