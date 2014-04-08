@@ -56,12 +56,18 @@ unittest
     static assert( !isPureDump!(TS) );
 }
 
-private T conv(T)( in imbyte data )
+private T conv(T)( in imbyte data, string inittype )
 {
     static if( isArray!T )
         return cast(T)data.dup;
     else static if( !hasUnsharedAliasing!T )
+    {
+        if( data.length * ubyte.sizeof != T.sizeof )
+            throw new Exception( format( "this PData create with '%s' unable convert to '%s'", 
+                        (inittype.length ? inittype : "no data"),
+                        T.stringof ) );
         return (cast(T[])data.dup)[0];
+    }
     else static if( __traits(compiles, T.load(data)) )
         return T.load(data);
     else static assert( 0, format( "unsupported type '%s'", T.stringof ) );
@@ -70,6 +76,7 @@ private T conv(T)( in imbyte data )
 struct PData
 {
     imbyte data;
+    string inittype;
 
     private void readData(T)( in T val )
     {
@@ -78,12 +85,20 @@ struct PData
         else static if( __traits(compiles, val.dump()) )
             data = val.dump().idup;
         else static assert( 0, format( "unsupported type '%s'", T.stringof ) );
+        inittype = T.stringof;
     }
 
-    pure this( in ubyte[] dd ) { data = dd.idup; }
+    pure this( in ubyte[] dd ) 
+    { 
+        data = dd.idup; 
+        inittype = "byte array";
+    }
 
     pure this(T)( in T val ) if( isPureDump!T ) 
-    { data = pureDumpData( val ); }
+    { 
+        data = pureDumpData( val ); 
+        inittype = T.stringof;
+    }
 
     this(T)( in T val ) if( !isPureDump!T ) 
     { readData( val ); }
@@ -96,9 +111,9 @@ struct PData
 
     @property
     {
-        T as(T)() const { return conv!T( data ); }
-        T as(T)() shared const { return conv!T( data ); }
-        T as(T)() immutable { return conv!T( data ); }
+        T as(T)() const { return conv!T( data, inittype ); }
+        T as(T)() shared const { return conv!T( data, inittype ); }
+        T as(T)() immutable { return conv!T( data, inittype ); }
     }
 }
 
