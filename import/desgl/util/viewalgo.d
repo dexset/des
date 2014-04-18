@@ -82,9 +82,5 @@ mat4 ortho( sz_vec sz, z_vec z )
 
 mat4 ortho( float w, float h, float znear, float zfar )
 {
-    float x = znear - zfar;
-    return mat4([ 2/w, 0,   0,       0,
-                  0,   2/h, 0,       0,
-                  0,   0,   -1/x,    0,
-                  0,   0,   znear/x, 1 ]);
+    ortho( sz_vec( w, h ), z_vec( znear, zfar ) );
 }
