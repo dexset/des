@@ -628,6 +628,9 @@ alias vec!(2,int,"xy") ivec2;
 alias vec!(3,int,"xyz") ivec3;
 alias vec!(4,int,"xyzw") ivec4;
 
+alias vec!( 2, float, "nf" ) z_vec; 
+alias vec!( 2, float, "wh" ) sz_vec; 
+
 unittest 
 { 
     vec!(3,float,"xyz") a;

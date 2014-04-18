@@ -68,9 +68,6 @@ mat4 perspective(float fov, float aspect, float znear, float zfar)
                   0, 0, -1, 0 ]);
 }
 
-alias vec!( 2, float, "nf" ) z_vec; 
-alias vec!( 2, float, "wh" ) sz_vec; 
-
 mat4 ortho( sz_vec sz, z_vec z )
 {
     float x = z.n - z.f;
@@ -82,5 +79,5 @@ mat4 ortho( sz_vec sz, z_vec z )
 
 mat4 ortho( float w, float h, float znear, float zfar )
 {
-    ortho( sz_vec( w, h ), z_vec( znear, zfar ) );
+    return ortho( sz_vec( w, h ), z_vec( znear, zfar ) );
 }
