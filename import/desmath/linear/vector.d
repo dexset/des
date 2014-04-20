@@ -624,6 +624,9 @@ alias vec!(4,double,"ijka") dquat;
 alias vec!(3,float,"rgb") col3;
 alias vec!(4,float,"rgba") col4;
 
+alias vec!(3,ubyte,"rgb") bcol3;
+alias vec!(4,ubyte,"rgba") bcol4;
+
 alias vec!(2,int,"xy") ivec2;
 alias vec!(3,int,"xyz") ivec3;
 alias vec!(4,int,"xyzw") ivec4;
