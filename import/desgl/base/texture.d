@@ -65,8 +65,6 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 )
         bind(); scope(exit) unbind();
         debug checkGL;
 
-        parameteri( GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-        parameteri( GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
         parameteri( GL_TEXTURE_MAG_FILTER, GL_LINEAR );
         parameteri( GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
