@@ -25,7 +25,7 @@ The MIT License (MIT)
 module desmath.linear.vector;
 
 import std.math;
-import std.traits : isNumeric, isFloatingPoint, isStaticArray, isArray;
+import std.traits;
 import std.algorithm : reduce;
 
 private import std.string, std.conv;
@@ -209,6 +209,17 @@ package{
         else return isStaticConv!(D,T[0]) && isStaticConv!(D,T[1 .. $]);
     }
 
+    @property pure nothrow bool hasDynamicArray(T...)() if( T.length > 0 )
+    {
+        static if( T.length == 1 )
+        {
+            alias T[0] G;
+            static if( isDynamicArray!G ) return true;
+            else return false;
+        }
+        else return hasDynamicArray!(T[0]) || hasDynamicArray!(T[1 .. $]);
+    }
+
     pure auto getStaticData(string src, string dst, T, E) ( ref size_t S, size_t N )
     {
         //import std.string : format;
@@ -298,7 +309,8 @@ package{
     pure @property bool isStaticCompatibleArgs(size_t N, T, E... )()
     {
         static if( E.length == 0 ) return false;
-        else return ( isStaticConv!(T,E) && N == getStaticArgsLength!(E) );
+        else return ( N == getStaticArgsLength!(E) );
+        //else return ( isStaticConv!(T,E) && N == getStaticArgsLength!(E) );
     }
 } 
 
@@ -376,6 +388,8 @@ struct vec( size_t N, T=float, string AS="" )
     {
         static if( isStaticCompatibleArgs!(N,T,E) )
             mixin( getAllStaticData!("ext","data",T,E) );
+        else static if( !hasDynamicArray!(E) )
+            static assert(0, "bad arguments '" ~ E.stringof ~ "' for " ~ selftype.stringof );
         else
         {
             T[] buf;

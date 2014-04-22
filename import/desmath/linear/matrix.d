@@ -80,6 +80,8 @@ struct mat( size_t H, size_t W, E=float )
     {
         static if( isStaticCompatibleArgs!(H*W,E,X) )
             mixin( getAllStaticData!("vals", "data",E,X) );
+        else static if( !hasDynamicArray!(X) )
+            static assert(0, "bad arguments '" ~ X.stringof ~ "' for " ~ selftype.stringof );
         else
         {
             E[] buf;
