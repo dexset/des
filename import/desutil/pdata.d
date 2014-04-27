@@ -93,9 +93,7 @@ struct PData
             data = val.dump().idup;
         else static assert( 0, format( "unsupported type '%s'", T.stringof ) );
         inittype = getType(val);
-        //inittype = T.stringof;
     }
-
 
     pure this( in ubyte[] dd ) 
     { 
@@ -107,7 +105,6 @@ struct PData
     { 
         data = pureDumpData( val ); 
         inittype = getType(val);
-        //inittype = T.stringof;
     }
 
     this(T)( in T val ) if( !isPureDump!T ) 
