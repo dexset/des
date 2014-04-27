@@ -99,10 +99,25 @@ struct mat( size_t H, size_t W, E=float )
             data[i] = cast(E)m.data[i];
     }
 
+    static pure private @property get_matrix_assign(size_t WW, size_t HH)()
+    {
+        import std.string;
+        string[] res;
+        foreach( i; 0 .. WW*HH )
+            res ~= format( "data[%d] = cast(E)m.data[%d];", i, i );
+        return res.join("\n");
+    }
+
     auto opAssign(X)( in mat!(H,W,X) m ) if( is( X : E ) )
     { 
-        foreach( i; 0 .. W*H )
-            data[i] = cast(E)m.data[i];
+        static if( is( X == E ) )
+            data = m.data;
+        else
+        {
+            foreach( i; 0 .. W*H )
+                data[i] = cast(E)m.data[i];
+        }
+        //mixin( get_matrix_assign!(W,H) );
         return this;
     }
     
@@ -295,17 +310,27 @@ struct mat( size_t H, size_t W, E=float )
         if( ( op == "*" || op == "/" ) && is( X : E ) )
     { return ( this = opBinary!op(b) ); }
 
+    static pure private @property string gen_matrix_mult(size_t HH, size_t WW, size_t MM)()
+    {
+        import std.string;
+        string[] res;
+        foreach( i; 0 .. HH )
+            foreach( j; 0 .. MM )
+            {
+                string[] res_arr;
+                foreach( k; 0 .. WW )
+                    res_arr ~= format( "a[%d,%d]*b[%d,%d]", i,k,k,j );
+                res ~= format( "ret[%d,%d] = ", i, j ) ~ res_arr.join(" + ") ~ ";";
+            }
+        return res.join("\n");
+    }
+
     auto opBinary(string op, size_t M,X)( in mat!(W,M,X) b ) const
         if( op == "*" && is( generalType!(E,X) ) )
     {
         mat!(H,M,E) ret;
-        foreach( i; 0 .. H )
-            foreach( j; 0 .. M )
-            {
-                ret[i,j] = 0;
-                foreach( k; 0 .. W )
-                    ret[i,j] += cast(E)(this[i,k] * b[k,j]);
-            }
+        alias this a;
+        mixin( gen_matrix_mult!(H,W,M) );
         return ret;
     }
 
@@ -315,30 +340,36 @@ struct mat( size_t H, size_t W, E=float )
         return true;
     }
 
+    static pure private @property string gen_matrix_mult_vector(size_t HH, size_t WW)()
+    {
+        import std.string;
+        string[] res;
+        foreach( i; 0 .. HH )
+        {
+            string[] res_arr;
+            foreach( j; 0 .. WW )
+                res_arr ~= format( "a[%d,%d]*b[%d]", i,j,j );
+            res ~= format( "ret[%d] = ", i ) ~ res_arr.join(" + ") ~ ";";
+        }
+        return res.join("\n");
+    }
+
     // vector as column
-    auto opBinary(string op, X)( in X v ) const
+    auto opBinary(string op, X)( in X b ) const
         if( op == "*" && isCompVector!(W,E,X) )
     {
         vec!(H,generalType!(E,X.datatype),H==W?X.accessString:"") ret;
-        foreach( i; 0 .. H )
-        {
-            ret[i] = 0;
-            foreach( j; 0 .. W )
-                ret[i] += this[i,j] * v[j];
-        }
+        alias this a;
+        mixin( gen_matrix_mult_vector!(H,W) );
         return ret;
     }
 
-    auto opBinaryRight(string op, X)( in X v ) const
+    auto opBinaryRight(string op, X)( in X b ) const
         if( op == "*" && isCompVector!(H,E,X) )
     {
         vec!(W,E,H==W?X.accessString:"") ret;
-        foreach( j; 0 .. W )
-        {
-            ret[j] = 0;
-            foreach( i; 0 .. H )
-                ret[j] += cast(E)(this[i,j] * v[i]);
-        }
+        alias this a;
+        mixin( gen_matrix_mult_vector!(H,W) );
         return ret;
     }
 

@@ -26,7 +26,7 @@ module desmath.linear.vector;
 
 import std.math;
 import std.traits;
-import std.algorithm : reduce;
+import std.algorithm;
 
 private import std.string, std.conv;
 
@@ -52,7 +52,7 @@ private static pure {
         enum ch = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
         string buf = x>=0?"":"-";
         x = x>0?x:-x;
-        if( x < 10 ) buf ~= ch[x]; 
+        if( x < 10 ) buf ~= ch[x];
         else buf ~= toStr(x/10) ~ ch[x%10];
         return buf;
     }
@@ -67,16 +67,7 @@ private static pure {
     }
 
     @property nothrow ptrdiff_t getIndex( string str, char m )()
-    {
-        ptrdiff_t rr(size_t index)()
-        {
-            static if( str.length <= index ) return -1;
-            else
-            static if( str[index] == m ) return index;
-            else return rr!(index+1);
-        }
-        return rr!0;
-    }
+    { return canFind( str, ""~m ) ? str.length - find(str, ""~m ).length : -1; }
 
     unittest
     {
@@ -196,7 +187,7 @@ private static pure {
 /++ work with static, dynamic compatible and accessing to data +/
 package{
 
-    @property pure nothrow bool isStaticConv(D,T...)() if( T.length >= 1 )
+    @property pure nothrow bool isStaticConv(D,T...)() if( T.length > 0 )
     {
         static if( T.length == 1 ) 
         {
@@ -207,6 +198,19 @@ package{
             else return false;
         }
         else return isStaticConv!(D,T[0]) && isStaticConv!(D,T[1 .. $]);
+    }
+
+    @property pure nothrow bool isAllNumeric(T...)() if( T.length > 0 )
+    {
+        static if( T.length == 1 ) 
+        {
+            alias T[0] G;
+            static if( isNumeric!G ) return true;
+            else static if( isStaticArray!G ) return isNumeric!(typeof(G.init[0]));
+            else static if( isVector!G ) return true;
+            else return false;
+        }
+        else return isAllNumeric!(T[0]) && isAllNumeric!(T[1 .. $]);
     }
 
     @property pure nothrow bool hasDynamicArray(T...)() if( T.length > 0 )
@@ -309,8 +313,7 @@ package{
     pure @property bool isStaticCompatibleArgs(size_t N, T, E... )()
     {
         static if( E.length == 0 ) return false;
-        else return ( N == getStaticArgsLength!(E) );
-        //else return ( isStaticConv!(T,E) && N == getStaticArgsLength!(E) );
+        else return ( isAllNumeric!E && N == getStaticArgsLength!(E) );
     }
 } 
 

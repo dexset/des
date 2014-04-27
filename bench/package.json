@@ -1,0 +1,11 @@
+{
+    "name": "test",
+    "targetPath": "bin",
+    "targetType": "executable",
+    "sourcePaths": [ ".", "../import/" ],
+    "importPaths": [ "../import/" ],
+    "dependencies":
+    {
+        "derelict": "~master"
+    }
+}
