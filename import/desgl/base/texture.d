@@ -72,7 +72,7 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 )
     }
 
     void genMipmap()
-    { 
+    {
         bind();
         glGenerateMipmap(type);
     }

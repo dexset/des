@@ -45,9 +45,7 @@ protected:
 public:
     static nothrow void unbind( GLenum tp ){ glBindBuffer( tp, 0 ); }
 
-    this() { float[] arr; this( arr ); }
-
-    this(E)( in E[] data_arr, GLenum Type=GL_ARRAY_BUFFER, GLenum mem=GL_DYNAMIC_DRAW )
+    this(E=float)( in E[] data_arr=[], GLenum Type=GL_ARRAY_BUFFER, GLenum mem=GL_DYNAMIC_DRAW )
     {
         glGenBuffers( 1, &vboID );
         type = Type;
@@ -151,4 +149,6 @@ public:
         vao = new GLVAO;
         debug checkGL;
     }
+
+    ~this() { destroy(vao); }
 }
