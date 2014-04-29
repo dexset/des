@@ -27,4 +27,4 @@ some OpenGL essential wraps:
 * VBO
 * FBO
 * shader
-*# texture
+* texture
