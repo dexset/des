@@ -67,7 +67,7 @@ public:
         sz = ivec2( 1, 1 );
 
         tex = new GLTexture2D;
-        tex.image( sz, 4, GL_RGBA, GL_UNSIGNED_BYTE );
+        tex.image( sz, 4, GL_RGBA, GL_FLOAT );
 
         // Render buffer
         glGenRenderbuffers( 1, &rboID );
@@ -98,7 +98,7 @@ public:
 
             debug log( "reshape FBO: [ %d x %d ]", sz.w, sz.h );
 
-            tex.image( sz, 4, GL_RGBA, GL_UNSIGNED_BYTE );
+            tex.image( sz, 4, GL_RGBA, GL_FLOAT );
             tex.genMipmap();
 
             glBindRenderbuffer( GL_RENDERBUFFER, rboID );
@@ -145,13 +145,12 @@ class FBORect: GLObj
 {
 private:
     GLFBO fbo;
-
     GLVBO pos, uv;
+    ivec2 wsz = ivec2(800,800);
+public:
+
     CommonShaderProgram shader;
 
-    ivec2 wsz = ivec2(800,800);
-
-public:
     this( in ShaderSource ss )
     {
         shader = new CommonShaderProgram(ss);
@@ -184,12 +183,16 @@ public:
 
     void unbind() { fbo.unbind(); }
 
-    void draw()
+    void predraw()
     {
         vao.bind();
         shader.use();
         fbo.bindTexture();
         shader.setUniformVec( "winsize", vec2(wsz) );
+    }
+
+    void draw()
+    {
         glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
     }
 
