@@ -44,13 +44,13 @@ enum ImCompType
 
 struct ImageType
 {
-    this( ImCompType ict, size_t ch )
+    pure this( ImCompType ict, size_t ch )
     {
         comp = ict;
         channels = ch;
     }
 
-    this( size_t ch )
+    pure this( size_t ch )
     {
         comp = ImCompType.RAWBYTE;
         channels = ch;
