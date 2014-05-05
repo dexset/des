@@ -121,7 +121,7 @@ protected:
     {
         GLuint shader = glCreateShader( type );
         debug log_info( "create shader %s with type %s", shader, type ); 
-        auto srcptr = src.ptr;
+        auto srcptr = src.toStringz;
         glShaderSource( shader, 1, &(srcptr), null );
         glCompileShader( shader );
 
