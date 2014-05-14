@@ -462,7 +462,7 @@ struct vec( size_t N, T=float, string AS="" )
     }
 
     @trusted auto opBinary(string op, E)( in E b ) const
-        if( !isVector!E && ( op == "*" || op == "/" ) && is( generalType!(T,E) ) )
+        if( !isVector!E && ( op == "*" || op == "/" || op == "^^" ) && is( generalType!(T,E) ) )
     {
         selftype ret;
         mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b );" ) );
