@@ -25,8 +25,8 @@ The MIT License (MIT)
 module desmath.linear.vector;
 
 import std.math;
-import std.traits : isNumeric, isFloatingPoint, isStaticArray, isArray;
-import std.algorithm : reduce;
+import std.traits;
+import std.algorithm;
 
 private import std.string, std.conv;
 
@@ -52,7 +52,7 @@ private static pure {
         enum ch = [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ];
         string buf = x>=0?"":"-";
         x = x>0?x:-x;
-        if( x < 10 ) buf ~= ch[x]; 
+        if( x < 10 ) buf ~= ch[x];
         else buf ~= toStr(x/10) ~ ch[x%10];
         return buf;
     }
@@ -67,16 +67,7 @@ private static pure {
     }
 
     @property nothrow ptrdiff_t getIndex( string str, char m )()
-    {
-        ptrdiff_t rr(size_t index)()
-        {
-            static if( str.length <= index ) return -1;
-            else
-            static if( str[index] == m ) return index;
-            else return rr!(index+1);
-        }
-        return rr!0;
-    }
+    { return canFind( str, ""~m ) ? str.length - find(str, ""~m ).length : -1; }
 
     unittest
     {
@@ -193,10 +184,24 @@ private static pure {
     }
 }
 
+version(unittest)
+{
+    import desmath.linear.matrix;
+
+    bool eq(T,D=float)( in T m1, in T m2, D eps = D.epsilon*4 )
+        if( isFloatingPoint!D && ( isMatrix!T || isVector!T ) )
+    {
+        float k = 0;
+        foreach( i; 0 .. m1.data.length )
+            k += abs( m1.data[i] - m2.data[i] );
+        return k < eps;
+    }
+}
+
 /++ work with static, dynamic compatible and accessing to data +/
 package{
 
-    @property pure nothrow bool isStaticConv(D,T...)() if( T.length >= 1 )
+    @property pure nothrow bool isStaticConv(D,T...)() if( T.length > 0 )
     {
         static if( T.length == 1 ) 
         {
@@ -207,6 +212,30 @@ package{
             else return false;
         }
         else return isStaticConv!(D,T[0]) && isStaticConv!(D,T[1 .. $]);
+    }
+
+    @property pure nothrow bool isAllNumeric(T...)() if( T.length > 0 )
+    {
+        static if( T.length == 1 ) 
+        {
+            alias T[0] G;
+            static if( isNumeric!G ) return true;
+            else static if( isStaticArray!G ) return isNumeric!(typeof(G.init[0]));
+            else static if( isVector!G ) return true;
+            else return false;
+        }
+        else return isAllNumeric!(T[0]) && isAllNumeric!(T[1 .. $]);
+    }
+
+    @property pure nothrow bool hasDynamicArray(T...)() if( T.length > 0 )
+    {
+        static if( T.length == 1 )
+        {
+            alias T[0] G;
+            static if( isDynamicArray!G ) return true;
+            else return false;
+        }
+        else return hasDynamicArray!(T[0]) || hasDynamicArray!(T[1 .. $]);
     }
 
     pure auto getStaticData(string src, string dst, T, E) ( ref size_t S, size_t N )
@@ -298,7 +327,7 @@ package{
     pure @property bool isStaticCompatibleArgs(size_t N, T, E... )()
     {
         static if( E.length == 0 ) return false;
-        else return ( isStaticConv!(T,E) && N == getStaticArgsLength!(E) );
+        else return ( isAllNumeric!E && N == getStaticArgsLength!(E) );
     }
 } 
 
@@ -359,6 +388,26 @@ private string zeros( size_t N )
     return "[" ~ join(ret,",") ~ "]";
 }
 
+package
+{
+    string generateFor(ptrdiff_t END, ptrdiff_t START=0)( string bodystr )
+    {
+        string[] ret;
+        for( auto i = START; i < END; i++ )
+            ret ~= format( bodystr, i );
+        return ret.join("\n");
+    }
+
+    string generateFor2(size_t A, size_t B)( string bodystr )
+    {
+        string[] ret;
+        foreach( i; 0 .. A )
+            foreach( j; 0 .. B )
+                ret ~= format( bodystr, i, j );
+        return ret.join("\n");
+    }
+}
+
 struct vec( size_t N, T=float, string AS="" )
     if( ( ( N == AS.length && trueAccessString!AS ) || AS.length == 0 ) && 
         isNumeric!T && N > 0 )
@@ -376,6 +425,8 @@ struct vec( size_t N, T=float, string AS="" )
     {
         static if( isStaticCompatibleArgs!(N,T,E) )
             mixin( getAllStaticData!("ext","data",T,E) );
+        else static if( !hasDynamicArray!(E) )
+            static assert(0, "bad arguments '" ~ E.stringof ~ "' for " ~ selftype.stringof );
         else
         {
             T[] buf;
@@ -394,48 +445,41 @@ struct vec( size_t N, T=float, string AS="" )
         return this;
     }
 
-    pure auto opUnary(string op)() const 
+    @trusted pure auto opUnary(string op)() const 
         if( op == "-" && is( typeof( T.init * (-1) ) : T ) )
     {
         selftype ret;
-        foreach( i, val; this.data )
-            ret.data[i] = cast(T)( val * (-1) );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] * (-1) );" ) );
         return ret;
     }
 
-    auto elem(string op, E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto elem(string op, E, string bs)( in vec!(N,E,bs) b ) const
         if( op == "*" || op == "/" || op == "^^" )    
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)(data[i] " ~ op ~ " b.data[i]);" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b.data[%1$d] );" ) );
         return ret;
     }
 
-    auto mlt(E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto mlt(E, string bs)( in vec!(N,E,bs) b ) const
     { return this.elem!"*"(b); }
 
-    auto div(E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto div(E, string bs)( in vec!(N,E,bs) b ) const
     { return this.elem!"/"(b); }
 
-    auto opBinary(string op, E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto opBinary(string op, E, string bs)( in vec!(N,E,bs) b ) const
         if( op == "+" || op == "-" )
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)( data[i] " ~ op ~ " b.data[i] );" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b.data[%1$d] );" ) );
         return ret;
     }
 
-    auto opBinary(string op, E)( in E b ) const
-        if( !isVector!E && ( op == "*" || op == "/" ) && is( generalType!(T,E) ) )
+    @trusted auto opBinary(string op, E)( in E b ) const
+        if( !isVector!E && ( op == "*" || op == "/" || op == "^^" ) && is( generalType!(T,E) ) )
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)(data[i] " ~ op ~ " b);" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b );" ) );
         return ret;
     }
 
@@ -447,8 +491,7 @@ struct vec( size_t N, T=float, string AS="" )
         if( op == "^" && is( generalType!(T,E) ) )
     {
         generalType!(T,E) ret = 0;
-        foreach( i, val; data )
-            ret += val * b.data[i];
+        mixin( generateFor!N( "ret += data[%1$d] * b.data[%1$d];" ) );
         return ret;
     }
 
@@ -577,7 +620,7 @@ struct vec( size_t N, T=float, string AS="" )
         static selftype fromAngle(E,string bs)( T alpha, in vec!(3,E,bs) b )
             if( isFloatingPoint!E )
         { 
-            T a = alpha / 2.0;
+            T a = alpha / cast(T)(2.0);
             return selftype( b * sin(a), cos(a) ); 
         }
 
@@ -624,9 +667,15 @@ alias vec!(4,double,"ijka") dquat;
 alias vec!(3,float,"rgb") col3;
 alias vec!(4,float,"rgba") col4;
 
+alias vec!(3,ubyte,"rgb") bcol3;
+alias vec!(4,ubyte,"rgba") bcol4;
+
 alias vec!(2,int,"xy") ivec2;
 alias vec!(3,int,"xyz") ivec3;
 alias vec!(4,int,"xyzw") ivec4;
+
+alias vec!( 2, float, "nf" ) z_vec; 
+alias vec!( 2, float, "wh" ) sz_vec; 
 
 unittest 
 { 

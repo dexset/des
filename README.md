@@ -1,21 +1,26 @@
 # D Extended Set #
 
-## Util ##
+## desutil ##
 
 * some signal-slot concept realisation
 * langpack class for easy localization
 * some help functions
 * log system (WIP)
 
-## Math ##
+## desmath ##
 
-## devilwrap - DevIL wrap for DES ##
+* linear algebra (vec,mat)
+* methods of approximation, calculus, statistics
 
 ## desil ##
 
 Image Library
 
-## GL ##
+## devilwrap - DevIL wrap for DES ##
+
+DevIL read/write image for working with desil
+
+## desgl ##
 
 some OpenGL essential wraps:
 * VAO
@@ -23,5 +28,3 @@ some OpenGL essential wraps:
 * FBO
 * shader
 * texture
-
-## D Extanded Set GUI ##

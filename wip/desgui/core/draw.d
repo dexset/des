@@ -24,8 +24,8 @@ The MIT License (MIT)
 
 module desgui.core.draw;
 
-public import desmath.types.vector;
-public import desmath.types.rect;
+public import desmath.linear.vector;
+public import desil.rect;
 
 import desil;
 

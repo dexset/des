@@ -80,6 +80,8 @@ struct mat( size_t H, size_t W, E=float )
     {
         static if( isStaticCompatibleArgs!(H*W,E,X) )
             mixin( getAllStaticData!("vals", "data",E,X) );
+        else static if( !hasDynamicArray!(X) )
+            static assert(0, "bad arguments '" ~ X.stringof ~ "' for " ~ selftype.stringof );
         else
         {
             E[] buf;
@@ -92,15 +94,14 @@ struct mat( size_t H, size_t W, E=float )
     }
 
     pure this(X)( in mat!(H,W,X) m ) if( is( X : E ) )
-    { 
-        foreach( i; 0 .. W*H )
-            data[i] = cast(E)m.data[i];
+    {
+        mixin( generateFor!(W*H)( "data[%1$d] = cast(E)( m.data[%1$d] );" ) );
     }
 
     auto opAssign(X)( in mat!(H,W,X) m ) if( is( X : E ) )
-    { 
-        foreach( i; 0 .. W*H )
-            data[i] = cast(E)m.data[i];
+    {
+        static if( is( X == E ) ) data = m.data;
+        else mixin( generateFor!(W*H)( "data[%1$d] = cast(E)( m.data[%1$d] );" ) );
         return this;
     }
     
@@ -208,7 +209,7 @@ struct mat( size_t H, size_t W, E=float )
         if( cno >= 0 && cno < W )
     {
         mat!(H,1,E) ret;
-        foreach( i; 0 .. H ) ret[i] = data[cno+i*W];
+        mixin( generateFor!(H)( "ret[%1$d] = data[cno+%1$d*W];" ) );
         return ret;
     }
 
@@ -216,7 +217,7 @@ struct mat( size_t H, size_t W, E=float )
         if( rno >= 0 && rno < H )
     {
         mat!(1,W,E) ret;
-        foreach( i; 0 .. W ) ret[i] = data[rno*W+i];
+        mixin( generateFor!(W)( "ret[%1$d] = data[rno*W+%1$d];" ) );
         return ret;
     }
 
@@ -253,9 +254,7 @@ struct mat( size_t H, size_t W, E=float )
     @property auto T() const
     {
         mat!(W,H,E) r;
-        foreach( i; 0 .. H )
-            foreach( j; 0 .. W )
-                r[j,i] = this[i,j]; 
+        mixin( generateFor2!(H,W)( "r[%2$d,%1$d] = this[%1$d,%2$d];" ) );
         return r;
     }
 
@@ -271,8 +270,7 @@ struct mat( size_t H, size_t W, E=float )
         if( op == "+" || op == "-" )
     {
         mat!(H,W,E) ret;
-        foreach( i, ref v; ret.data ) 
-            mixin( "v = cast(E)(data[i] " ~ op ~ " b.data[i]);" );
+        mixin( generateFor!(H*W)( "ret.data[%1$d] = cast(E)(data[%1$d] " ~ op ~ " b.data[%1$d]);" ) );
         return ret;
     }
 
@@ -284,8 +282,7 @@ struct mat( size_t H, size_t W, E=float )
         if( ( op == "*" || op == "/" ) && isNumeric!X )
     {
         mat!(H,W,E) ret;
-        foreach( i, ref v; ret.data ) 
-            mixin( "v = cast(E)(data[i] " ~ op ~ " b);" );
+        mixin( generateFor!(H*W)( "ret.data[%1$d] = cast(E)(data[%1$d] " ~ op ~ " b);" ) );
         return ret;
     }
 
@@ -293,17 +290,27 @@ struct mat( size_t H, size_t W, E=float )
         if( ( op == "*" || op == "/" ) && is( X : E ) )
     { return ( this = opBinary!op(b) ); }
 
+    static pure private @property string gen_matrix_mult(size_t HH, size_t WW, size_t MM)()
+    {
+        import std.string;
+        string[] res;
+        foreach( i; 0 .. HH )
+            foreach( j; 0 .. MM )
+            {
+                string[] res_arr;
+                foreach( k; 0 .. WW )
+                    res_arr ~= format( "a[%d,%d]*b[%d,%d]", i,k,k,j );
+                res ~= format( "ret[%d,%d] = ", i, j ) ~ res_arr.join(" + ") ~ ";";
+            }
+        return res.join("\n");
+    }
+
     auto opBinary(string op, size_t M,X)( in mat!(W,M,X) b ) const
         if( op == "*" && is( generalType!(E,X) ) )
     {
         mat!(H,M,E) ret;
-        foreach( i; 0 .. H )
-            foreach( j; 0 .. M )
-            {
-                ret[i,j] = 0;
-                foreach( k; 0 .. W )
-                    ret[i,j] += cast(E)(this[i,k] * b[k,j]);
-            }
+        alias this a;
+        mixin( gen_matrix_mult!(H,W,M) );
         return ret;
     }
 
@@ -313,30 +320,36 @@ struct mat( size_t H, size_t W, E=float )
         return true;
     }
 
+    static pure private @property string gen_matrix_mult_vector(size_t HH, size_t WW)()
+    {
+        import std.string;
+        string[] res;
+        foreach( i; 0 .. HH )
+        {
+            string[] res_arr;
+            foreach( j; 0 .. WW )
+                res_arr ~= format( "a[%d,%d]*b[%d]", i,j,j );
+            res ~= format( "ret[%d] = ", i ) ~ res_arr.join(" + ") ~ ";";
+        }
+        return res.join("\n");
+    }
+
     // vector as column
-    auto opBinary(string op, X)( in X v ) const
+    auto opBinary(string op, X)( in X b ) const
         if( op == "*" && isCompVector!(W,E,X) )
     {
         vec!(H,generalType!(E,X.datatype),H==W?X.accessString:"") ret;
-        foreach( i; 0 .. H )
-        {
-            ret[i] = 0;
-            foreach( j; 0 .. W )
-                ret[i] += this[i,j] * v[j];
-        }
+        alias this a;
+        mixin( gen_matrix_mult_vector!(H,W) );
         return ret;
     }
 
-    auto opBinaryRight(string op, X)( in X v ) const
+    auto opBinaryRight(string op, X)( in X b ) const
         if( op == "*" && isCompVector!(H,E,X) )
     {
         vec!(W,E,H==W?X.accessString:"") ret;
-        foreach( j; 0 .. W )
-        {
-            ret[j] = 0;
-            foreach( i; 0 .. H )
-                ret[j] += cast(E)(this[i,j] * v[i]);
-        }
+        alias this a;
+        mixin( gen_matrix_mult_vector!(H,W) );
         return ret;
     }
 
@@ -505,10 +518,7 @@ struct mat( size_t H, size_t W, E=float )
             {
                 selftype ret;
 
-                foreach( i; 0 .. 3 )
-                    foreach( j; 0 .. 3 )
-                        ret[i,j] = this[j,i];
-
+                mixin( generateFor2!(3,3)( "ret[%2$d,%1$d] = this[%1$d,%2$d];" ) );
 
                 auto a22k = 1.0 / this[3,3];
 

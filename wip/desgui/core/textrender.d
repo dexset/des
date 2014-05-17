@@ -24,8 +24,8 @@ The MIT License (MIT)
 
 module desgui.core.textrender;
 
-public import desmath.types.vector,
-              desmath.types.rect;
+public import desmath.linear.vector,
+              desil.rect;
 
 public import desil.image;
 

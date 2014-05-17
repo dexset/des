@@ -26,145 +26,179 @@ module desgl.post.fbo;
 
 import derelict.opengl3.gl3;
 
-//import desmath.linear;
-//import desmath.types.rect;
-//import desutil.signal;
-//
-//public import desgl.shader;
-//import desgl.object;
-//import desgl.texture;
-//import desgl.helpers;
-//
-//import desil.image;
-//
-//import desutil.logger;
-//mixin( PrivateLoggerMixin );
-//
-//class GLFBOException : Exception 
-//{ @safe pure nothrow this( string msg ){ super( msg ); } }
-//
-//class GLFBO
-//{
-//private:
-//    uint rboID;
-//    uint fboID;
-//
-//    GLTexture2D tex;
-//
-//    static uint[] fboStack;
-//
-//    static this() { fboStack ~= 0; }
-//
-//    vec!(2,int,"wh") sz;
-//
-//public:
-//
-//    alias const ref ivec2 in_ivec2;
-//    Signal!in_ivec2 resize;
-//    SignalBoxNoArgs draw;
-//
-//    this()
-//    {
-//        sz = ivec2( 1, 1 );
-//
-//        tex = new GLTexture2D;
-//        tex.image( sz, 4, GL_RGBA, GL_UNSIGNED_BYTE );
-//
-//        // Render buffer
-//        glGenRenderbuffers( 1, &rboID );
-//        glBindRenderbuffer( GL_RENDERBUFFER, rboID );
-//        glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sz.w, sz.h );
-//        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-//
-//        // Frame buffer
-//        glGenFramebuffers( 1, &fboID );
-//        glBindFramebuffer( GL_FRAMEBUFFER, fboID );
-//        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-//                                GL_TEXTURE_2D, tex.id, 0 );
-//        glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
-//                                   GL_RENDERBUFFER, rboID );
-//
-//        GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
-//        import std.string;
-//        if( status != GL_FRAMEBUFFER_COMPLETE )
-//            throw new GLFBOException( format( "status isn't GL_FRAMEBUFFER_COMPLETE, it's %#x", status ) );
-//
-//        glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-//
-//        debug log( "create FBO [fbo:%d], [rbo:%d], [tex:%d]", fboID, rboID, tex.id );
-//
-//        resize.connect( (nsz)
-//        {
-//            sz = nsz;
-//
-//            debug log( "reshape FBO: [ %d x %d ]", sz.w, sz.h );
-//
-//            tex.image( sz, 4, GL_RGBA, GL_UNSIGNED_BYTE );
-//            tex.genMipmap();
-//
-//            glBindRenderbuffer( GL_RENDERBUFFER, rboID );
-//            glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sz.w, sz.h );
-//            glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-//        });
-//
-//        resize( ivec2(1,1) );
-//    }
-//
-//    final nothrow void bind() 
-//    { 
-//        glBindFramebuffer( GL_FRAMEBUFFER, fboID ); 
-//        fboStack ~= fboID;
-//    }
-//
-//    final nothrow void unbind() 
-//    { 
-//        if( fboStack.length > 1 )
-//        {
-//            glBindFramebuffer( GL_FRAMEBUFFER, fboStack[$-2] ); 
-//            fboStack = fboStack[ 0 .. $-1 ];
-//        }
-//    }
-//
-//    /+ TODO 
-//        работу с текстурой переложить на GLTexture2D
-//       TODO +/
-//
-//    final nothrow void bindTexture() { tex.bind(); }
-//    final nothrow void unbindTexture() { tex.unbind(); }
-//
-//    final void getImage( ref Image img, uint level=0, GLenum fmt=GL_RGB, GLenum rtype=GL_UNSIGNED_BYTE )
-//    { tex.getImage( img, level, fmt, rtype ); }
-//
-//    nothrow @property auto size() const { return sz; }
-//
-//    ~this()
-//    {
-//        unbind();
-//        glDeleteFramebuffers( 1, &fboID );
-//        glDeleteRenderbuffers( 1, &rboID );
-//        //clear(tex);
-//    }
-//}
-//
-//import desgl.draw.rectshape;
-//
-//class GLFBODraw(Args...)
-//{
-//    GLFBO fbo;
-//    TexturedRect!() obj;
-//
-//    SignalBox!Args render, draw;
-//
-//    this( int posloc, int uvloc )
-//    {
-//        fbo = new GLFBO;
-//
-//        obj = new TexturedRect!()( posloc, uvloc );
-//
-//        render.addBegin( (Args a) { fbo.bind(); } );
-//        render.addEnd( (Args a) { fbo.unbind(); } );
-//
-//        draw.addBegin( (Args a) { fbo.bindTexture(); });
-//        draw.connect( (Args a) { obj.draw(); } );
-//    }
-//}
+import desmath.linear;
+import desil.rect;
+import desutil.signal;
+
+public import desgl.base;
+import desgl.util;
+
+import desutil.logger;
+mixin( PrivateLoggerMixin );
+
+import desil.image;
+
+
+class GLFBOException : Exception 
+{ @safe pure nothrow this( string msg ){ super( msg ); } }
+
+class GLFBO
+{
+private:
+    uint rboID;
+    uint fboID;
+
+    GLTexture2D tex;
+
+    static this() { fboStack ~= 0; }
+
+    vec!(2,int,"wh") sz;
+
+    static uint[] fboStack;
+
+public:
+
+    alias const ref ivec2 in_ivec2;
+    Signal!in_ivec2 resize;
+    SignalBoxNoArgs draw;
+
+    this()
+    {
+        sz = ivec2( 1, 1 );
+
+        tex = new GLTexture2D;
+        tex.image( sz, 4, GL_RGBA, GL_FLOAT );
+
+        // Render buffer
+        glGenRenderbuffers( 1, &rboID );
+        glBindRenderbuffer( GL_RENDERBUFFER, rboID );
+        glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sz.w, sz.h );
+        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+
+        // Frame buffer
+        glGenFramebuffers( 1, &fboID );
+        glBindFramebuffer( GL_FRAMEBUFFER, fboID );
+        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                GL_TEXTURE_2D, tex.id, 0 );
+        glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
+                                   GL_RENDERBUFFER, rboID );
+
+        GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
+        import std.string;
+        if( status != GL_FRAMEBUFFER_COMPLETE )
+            throw new GLFBOException( format( "status isn't GL_FRAMEBUFFER_COMPLETE, it's %#x", status ) );
+
+        glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+        debug log( "create FBO [fbo:%d], [rbo:%d], [tex:%d]", fboID, rboID, tex.id );
+
+        resize.connect( (nsz)
+        {
+            sz = nsz;
+
+            debug log( "reshape FBO: [ %d x %d ]", sz.w, sz.h );
+
+            tex.image( sz, 4, GL_RGBA, GL_FLOAT );
+            tex.genMipmap();
+
+            glBindRenderbuffer( GL_RENDERBUFFER, rboID );
+            glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sz.w, sz.h );
+            glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+        });
+
+        resize( ivec2(1,1) );
+    }
+
+    final nothrow void bind() 
+    { 
+        glBindFramebuffer( GL_FRAMEBUFFER, fboID ); 
+        fboStack ~= fboID;
+    }
+
+    final nothrow void unbind() 
+    { 
+        if( fboStack.length > 1 )
+        {
+            glBindFramebuffer( GL_FRAMEBUFFER, fboStack[$-2] ); 
+            fboStack = fboStack[ 0 .. $-1 ];
+        }
+    }
+
+    final nothrow void bindTexture() { tex.bind(); }
+    final nothrow void unbindTexture() { tex.unbind(); }
+
+    final void getImage( ref Image img, uint level=0, GLenum fmt=GL_RGB, GLenum rtype=GL_UNSIGNED_BYTE )
+    { tex.getImage( img, level, fmt, rtype ); }
+
+    nothrow @property auto size() const { return sz; }
+
+    ~this()
+    {
+        unbind();
+        glDeleteFramebuffers( 1, &fboID );
+        glDeleteRenderbuffers( 1, &rboID );
+        destroy( tex );
+    }
+}
+
+class FBORect: GLObj
+{
+private:
+    GLFBO fbo;
+    GLVBO pos, uv;
+    ivec2 wsz = ivec2(800,800);
+public:
+
+    CommonShaderProgram shader;
+
+    this( in ShaderSource ss )
+    {
+        shader = new CommonShaderProgram(ss);
+        fbo = new GLFBO;
+        fbo.resize( wsz );
+
+        int pos_loc = shader.getAttribLocation( "vertex" );
+        int uv_loc = shader.getAttribLocation( "uv" );
+
+        auto pos_dt = [ vec2(-1, 1), vec2(1, 1), vec2(-1,-1), vec2(1,-1) ];
+        auto uv_dt =  [ vec2( 0, 1), vec2(1, 1), vec2( 0, 0), vec2(1, 0) ];
+
+        pos = new GLVBO( pos_dt, GL_ARRAY_BUFFER, GL_STATIC_DRAW );
+        setAttribPointer( pos, pos_loc, 2, GL_FLOAT );
+        uv = new GLVBO( uv_dt, GL_ARRAY_BUFFER, GL_STATIC_DRAW );
+        setAttribPointer( uv, uv_loc, 2, GL_FLOAT );
+    }
+
+    void bind() 
+    { 
+        fbo.bind(); 
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    }
+
+    void resize( in ivec2 sz )
+    {
+        wsz = sz;
+        fbo.resize( wsz );
+    }
+
+    void unbind() { fbo.unbind(); }
+
+    void predraw()
+    {
+        vao.bind();
+        shader.use();
+        fbo.bindTexture();
+        shader.setUniformVec( "winsize", vec2(wsz) );
+    }
+
+    void draw()
+    {
+        glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
+    }
+
+    ~this()
+    {
+        destroy(pos);
+        destroy(uv);
+    }
+}

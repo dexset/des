@@ -56,20 +56,34 @@ unittest
     static assert( !isPureDump!(TS) );
 }
 
-private T conv(T)( in imbyte data )
+private T conv(T)( in imbyte data, string inittype )
 {
     static if( isArray!T )
         return cast(T)data.dup;
     else static if( !hasUnsharedAliasing!T )
+    {
+        if( data.length * ubyte.sizeof != T.sizeof )
+            throw new Exception( format( "this PData create with '%s' unable convert to '%s'", 
+                        (inittype.length ? inittype : "no data"),
+                        T.stringof ) );
         return (cast(T[])data.dup)[0];
+    }
     else static if( __traits(compiles, T.load(data)) )
         return T.load(data);
     else static assert( 0, format( "unsupported type '%s'", T.stringof ) );
 }
 
+private pure string getType(T)( T obj )
+{
+    static if( is(T == PData) || is( T == const(PData) ) || is(T == shared(PData) ) || is( T == immutable(PData) )  )
+        return obj.inittype;
+    else return T.stringof;
+}
+
 struct PData
 {
     imbyte data;
+    string inittype;
 
     private void readData(T)( in T val )
     {
@@ -78,12 +92,20 @@ struct PData
         else static if( __traits(compiles, val.dump()) )
             data = val.dump().idup;
         else static assert( 0, format( "unsupported type '%s'", T.stringof ) );
+        inittype = getType(val);
     }
 
-    pure this( in ubyte[] dd ) { data = dd.idup; }
+    pure this( in ubyte[] dd ) 
+    { 
+        data = dd.idup; 
+        inittype = "byte array";
+    }
 
     pure this(T)( in T val ) if( isPureDump!T ) 
-    { data = pureDumpData( val ); }
+    { 
+        data = pureDumpData( val ); 
+        inittype = getType(val);
+    }
 
     this(T)( in T val ) if( !isPureDump!T ) 
     { readData( val ); }
@@ -96,18 +118,24 @@ struct PData
 
     @property
     {
-        T as(T)() const { return conv!T( data ); }
-        T as(T)() shared const { return conv!T( data ); }
-        T as(T)() immutable { return conv!T( data ); }
+        T as(T)() const { return conv!T( data, inittype ); }
+        T as(T)() shared const { return conv!T( data, inittype ); }
+        T as(T)() immutable { return conv!T( data, inittype ); }
     }
 }
 
 unittest
 {
+    void should_eq(size_t line=__LINE__,T1,T2)( T1 a, T2 b )
+    { assert( a == b, format( "'%s' should equal '%s' at line #%d", a, b, line ) ); }
+
+    void should_not_eq(size_t line=__LINE__,T1,T2)( T1 a, T2 b )
+    { assert( a != b, format( "'%s' should not equal '%s' at line #%d", a, b, line ) ); }
+
     auto a = PData( [ .1, .2, .3 ] );
-    assert( a.as!(double[]) == [ .1, .2, .3 ] );
+    should_eq( a.as!(double[]), [ .1, .2, .3 ] );
     a = "hello";
-    assert( a.as!string == "hello" );
+    should_eq( a.as!string, "hello" );
 
     static struct TestStruct 
     { double x, y; string info; immutable(int)[] data; }
@@ -121,17 +149,17 @@ unittest
     auto xd = immutable PData( xx );
     auto xe = shared immutable PData( xx );
 
-    assert( xx == xa );
-    assert( xx == xb );
-    assert( xx == xc );
-    assert( xx == xd );
-    assert( xx == xe );
+    should_eq( xx, xa );
+    should_eq( xx, xb );
+    should_eq( xx, xc );
+    should_eq( xx, xd );
+    should_eq( xx, xe );
 
-    assert( xa.as!TestStruct == ts );
-    assert( xb.as!TestStruct == ts );
-    assert( xc.as!TestStruct == ts );
-    assert( xd.as!TestStruct == ts );
-    assert( xe.as!TestStruct == ts );
+    should_eq( xa.as!TestStruct, ts );
+    should_eq( xb.as!TestStruct, ts );
+    should_eq( xc.as!TestStruct, ts );
+    should_eq( xd.as!TestStruct, ts );
+    should_eq( xe.as!TestStruct, ts );
 
     auto ax = PData( xa );
     auto bx = PData( xb );
@@ -139,17 +167,23 @@ unittest
     auto dx = PData( xd );
     auto ex = PData( xe );
 
-    assert( xx == ax, "xx != ax" );
-    assert( xx == bx, "xx != bx" );
-    assert( xx == cx, "xx != cx" );
-    assert( xx == dx, "xx != dx" );
-    assert( xx == ex, "xx != ex" );
+    //assert( xx == ax, format("%s != %s", xx, xa) );
+    //assert( xx == bx );
+    //assert( xx == cx );
+    //assert( xx == dx );
+    //assert( xx == ex );
 
-    assert( ax.as!TestStruct == ts );
-    assert( bx.as!TestStruct == ts );
-    assert( cx.as!TestStruct == ts );
-    assert( dx.as!TestStruct == ts );
-    assert( ex.as!TestStruct == ts );
+    should_eq( ax.data, xx.data );
+    should_eq( bx.data, xx.data );
+    should_eq( cx.data, xx.data );
+    should_eq( dx.data, xx.data );
+    should_eq( ex.data, xx.data );
+
+    should_eq( ax.as!TestStruct, ts );
+    should_eq( bx.as!TestStruct, ts );
+    should_eq( cx.as!TestStruct, ts );
+    should_eq( dx.as!TestStruct, ts );
+    should_eq( ex.as!TestStruct, ts );
 }
 
 unittest
