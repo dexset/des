@@ -25,8 +25,8 @@ The MIT License (MIT)
 module desgui.base.ftglyphrender;
 
 public import desgui.core.textrender;
-import desmath.types.vector;
-import desmath.types.rect;
+import desmath.linear.vector;
+import desil;
 
 import derelict.freetype.ft;
 import derelict.freetype.types;
@@ -135,4 +135,3 @@ public:
             FT_Done_FreeType( ft ); 
     }
 }
-
