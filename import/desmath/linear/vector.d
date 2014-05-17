@@ -184,6 +184,20 @@ private static pure {
     }
 }
 
+version(unittest)
+{
+    import desmath.linear.matrix;
+
+    bool eq(T,D=float)( in T m1, in T m2, D eps = D.epsilon*4 )
+        if( isFloatingPoint!D && ( isMatrix!T || isVector!T ) )
+    {
+        float k = 0;
+        foreach( i; 0 .. m1.data.length )
+            k += abs( m1.data[i] - m2.data[i] );
+        return k < eps;
+    }
+}
+
 /++ work with static, dynamic compatible and accessing to data +/
 package{
 
