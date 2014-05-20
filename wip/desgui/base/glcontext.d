@@ -92,24 +92,104 @@ void log(size_t line=__LINE__, T...)( string fmt, T args )
 final abstract class DiGuiShader
 {
 private:
-    static ShaderProgram main_shader;
+    static CommonShaderProgram main_shader;
 
 public:
-    static ShaderProgram get()
+    static CommonShaderProgram get()
     {
         if( main_shader is null )
-            main_shader = new ShaderProgram( SS_GUI );
+            main_shader = new CommonShaderProgram( SS_GUI );
         return main_shader;
     }
 
-    static void set( ShaderProgram shader )
+    static void set( CommonShaderProgram shader )
     {
         if( shader is null ) return;
         main_shader = shader;
     }
 }
 
-import desgl.helpers : ViewportStateCtrl;
+import std.array;
+import derelict.opengl3.gl3;
+
+class ViewportStateCtrl
+{
+private:
+    struct PRect { irect viewport, scissor; }
+
+    PRect[] states;
+    PRect current;
+
+    void update()
+    {
+        auto vp = current.viewport;
+        auto sc = current.scissor;
+        glViewport( vp.x,vp.y,vp.w,vp.h );
+        glScissor( sc.x,sc.y,sc.w,sc.h );
+    }
+
+    nothrow static void setFromGL( ref PRect rr )
+    {
+        glGetIntegerv( GL_VIEWPORT, rr.viewport.vr.data.ptr );
+        glGetIntegerv( GL_SCISSOR_BOX, rr.scissor.vr.data.ptr );
+    }
+
+public:
+
+    this( in irect init ) { set( init ); }
+    this(){ setFromGL( current ); }
+
+    void push() { states ~= current; }
+
+    void pull()
+    {
+        if( !states.empty )
+        {
+            current = states.back();
+            states.popBack();
+        }
+        update();
+    }
+
+    irect sub( in irect vp )
+    {
+        auto cvp = current.viewport;
+        auto csc = current.scissor;
+
+        irect nvp;
+        nvp.x = cvp.x + vp.x;
+        nvp.y = cvp.y + cvp.h - ( vp.y + vp.h );
+        nvp.w = vp.w;
+        nvp.h = vp.h;
+
+        irect nsc = csc.overlap( nvp );
+
+        irect locsc;
+        locsc.x = nsc.x - nvp.x;
+        locsc.y = nvp.y + nvp.h - nsc.y - nsc.h;
+        locsc.w = nsc.w;
+        locsc.h = nsc.h;
+
+        current.viewport = nvp;
+        current.scissor = nsc;
+        update();
+
+        return locsc;
+    }
+
+    void set( in irect vp )
+    {
+        current.viewport = vp;
+        current.scissor = vp;
+        update();
+    }
+
+    void setClear( in irect vp )
+    {
+        states.length = 0;
+        set( vp );
+    }
+}
 
 class DiGLDrawStack: DiDrawStack
 {
@@ -124,7 +204,7 @@ protected:
     size_t cur = 0;
 
     ViewportStateCtrl vpctl;
-    ShaderProgram shader;
+    CommonShaderProgram shader;
 
 public:
 
@@ -176,25 +256,21 @@ public:
 }
 
 import desgui.base.ftglyphrender;
-import desgui.base.style;
 
 class DiGLContext: DiContext
 {
     DiDrawStack ds;
     DiGlyphRender gr;
     DiDrawFactory df;
-    DiStyle st;
 
     this( string fontname )
     {
         ds = new DiGLDrawStack();
         gr = FTGlyphRender.get( fontname );
         df = new DiGLDrawFactory;
-        st = new DiBaseStyle;
     }
 
     @property DiDrawStack drawStack() { return ds; }
     @property DiGlyphRender baseGlyphRender() { return gr; }
     @property DiDrawFactory draw() { return df; }
-    @property DiStyle style() { return st; }
 }

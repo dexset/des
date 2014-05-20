@@ -24,19 +24,33 @@ The MIT License (MIT)
 
 module desmath.linear.node;
 
+public import desmath.linear.vector;
 public import desmath.linear.matrix;
 
 interface Node
 {
-    @property mat4 self() const;
-    @property Node parent();
+    const @property
+    {
+        /+ local to parent transform +/
+        mat4 self();
+        const(Node) parent();
+
+        final
+        {
+            vec3 x() { return vec3( self.col!(0).data[0 .. 3] ); }
+            vec3 y() { return vec3( self.col!(1).data[0 .. 3] ); }
+            vec3 z() { return vec3( self.col!(2).data[0 .. 3] ); }
+            /+ in parent system +/
+            vec3 pos() { return vec3( self.col!(3).data[0 .. 3] ); }
+        }
+    }
 }
 
 class Resolver
 {
-    mat4 opCall( Node obj, Node cam )
+    mat4 opCall( const(Node) obj, const(Node) cam ) const
     {
-        Node[] obj_branch, cam_branch;
+        const(Node)[] obj_branch, cam_branch;
         obj_branch ~= obj;
         cam_branch ~= cam;
 
@@ -50,20 +64,18 @@ class Resolver
             foreach( obi, objparents; obj_branch )
                 if( camparents == objparents )
                 {
-                    cam_branch = cam_branch[0 .. cbi+1];
-                    obj_branch = obj_branch[0 .. obi+1];
+                    cam_branch = cam_branch[0 .. cbi];
+                    obj_branch = obj_branch[0 .. obi];
                     break top;
                 }
 
         mat4 obj_mtr, cam_mtr;
 
         foreach( node; obj_branch )
-            if( node ) obj_mtr = node.self * obj_mtr;
-            else break;
+            obj_mtr = node.self * obj_mtr;
 
         foreach( node; cam_branch )
-            if( node ) cam_mtr = cam_mtr * node.self.speedTransformInv;
-            else break;
+            cam_mtr = cam_mtr * node.self.speedTransformInv;
 
         return cam_mtr * obj_mtr;
     }

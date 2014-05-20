@@ -33,9 +33,10 @@ import desgui.core.event;
 import desgui.core.widget;
 import desgui.base.glcontext;
 
-import desgl.helpers;
+import desgl;
+import desil;
 
-import desmath.types.vector;
+import desmath.linear.vector;
 
 import desutil.signal;
 import desutil.helpers;
