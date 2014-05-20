@@ -374,6 +374,26 @@ private string zeros( size_t N )
     return "[" ~ join(ret,",") ~ "]";
 }
 
+package
+{
+    string generateFor(ptrdiff_t END, ptrdiff_t START=0)( string bodystr )
+    {
+        string[] ret;
+        for( auto i = START; i < END; i++ )
+            ret ~= format( bodystr, i );
+        return ret.join("\n");
+    }
+
+    string generateFor2(size_t A, size_t B)( string bodystr )
+    {
+        string[] ret;
+        foreach( i; 0 .. A )
+            foreach( j; 0 .. B )
+                ret ~= format( bodystr, i, j );
+        return ret.join("\n");
+    }
+}
+
 struct vec( size_t N, T=float, string AS="" )
     if( ( ( N == AS.length && trueAccessString!AS ) || AS.length == 0 ) && 
         isNumeric!T && N > 0 )
@@ -411,48 +431,41 @@ struct vec( size_t N, T=float, string AS="" )
         return this;
     }
 
-    pure auto opUnary(string op)() const 
+    @trusted pure auto opUnary(string op)() const 
         if( op == "-" && is( typeof( T.init * (-1) ) : T ) )
     {
         selftype ret;
-        foreach( i, val; this.data )
-            ret.data[i] = cast(T)( val * (-1) );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] * (-1) );" ) );
         return ret;
     }
 
-    auto elem(string op, E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto elem(string op, E, string bs)( in vec!(N,E,bs) b ) const
         if( op == "*" || op == "/" || op == "^^" )    
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)(data[i] " ~ op ~ " b.data[i]);" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b.data[%1$d] );" ) );
         return ret;
     }
 
-    auto mlt(E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto mlt(E, string bs)( in vec!(N,E,bs) b ) const
     { return this.elem!"*"(b); }
 
-    auto div(E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto div(E, string bs)( in vec!(N,E,bs) b ) const
     { return this.elem!"/"(b); }
 
-    auto opBinary(string op, E, string bs)( in vec!(N,E,bs) b ) const
+    @trusted auto opBinary(string op, E, string bs)( in vec!(N,E,bs) b ) const
         if( op == "+" || op == "-" )
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)( data[i] " ~ op ~ " b.data[i] );" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b.data[%1$d] );" ) );
         return ret;
     }
 
-    auto opBinary(string op, E)( in E b ) const
-        if( !isVector!E && ( op == "*" || op == "/" ) && is( generalType!(T,E) ) )
+    @trusted auto opBinary(string op, E)( in E b ) const
+        if( !isVector!E && ( op == "*" || op == "/" || op == "^^" ) && is( generalType!(T,E) ) )
     {
-        //vec!(N,generalType!(T,E),AS) ret;
         selftype ret;
-        foreach( i, ref val; ret.data )
-            mixin( "val = cast(T)(data[i] " ~ op ~ " b);" );
+        mixin( generateFor!N( "ret.data[%1$d] = cast(T)( data[%1$d] " ~ op ~ " b );" ) );
         return ret;
     }
 
@@ -464,8 +477,7 @@ struct vec( size_t N, T=float, string AS="" )
         if( op == "^" && is( generalType!(T,E) ) )
     {
         generalType!(T,E) ret = 0;
-        foreach( i, val; data )
-            ret += val * b.data[i];
+        mixin( generateFor!N( "ret += data[%1$d] * b.data[%1$d];" ) );
         return ret;
     }
 
@@ -594,7 +606,7 @@ struct vec( size_t N, T=float, string AS="" )
         static selftype fromAngle(E,string bs)( T alpha, in vec!(3,E,bs) b )
             if( isFloatingPoint!E )
         { 
-            T a = alpha / 2.0;
+            T a = alpha / cast(T)(2.0);
             return selftype( b * sin(a), cos(a) ); 
         }
 

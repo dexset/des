@@ -10,3 +10,4 @@
 *.lst
 *.sh
 bin
+dub.selections.json

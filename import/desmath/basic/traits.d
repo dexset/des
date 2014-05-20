@@ -217,6 +217,12 @@ private
     auto opSub( in self b ) const { return %1$s( %3$s ); }
     auto opMul( double b ) const { return %1$s( %4$s ); }
     auto opDiv( double b ) const { return %1$s( %5$s ); }
+
+    auto opOpAssign(string op)( in self b )
+    { mixin( "return this = this " ~ op ~ " b;" ); }
+
+    auto opOpAssign(string op)( double b )
+    { mixin( "return this = this " ~ op ~ " b;" ); }
     `,
         bmctor,
         opSelf( fields, "+" ),
@@ -265,6 +271,23 @@ unittest
     auto c2 = Comp( "valav", 5, .8 );
 
     assert( c1 + c2 == Comp("ololo", 15, 1.3) );
+}
+
+unittest
+{
+    static struct Val
+    {
+        float v1 = 0;
+        double v2 = 0;
+        mixin( BasicMathOp!"v1 v2" );
+    }
+
+    auto p1 = Val( 1, 2 );
+    auto p2 = Val( 2, 3 );
+
+    auto p3 = p1 + p2;
+    p1 += p2;
+    assert( p1 == p3 );
 }
 
 unittest

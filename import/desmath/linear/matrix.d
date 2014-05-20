@@ -94,30 +94,14 @@ struct mat( size_t H, size_t W, E=float )
     }
 
     pure this(X)( in mat!(H,W,X) m ) if( is( X : E ) )
-    { 
-        foreach( i; 0 .. W*H )
-            data[i] = cast(E)m.data[i];
-    }
-
-    static pure private @property get_matrix_assign(size_t WW, size_t HH)()
     {
-        import std.string;
-        string[] res;
-        foreach( i; 0 .. WW*HH )
-            res ~= format( "data[%d] = cast(E)m.data[%d];", i, i );
-        return res.join("\n");
+        mixin( generateFor!(W*H)( "data[%1$d] = cast(E)( m.data[%1$d] );" ) );
     }
 
     auto opAssign(X)( in mat!(H,W,X) m ) if( is( X : E ) )
-    { 
-        static if( is( X == E ) )
-            data = m.data;
-        else
-        {
-            foreach( i; 0 .. W*H )
-                data[i] = cast(E)m.data[i];
-        }
-        //mixin( get_matrix_assign!(W,H) );
+    {
+        static if( is( X == E ) ) data = m.data;
+        else mixin( generateFor!(W*H)( "data[%1$d] = cast(E)( m.data[%1$d] );" ) );
         return this;
     }
     
@@ -225,7 +209,7 @@ struct mat( size_t H, size_t W, E=float )
         if( cno >= 0 && cno < W )
     {
         mat!(H,1,E) ret;
-        foreach( i; 0 .. H ) ret[i] = data[cno+i*W];
+        mixin( generateFor!(H)( "ret[%1$d] = data[cno+%1$d*W];" ) );
         return ret;
     }
 
@@ -233,7 +217,7 @@ struct mat( size_t H, size_t W, E=float )
         if( rno >= 0 && rno < H )
     {
         mat!(1,W,E) ret;
-        foreach( i; 0 .. W ) ret[i] = data[rno*W+i];
+        mixin( generateFor!(W)( "ret[%1$d] = data[rno*W+%1$d];" ) );
         return ret;
     }
 
@@ -270,9 +254,7 @@ struct mat( size_t H, size_t W, E=float )
     @property auto T() const
     {
         mat!(W,H,E) r;
-        foreach( i; 0 .. H )
-            foreach( j; 0 .. W )
-                r[j,i] = this[i,j]; 
+        mixin( generateFor2!(H,W)( "r[%2$d,%1$d] = this[%1$d,%2$d];" ) );
         return r;
     }
 
@@ -288,8 +270,7 @@ struct mat( size_t H, size_t W, E=float )
         if( op == "+" || op == "-" )
     {
         mat!(H,W,E) ret;
-        foreach( i, ref v; ret.data ) 
-            mixin( "v = cast(E)(data[i] " ~ op ~ " b.data[i]);" );
+        mixin( generateFor!(H*W)( "ret.data[%1$d] = cast(E)(data[%1$d] " ~ op ~ " b.data[%1$d]);" ) );
         return ret;
     }
 
@@ -301,8 +282,7 @@ struct mat( size_t H, size_t W, E=float )
         if( ( op == "*" || op == "/" ) && isNumeric!X )
     {
         mat!(H,W,E) ret;
-        foreach( i, ref v; ret.data ) 
-            mixin( "v = cast(E)(data[i] " ~ op ~ " b);" );
+        mixin( generateFor!(H*W)( "ret.data[%1$d] = cast(E)(data[%1$d] " ~ op ~ " b);" ) );
         return ret;
     }
 
@@ -538,10 +518,7 @@ struct mat( size_t H, size_t W, E=float )
             {
                 selftype ret;
 
-                foreach( i; 0 .. 3 )
-                    foreach( j; 0 .. 3 )
-                        ret[i,j] = this[j,i];
-
+                mixin( generateFor2!(3,3)( "ret[%2$d,%1$d] = this[%1$d,%2$d];" ) );
 
                 auto a22k = 1.0 / this[3,3];
 

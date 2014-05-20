@@ -27,9 +27,10 @@ class Camera : Node
 
 class Obj : Node
 {
+    mat4 mtr;
     @property 
     {
-        mat4 self() const { return mat4(); }
+        mat4 self() const { return mtr; }
         Node parent() { return null; }
     }
 }
@@ -45,7 +46,7 @@ void main()
         auto buf = cam(obj) * vec4(pnt,1);
         auto res = buf.xyz / buf.w;
     }
-    enum n = 100_000;
+    enum n = 500_000;
     auto res = benchmark!(f0)(n);
 
     foreach( i, r; res )
