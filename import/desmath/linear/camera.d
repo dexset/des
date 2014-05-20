@@ -109,7 +109,7 @@ public:
             return r.xyz;
         }
 
-        final override @property
+        override @property
         {
             mat4 self() { return mtr; }
             const(Node) parent() { return handler; }
@@ -149,6 +149,12 @@ public:
 
     final @property
     {
+        override const
+        {
+            mat4 self() { return mtr; }
+            const(Node) parent() { return handler; }
+        }
+
         Node parent( Node par )
         {
             handler = par;
