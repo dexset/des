@@ -27,14 +27,12 @@ module desgui.core.context;
 public import desgui.core.except;
 public import desgui.core.draw;
 public import desgui.core.textrender;
-public import desgui.core.style;
 
 interface DiContext
 {
     @property DiDrawStack drawStack();
     @property DiGlyphRender baseGlyphRender();
     @property DiDrawFactory draw();
-    @property DiStyle style();
 }
 
 version(unittest)
@@ -78,7 +76,6 @@ version(unittest)
             void draw() {}
             void idle( float dt ) {}
             void reshape( in irect r ) {}
-            void changeStyle( string s ) {}
         }
 
         class TestStyle : DiStyle
@@ -92,20 +89,17 @@ version(unittest)
             DiDrawStack ds;
             DiGlyphRender gr;
             DiDrawFactory df;
-            DiStyle st;
 
             this() 
             { 
                 ds = new TestDrawStack; 
                 gr = new TestGlyphRender;
                 df = new TestDrawFactory;
-                st = new TestStyle;
             }
 
             @property DiDrawStack drawStack() { return ds; }
             @property DiGlyphRender baseGlyphRender() { return gr; }
             @property DiDrawFactory draw() { return df; }
-            @property DiStyle style() { return st; }
         }
 
         static Image screen;

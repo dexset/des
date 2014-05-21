@@ -27,7 +27,7 @@ import std.string;
 
 class DiException : Exception
 {
-    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) @safe pure nothrow
     { super( msg, file, line ); }
 
     static DiException fmt(string file=__FILE__, size_t line=__LINE__, Args...)( string fmt, Args args )

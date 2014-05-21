@@ -35,7 +35,7 @@ import std.string;
 
 class DiTextRenderException: DiException
 { 
-    @safe nothrow pure this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) @safe nothrow pure
     { super( msg, file, line ); } 
 }
 

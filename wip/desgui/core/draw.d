@@ -107,11 +107,6 @@ interface DiAnimateShape : DiShapeDrawable, DiAnimate
     void reshape( in irect ); 
 }
 
-interface DiSubstrate : DiAnimateShape
-{
-    void changeStyle( string );
-}
-
 interface DiDrawRect : DiShapeDrawable
 {
     enum UseTexture
