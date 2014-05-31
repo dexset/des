@@ -270,7 +270,7 @@ public:
         auto cnt = vals.length / sz;
         use();
         mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
-                "v( loc, cast(int)cnt, vlas.ptr );" );
+                "v( loc, cast(int)cnt, vals.ptr );" );
         debug checkGL;
     }
 
