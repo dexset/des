@@ -169,10 +169,11 @@ public:
         setAttribPointer( uv, uv_loc, 2, GL_FLOAT );
     }
 
-    void bind() 
+    void bind(bool clear=true)
     { 
-        fbo.bind(); 
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        fbo.bind();
+        if( clear )
+            glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     }
 
     void resize( in ivec2 sz )
