@@ -37,7 +37,7 @@ class GLObjException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class GLVBO
+class GLVBO : ExternalMemoryManager
 {
 protected:
     uint vboID;
@@ -77,10 +77,10 @@ public:
         }
     }
 
-    //~this() { glDeleteBuffers( 1, &vboID ); }
+    void destroy() { glDeleteBuffers( 1, &vboID ); }
 }
 
-final class GLVAO
+final class GLVAO : ExternalMemoryManager
 {
 protected:
     uint vaoID;
@@ -116,12 +116,14 @@ public:
         }
     }
 
-    //~this() { glDeleteVertexArrays( 1, &vaoID ); }
+    void destroy() { glDeleteVertexArrays( 1, &vaoID ); }
 }
 
-class GLObj
+class GLObj: ExternalMemoryManager
 {
 protected:
+    ExternalMemoryManager[] childEMM;
+
     GLVAO vao;
 
     final nothrow
@@ -147,8 +149,13 @@ public:
     this()
     {
         vao = new GLVAO;
+        childEMM ~= vao;
         debug checkGL;
     }
 
-    //~this() { destroy(vao); }
+    void destroy()
+    { 
+        foreach( emm; childEMM )
+            emm.destroy();
+    }
 }

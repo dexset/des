@@ -90,7 +90,7 @@ class ShaderException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class BaseShaderProgram
+class BaseShaderProgram : ExternalMemoryManager
 {
 private:
     static GLint inUse = -1;
@@ -161,25 +161,6 @@ protected:
         debug checkGL;
     }
 
-    void destruct()
-    {
-        thisInUse = false;
-
-        if( frag_sh ) glDetachShader( program, frag_sh );
-        if( geom_sh ) glDetachShader( program, geom_sh );
-
-        glDetachShader( program, vert_sh );
-
-        glDeleteProgram( program );
-
-        if( frag_sh ) glDeleteShader( frag_sh );
-        if( geom_sh ) glDeleteShader( geom_sh );
-
-        glDeleteShader( vert_sh );
-
-        debug checkGL;
-    }
-
     void construct( in ShaderSource src )
     {
         if( src.vert.length == 0 ) 
@@ -212,7 +193,25 @@ protected:
 
 public:
     this( in ShaderSource src ) { construct( src ); }
-    //~this() { destruct(); }
+
+    void destroy()
+    {
+        thisInUse = false;
+
+        if( frag_sh ) glDetachShader( program, frag_sh );
+        if( geom_sh ) glDetachShader( program, geom_sh );
+
+        glDetachShader( program, vert_sh );
+
+        glDeleteProgram( program );
+
+        if( frag_sh ) glDeleteShader( frag_sh );
+        if( geom_sh ) glDeleteShader( geom_sh );
+
+        glDeleteShader( vert_sh );
+
+        debug checkGL;
+    }
 
     final nothrow void use() { thisInUse = true; }
 }

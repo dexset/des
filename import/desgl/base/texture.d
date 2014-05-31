@@ -47,7 +47,7 @@ private @property string accessVecFields(T,string name)()
     return ret[0 .. $-1];
 }
 
-class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 )
+class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 ) : ExternalMemoryManager
 {
     import std.string : format;
 
@@ -183,13 +183,13 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 )
         }
     }
 
-    //~this()
-    //{
-    //    unbind();
-    //    glDeleteTextures( 1, &texID );
+    void destroy()
+    {
+        unbind();
+        glDeleteTextures( 1, &texID );
 
-    //    debug checkGL;
-    //}
+        debug checkGL;
+    }
 }
 
 alias GLTexture!2 GLTexture2D;

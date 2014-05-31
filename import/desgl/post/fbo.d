@@ -38,11 +38,10 @@ mixin( PrivateLoggerMixin );
 
 import desil.image;
 
-
 class GLFBOException : Exception 
 { @safe pure nothrow this( string msg ){ super( msg ); } }
 
-class GLFBO
+class GLFBO : ExternalMemoryManager
 {
 private:
     uint rboID;
@@ -132,13 +131,13 @@ public:
 
     nothrow @property auto size() const { return sz; }
 
-    //~this()
-    //{
-    //    unbind();
-    //    glDeleteFramebuffers( 1, &fboID );
-    //    glDeleteRenderbuffers( 1, &rboID );
-    //    destroy( tex );
-    //}
+    void destroy()
+    {
+        unbind();
+        glDeleteFramebuffers( 1, &fboID );
+        glDeleteRenderbuffers( 1, &rboID );
+        tex.destroy();
+    }
 }
 
 class FBORect: GLObj
@@ -155,6 +154,10 @@ public:
     {
         shader = new CommonShaderProgram(ss);
         fbo = new GLFBO;
+
+        childEMM ~= shader;
+        childEMM ~= fbo;
+
         fbo.resize( wsz );
 
         int pos_loc = shader.getAttribLocation( "vertex" );
@@ -196,10 +199,4 @@ public:
     {
         glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
     }
-
-    //~this()
-    //{
-    //    destroy(pos);
-    //    destroy(uv);
-    //}
 }
