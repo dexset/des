@@ -132,13 +132,13 @@ public:
 
     nothrow @property auto size() const { return sz; }
 
-    ~this()
-    {
-        unbind();
-        glDeleteFramebuffers( 1, &fboID );
-        glDeleteRenderbuffers( 1, &rboID );
-        destroy( tex );
-    }
+    //~this()
+    //{
+    //    unbind();
+    //    glDeleteFramebuffers( 1, &fboID );
+    //    glDeleteRenderbuffers( 1, &rboID );
+    //    destroy( tex );
+    //}
 }
 
 class FBORect: GLObj
@@ -197,9 +197,9 @@ public:
         glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
     }
 
-    ~this()
-    {
-        destroy(pos);
-        destroy(uv);
-    }
+    //~this()
+    //{
+    //    destroy(pos);
+    //    destroy(uv);
+    //}
 }

@@ -212,7 +212,7 @@ protected:
 
 public:
     this( in ShaderSource src ) { construct( src ); }
-    ~this() { destruct(); }
+    //~this() { destruct(); }
 
     final nothrow void use() { thisInUse = true; }
 }

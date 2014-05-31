@@ -77,7 +77,7 @@ public:
         }
     }
 
-    ~this() { glDeleteBuffers( 1, &vboID ); }
+    //~this() { glDeleteBuffers( 1, &vboID ); }
 }
 
 final class GLVAO
@@ -116,7 +116,7 @@ public:
         }
     }
 
-    ~this() { glDeleteVertexArrays( 1, &vaoID ); }
+    //~this() { glDeleteVertexArrays( 1, &vaoID ); }
 }
 
 class GLObj
@@ -150,5 +150,5 @@ public:
         debug checkGL;
     }
 
-    ~this() { destroy(vao); }
+    //~this() { destroy(vao); }
 }

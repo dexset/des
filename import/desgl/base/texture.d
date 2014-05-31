@@ -183,13 +183,13 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 )
         }
     }
 
-    ~this()
-    {
-        unbind();
-        glDeleteTextures( 1, &texID );
+    //~this()
+    //{
+    //    unbind();
+    //    glDeleteTextures( 1, &texID );
 
-        debug checkGL;
-    }
+    //    debug checkGL;
+    //}
 }
 
 alias GLTexture!2 GLTexture2D;
