@@ -43,6 +43,7 @@ class GLFBOException : Exception
 
 class GLFBO : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
 private:
     uint rboID;
     uint fboID;
@@ -65,7 +66,7 @@ public:
     {
         sz = ivec2( 1, 1 );
 
-        tex = new GLTexture2D;
+        tex = registerChildEMM( new GLTexture2D );
         tex.image( sz, 4, GL_RGBA, GL_FLOAT );
 
         // Render buffer
@@ -131,12 +132,11 @@ public:
 
     nothrow @property auto size() const { return sz; }
 
-    void destroy()
+    protected void selfDestroy()
     {
         unbind();
         glDeleteFramebuffers( 1, &fboID );
         glDeleteRenderbuffers( 1, &rboID );
-        tex.destroy();
     }
 }
 
@@ -152,11 +152,8 @@ public:
 
     this( in ShaderSource ss )
     {
-        shader = new CommonShaderProgram(ss);
-        fbo = new GLFBO;
-
-        childEMM ~= shader;
-        childEMM ~= fbo;
+        shader = registerChildEMM( new CommonShaderProgram(ss) );
+        fbo = registerChildEMM( new GLFBO );
 
         fbo.resize( wsz );
 

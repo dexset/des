@@ -92,6 +92,7 @@ class ShaderException : DesGLException
 
 class BaseShaderProgram : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
 private:
     static GLint inUse = -1;
 
@@ -191,10 +192,7 @@ protected:
     void checkLocation( int loc )
     { enforce( loc >= 0, new ShaderException( format( "bad location: '%d'", loc ) ) ); }
 
-public:
-    this( in ShaderSource src ) { construct( src ); }
-
-    void destroy()
+    void selfDestroy()
     {
         thisInUse = false;
 
@@ -212,6 +210,9 @@ public:
 
         debug checkGL;
     }
+
+public:
+    this( in ShaderSource src ) { construct( src ); }
 
     final nothrow void use() { thisInUse = true; }
 }

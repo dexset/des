@@ -49,6 +49,8 @@ private @property string accessVecFields(T,string name)()
 
 class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 ) : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
+
     import std.string : format;
 
     private uint texID;
@@ -183,7 +185,7 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 ) : ExternalMemo
         }
     }
 
-    void destroy()
+    protected void selfDestroy()
     {
         unbind();
         glDeleteTextures( 1, &texID );

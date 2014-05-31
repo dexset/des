@@ -31,7 +31,7 @@ import derelict.opengl3.gl3;
 
 import desmath.linear.vector;
 
-import desutil.helpers;
+public import desutil.helpers: ExternalMemoryManager;
 import desutil.logger;
 
 mixin( PrivateLoggerMixin );
@@ -60,9 +60,4 @@ class DesGLException : Exception
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
-}
-
-interface ExternalMemoryManager
-{
-    void destroy();
 }

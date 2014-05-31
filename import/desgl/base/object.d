@@ -28,7 +28,7 @@ import derelict.opengl3.gl3;
 
 import desgl.util.ext;
 
-import desutil.logger;
+import desutil;
 mixin( PrivateLoggerMixin );
 
 class GLObjException : DesGLException 
@@ -37,11 +37,18 @@ class GLObjException : DesGLException
     { super( msg, file, line ); } 
 }
 
+    @property ref ExternalMemoryManager[] childEMM();
+
 class GLVBO : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
+
 protected:
     uint vboID;
     GLenum type;
+
+    void selfDestroy() { glDeleteBuffers( 1, &vboID ); }
+
 public:
     static nothrow void unbind( GLenum tp ){ glBindBuffer( tp, 0 ); }
 
@@ -76,14 +83,16 @@ public:
             debug log( "vbo setData (%d byte)", size );
         }
     }
-
-    void destroy() { glDeleteBuffers( 1, &vboID ); }
 }
 
 final class GLVAO : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
+
 protected:
     uint vaoID;
+
+    void selfDestroy() { glDeleteVertexArrays( 1, &vaoID ); }
 
 public:
     static nothrow void unbind(){ glBindVertexArray(0); }
@@ -115,16 +124,16 @@ public:
             debug checkGL;
         }
     }
-
-    void destroy() { glDeleteVertexArrays( 1, &vaoID ); }
 }
 
 class GLObj: ExternalMemoryManager
 {
-protected:
-    ExternalMemoryManager[] childEMM;
+    mixin( getMixinChildEMM );
 
+protected:
     GLVAO vao;
+
+    void selfDestroy(){}
 
     final nothrow
     {
@@ -148,14 +157,7 @@ public:
 
     this()
     {
-        vao = new GLVAO;
-        childEMM ~= vao;
+        vao = registerChildEMM( new GLVAO );
         debug checkGL;
-    }
-
-    void destroy()
-    { 
-        foreach( emm; childEMM )
-            emm.destroy();
     }
 }
