@@ -17,11 +17,31 @@ private:
     Socket server;
     Socket client;
     void delegate( immutable ubyte[] ) cb;
+
+    bool checkClient()
+    {
+        if( client is null )
+        {
+            try
+            {
+                server.blocking(true);
+                client = server.accept();
+            }
+            catch( SocketAcceptException e )
+            {
+                return false;
+            }
+        }
+        server.blocking(false);
+        return true;
+    }
 public:
     this( Address addr )
     {
         server = new TcpSocket();
         server.setOption( SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, true );
+        import std.datetime;
+        server.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"msecs"(100) );
         server.bind( addr );
         server.listen(1);//TODO only for one sender
         client = null;
@@ -34,14 +54,10 @@ public:
     void step()
     {
         int bs = -1;
-        if( client is null )
-        {
-            server.blocking(true);
-            client = server.accept();
-            server.blocking(false);
-        }
 
-        std.stdio.stderr.writeln( client );
+        if( !checkClient() )
+            return;
+
         if( client is null )
             return;
 
@@ -58,7 +74,10 @@ public:
 
             auto received = client.receive( buffer );
             if( received == 0 )
+            {
+                client = null;
                 goto end;
+            }
 
             if( count == -1 )
             {
@@ -86,7 +105,6 @@ public:
 
         cb(raw_data[ 0 .. fin_count ].idup);
 end:
-        std.stdio.stderr.writeln( "End work" );
     }
 }
 
