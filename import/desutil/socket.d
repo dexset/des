@@ -15,7 +15,8 @@ class SListener
 {
 private:
     Socket server;
-    void delegate( in ubyte[] ) cb;
+    Socket client;
+    void delegate( immutable ubyte[] ) cb;
 public:
     this( Address addr )
     {
@@ -23,18 +24,24 @@ public:
         server.setOption( SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, true );
         server.bind( addr );
         server.listen(1);//TODO only for one sender
-        server.blocking(false);
+        client = null;
     }
 
     this( ushort port ){ this( new InternetAddress( port ) ); }
 
-    void setReceiveCB( void delegate( in ubyte[] ) _cb ){ cb = _cb; }
+    void setReceiveCB( void delegate( immutable ubyte[] ) _cb ){ cb = _cb; }
 
     void step()
     {
         int bs = -1;
-        Socket client = null;
-        client = server.accept();
+        if( client is null )
+        {
+            server.blocking(true);
+            client = server.accept();
+            server.blocking(false);
+        }
+
+        std.stdio.stderr.writeln( client );
         if( client is null )
             return;
 
@@ -50,6 +57,8 @@ public:
             buffer.length = bs == -1 ? size_t.sizeof : bs;
 
             auto received = client.receive( buffer );
+            if( received == 0 )
+                goto end;
 
             if( count == -1 )
             {
@@ -75,7 +84,9 @@ public:
             count -= bs;
         }
 
-        cb(raw_data[ 0 .. fin_count ]);
+        cb(raw_data[ 0 .. fin_count ].idup);
+end:
+        std.stdio.stderr.writeln( "End work" );
     }
 }
 
@@ -124,7 +135,7 @@ unittest
         d = cast(ubyte)uniform( 100, 255 );
     ubyte[100] rdata;
 
-    auto cb = ( in ubyte[] data )
+    auto cb = ( immutable ubyte[] data )
     {
         rdata = data.dup;
     };
