@@ -18,49 +18,19 @@ private:
     Socket client;
     void delegate( immutable ubyte[] ) cb;
 
-    bool checkClient()
+    void checkClient()
     {
         if( client is null )
         {
-            try
-            {
-                server.blocking(true);
-                client = server.accept();
-            }
-            catch( SocketAcceptException e )
-            {
-                return false;
-            }
+            server.blocking(true);
+            client = server.accept();
+            server.blocking(false);
         }
-        server.blocking(false);
-        return true;
-    }
-public:
-    this( Address addr )
-    {
-        server = new TcpSocket();
-        server.setOption( SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, true );
-        import std.datetime;
-        server.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"msecs"(100) );
-        server.bind( addr );
-        server.listen(1);//TODO only for one sender
-        client = null;
     }
 
-    this( ushort port ){ this( new InternetAddress( port ) ); }
-
-    void setReceiveCB( void delegate( immutable ubyte[] ) _cb ){ cb = _cb; }
-
-    void step()
+    immutable (ubyte)[] receiveAll( Socket cli )
     {
         int bs = -1;
-
-        if( !checkClient() )
-            return;
-
-        if( client is null )
-            return;
-
         int count = -1;
         int fin_count = -1;
 
@@ -76,7 +46,7 @@ public:
             if( received == 0 )
             {
                 client = null;
-                goto end;
+                return [];
             }
 
             if( count == -1 )
@@ -102,9 +72,30 @@ public:
             raw_data ~= buffer;
             count -= bs;
         }
+        return raw_data[ 0 .. fin_count ].idup;
+    }
+public:
+    this( Address addr )
+    {
+        server = new TcpSocket();
+        server.setOption( SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, true );
+        server.bind( addr );
+        server.listen(10);
+        client = null;
+    }
 
-        cb(raw_data[ 0 .. fin_count ].idup);
-end:
+    this( ushort port ){ this( new InternetAddress( port ) ); }
+
+    void setReceiveCB( void delegate( immutable ubyte[] ) _cb ){ cb = _cb; }
+
+    void step()
+    {
+        checkClient();
+
+        if( client is null )
+            return;
+
+        cb(receiveAll( client ));
     }
 }
 
