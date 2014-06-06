@@ -14,17 +14,18 @@ class SocketException: Exception
 interface DSocket
 {
 protected:
-    alias ptrdiff_t delegate( const (void)[] ) sendFunc;
+    alias ptrdiff_t delegate( const (void)[], size_t bs ) sendFunc;
     final void formSend( sendFunc func, in void[] data, int bs )
     {
-        func( [bs] ); 
-        func( [cast(int)data.length] );
+        func( [bs], int.sizeof ); 
+        int data_length = cast(int)data.length;
+        func( [data_length], int.sizeof );
 
         void[] raw_data = data.dup;
         raw_data.length += bs - raw_data.length % bs;
         auto block_count = raw_data.length / bs;
         foreach( i; 0 .. block_count )
-            func( raw_data[i*bs .. (i+1)*bs] );
+            func( raw_data[i*bs .. (i+1)*bs], bs );
     }
 
     alias ptrdiff_t delegate( void[] ) receiveFunc;
@@ -41,6 +42,7 @@ protected:
             void[] buffer;
 
             buffer.length = bs == -1 || full_size == -1 ? int.sizeof : bs;
+            std.stdio.writeln( buffer.length );
 
             auto receive = func( buffer );
             std.stdio.stderr.writeln( buffer );
@@ -111,7 +113,7 @@ public:
         {
             auto send_data = cb( data );
             if( send_data.length != 0 )
-                formSend( (const(void)[] dd){return client.send(dd);}, send_data, block_size );
+                formSend( (const(void)[] dd, size_t block_size){return client.send(dd);}, send_data, block_size );
         }
     }
 }
@@ -148,7 +150,7 @@ public:
 
     void send( in ubyte[] data )
     {
-        formSend( (const (void)[] dd ){ return cast(ptrdiff_t)(ss.writeBlock( cast(void*)dd.ptr, bs )); }, data, bs );
+        formSend( (const (void)[] dd, size_t block_size ){ return cast(ptrdiff_t)(ss.writeBlock( cast(void*)dd.ptr, block_size )); }, data, bs );
     }
 }
 
