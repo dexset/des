@@ -11,12 +11,69 @@ class SocketException: Exception
     { super( msg, file, line ); } 
 }
 
-class SListener
+interface DSocket
+{
+protected:
+    alias ptrdiff_t delegate( const (void)[] ) sendFunc;
+    final void formSend( sendFunc func, in void[] data, int bs )
+    {
+        func( [bs] ); 
+        func( [cast(int)data.length] );
+
+        void[] raw_data = data.dup;
+        raw_data.length += bs - raw_data.length % bs;
+        auto block_count = raw_data.length / bs;
+        foreach( i; 0 .. block_count )
+            func( raw_data[i*bs .. (i+1)*bs] );
+    }
+
+    alias ptrdiff_t delegate( void[] ) receiveFunc;
+    final void[] formReceive( receiveFunc func )
+    {
+        int bs = -1;
+        int full_size = -1;
+        int data_size = -1;
+
+        void[] raw_data;
+
+        while( full_size != 0 )
+        {
+            void[] buffer;
+
+            buffer.length = bs == -1 || full_size == -1 ? int.sizeof : bs;
+
+            auto receive = func( buffer );
+            std.stdio.stderr.writeln( buffer );
+            if( receive == 0 )
+                return [];
+
+            if( full_size == -1 )
+            {
+                auto val = (cast(int[])(buffer))[0];
+                if( bs == -1 )
+                    bs = val;
+                else
+                {
+                    data_size = val;
+                    full_size = data_size + bs - data_size % bs;
+                }
+                continue;
+            }
+
+            raw_data ~= buffer;
+            full_size -= bs;
+        }
+        return raw_data[ 0 .. data_size ].dup;
+    }
+}
+
+class SListener : DSocket
 {
 private:
     Socket server;
     Socket client;
-    void delegate( immutable ubyte[] ) cb;
+    alias void[] delegate( void[] ) callback;
+    callback cb;
 
     void checkClient()
     {
@@ -27,53 +84,7 @@ private:
             server.blocking(false);
         }
     }
-
-    immutable (ubyte)[] receiveAll( Socket cli )
-    {
-        int bs = -1;
-        int count = -1;
-        int fin_count = -1;
-
-        ubyte[] raw_data;
-
-        while( count != 0 )
-        {
-            ubyte[] buffer;
-
-            buffer.length = bs == -1 ? size_t.sizeof : bs;
-
-            auto received = client.receive( buffer );
-            if( received == 0 )
-            {
-                client = null;
-                return [];
-            }
-
-            if( count == -1 )
-            {
-                ubyte[] tbuffer;
-                tbuffer ~= buffer;
-                auto ssz = buffer.length % size_t.sizeof;
-                if( ssz != 0 )
-                    tbuffer.length += size_t.sizeof - ssz;
-                auto val = (cast(size_t[])(tbuffer))[0];
-                if( bs == -1 )
-                {
-                    bs = cast(int)val;
-                }
-                else if( fin_count == -1 )
-                {
-                    fin_count = cast(int)(val);
-                    count = fin_count + bs - fin_count % bs;
-                }
-                continue;
-            }
-
-            raw_data ~= buffer;
-            count -= bs;
-        }
-        return raw_data[ 0 .. fin_count ].idup;
-    }
+    int block_size = 16;
 public:
     this( Address addr )
     {
@@ -86,7 +97,7 @@ public:
 
     this( ushort port ){ this( new InternetAddress( port ) ); }
 
-    void setReceiveCB( void delegate( immutable ubyte[] ) _cb ){ cb = _cb; }
+    void setReceiveCB( callback _cb ){ cb = _cb; }
 
     void step()
     {
@@ -95,42 +106,49 @@ public:
         if( client is null )
             return;
 
-        cb(receiveAll( client ));
+        auto data = formReceive( &client.receive );
+        if( cb !is null )
+        {
+            auto send_data = cb( data );
+            if( send_data.length != 0 )
+                formSend( (const(void)[] dd){return client.send(dd);}, send_data, block_size );
+        }
     }
 }
 
-class SSender
+class SSender : DSocket
 {
 private:
     Socket sender;
-    SocketStream sstream;
-    size_t bs = 16;
+    int bs = 16;
+
+    alias void delegate( void[] ) callback;
+    callback cb;
+    Address address;
+    SocketStream ss;
 public:
     this( Address addr )
     {
         sender = new TcpSocket();
-        sender.connect( addr );
-        sstream = new SocketStream( sender );
+        address = addr;
+        sender.connect( address );
+        ss = new SocketStream( sender );
+        sender.blocking(false);
     }
+    void setReceiveCB( callback _cb ){ cb = _cb; }
 
     this( ushort port ) { this( new InternetAddress(port) ); }
 
+    void step()
+    {
+        auto data = formReceive(( void[] data ) { return sender.receiveFrom(data, address); });
+        if( cb !is null )
+            cb( data );
+    }
+
     void send( in ubyte[] data )
     {
-        sstream.writeBlock( cast(void*)&bs, size_t.sizeof ); 
-        auto length = data.length;
-        sstream.writeBlock( cast(void*)&length, bs ); 
-
-        auto raw_data = data.dup;
-        length += bs - raw_data.length % bs;
-        raw_data.length = length;
-        
-        auto ptr = raw_data.ptr;
-        for( int i = 0; i < length; i+=bs )
-        {
-            sstream.writeBlock( cast(void*)ptr, bs );
-            ptr += bs;
-        }
+        formSend( (const (void)[] dd ){ return cast(ptrdiff_t)(ss.writeBlock( cast(void*)dd.ptr, bs )); }, data, bs );
     }
 }
 
@@ -139,17 +157,23 @@ unittest
     import std.random;
     SListener ll = new SListener( 4040 );
     SSender ss = new SSender( 4040 );
-    ubyte[100] data;
+    ubyte[] data;
+    data.length = 100;
     foreach( ref d; data )
         d = cast(ubyte)uniform( 100, 255 );
-    ubyte[100] rdata;
+    ubyte[] rdata;
+    rdata.length = 100;
 
-    auto cb = ( immutable ubyte[] data )
+    auto cb = ( void[] data )
     {
-        rdata = data.dup;
+        void[] res;
+        rdata = cast(ubyte[])data.dup;
+        return res;
     };
     ll.setReceiveCB( cb );
     ss.send( data );
     ll.step();
+    import std.stdio;
+    writeln( "send" );
     assert( data == rdata );
 }
