@@ -37,12 +37,38 @@ interface Node
 
         final
         {
-            vec3 x() { return vec3( self.col!(0).data[0 .. 3] ); }
-            vec3 y() { return vec3( self.col!(1).data[0 .. 3] ); }
-            vec3 z() { return vec3( self.col!(2).data[0 .. 3] ); }
+            vec3 baseX() { return vec3( self.col!(0).data[0 .. 3] ); }
+            vec3 baseY() { return vec3( self.col!(1).data[0 .. 3] ); }
+            vec3 baseZ() { return vec3( self.col!(2).data[0 .. 3] ); }
             /+ in parent system +/
-            vec3 pos() { return vec3( self.col!(3).data[0 .. 3] ); }
+            vec3 basePoint() { return vec3( self.col!(3).data[0 .. 3] ); }
         }
+    }
+}
+
+final class DimmyNode : Node
+{
+private:
+    Node owner;
+    mat4 mtr;
+
+public:
+    this( Node own = null ) { owner = own; }
+
+    @property
+    {
+        mat4 self() const { return mtr; }
+        mat4 self( in mat4 m ) { mtr = m; return mtr; }
+        const(Node) parent() const { return owner; }
+    }
+
+    void setParent( Node par ) { owner = par; }
+
+    void setPosition( in vec3 p )
+    {
+        mtr[0,3] = p.x;
+        mtr[1,3] = p.y;
+        mtr[2,3] = p.z;
     }
 }
 
