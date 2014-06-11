@@ -81,9 +81,15 @@ private:
     {
         if( client is null )
         {
-            server.blocking(true);
-            client = server.accept();
-            server.blocking(false);
+            auto set = new SocketSet;
+            set.add( server );
+            if( Socket.select(set,null,null,dur!"msecs"(500) ) != -1 && set.isSet(server) )
+            {
+                std.stdio.stderr.writeln( "have read set, block" );
+                server.blocking(true);
+                client = server.accept();
+                server.blocking(false);
+            }
         }
     }
     int block_size = 16;
