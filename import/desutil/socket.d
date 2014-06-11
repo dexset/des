@@ -85,7 +85,7 @@ private:
     {
         if( client is null )
         {
-            log( client is null );
+            log( "client is null" );
             auto set = new SocketSet;
             set.add( server );
             if( Socket.select(set,null,null,dur!"msecs"(500) ) > 0 && set.isSet(server) )
@@ -103,6 +103,7 @@ public:
     {
         server = new TcpSocket();
         server.setOption( SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, true );
+        server.setOption( SocketOptionLevel.SOCKET, SocketOption.RCVTIMEO, dur!"usecs"(0) );
         server.bind( addr );
         server.listen(10);
         client = null;
@@ -127,7 +128,7 @@ public:
         if( Socket.select(set,null,null,dur!"msecs"(0) ) <= 0 || !set.isSet(client) ) return;
 
         auto data = formReceive( &client.receive );
-        if( data.length == 0 ) 
+        if( data.length == 0 )
         {
             client = null;
             return;
@@ -146,7 +147,7 @@ class SSender : DSocket
 {
 private:
     Socket sender;
-    int bs = 16;
+    int bs = 128;
 
     alias void delegate( void[] ) callback;
     callback cb;
@@ -156,6 +157,7 @@ public:
     this( Address addr )
     {
         sender = new TcpSocket();
+        sender.setOption( SocketOptionLevel.SOCKET, SocketOption.TCP_NODELAY, true );
         address = addr;
         sender.connect( address );
         ss = new SocketStream( sender );
