@@ -157,7 +157,7 @@ public:
     this( Address addr )
     {
         sender = new TcpSocket();
-        sender.setOption( SocketOptionLevel.TCP, SocketOption.TCP_NODELAY, true );
+        //sender.setOption( SocketOptionLevel.TCP, SocketOption.TCP_NODELAY, true );
         address = addr;
         sender.connect( address );
         ss = new SocketStream( sender );
