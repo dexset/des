@@ -102,6 +102,7 @@ public:
 
     const
     {
+        mat4 resolve( const(Node) obj ) { return rsl(obj, this); }
         mat4 opCall( const(Node) obj ) { return rsl(obj, this); }
         vec3 map( in vec3 pnt, const(Node) obj=null )
         {
