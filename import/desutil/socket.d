@@ -5,6 +5,12 @@ import std.socketstream;
 
 import desutil.pdata;
 
+void log(string file=__FILE__, size_t line=__LINE__, Args...)( Args args )
+{ 
+    std.stdio.stderr.writef( "%s:%d ", file, line );
+    std.stdio.stderr.writeln( args );
+}
+
 class SocketException: Exception
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, int line=__LINE__ ) 
@@ -42,10 +48,8 @@ protected:
             void[] buffer;
 
             buffer.length = bs == -1 || full_size == -1 ? int.sizeof : bs;
-            std.stdio.writeln( buffer.length );
 
             auto receive = func( buffer );
-            std.stdio.stderr.writeln( buffer );
             if( receive == 0 )
                 return [];
 
@@ -81,11 +85,12 @@ private:
     {
         if( client is null )
         {
+            log( client is null );
             auto set = new SocketSet;
             set.add( server );
-            if( Socket.select(set,null,null,dur!"msecs"(500) ) != -1 && set.isSet(server) )
+            if( Socket.select(set,null,null,dur!"msecs"(500) ) > 0 && set.isSet(server) )
             {
-                std.stdio.stderr.writeln( "have read set, block" );
+                log( "locking" );
                 server.blocking(true);
                 client = server.accept();
                 server.blocking(false);
@@ -109,12 +114,25 @@ public:
 
     void step()
     {
+        log("step");
         checkClient();
 
         if( client is null )
             return;
+        log("   client not null");
+
+
+        auto set = new SocketSet;
+        set.add( client );
+        if( Socket.select(set,null,null,dur!"msecs"(0) ) <= 0 || !set.isSet(client) ) return;
 
         auto data = formReceive( &client.receive );
+        if( data.length == 0 ) 
+        {
+            client = null;
+            return;
+        }
+        log("   data recived");
         if( cb !is null )
         {
             auto send_data = cb( data );
