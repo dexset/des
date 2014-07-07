@@ -226,7 +226,7 @@ public:
     { 
         auto ret = glGetAttribLocation( program, name.toStringz ); 
         debug checkGL;
-        enforce( ret >= 0, new ShaderException( format( "bad attribute name: '%s'", name ) ) );
+        //enforce( ret >= 0, new ShaderException( format( "bad attribute name: '%s'", name ) ) );
         return ret;
     }
 
