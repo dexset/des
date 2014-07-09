@@ -25,7 +25,7 @@ Image loadImageFromFile( string fname )
         ilBindImage( im );
 
         if( ilLoadImage( fname.toStringz ) == false )
-            throw new ImageException( "ilLoadImage fails: " ~ 
+            throw new ImageException( "ilLoadImage fails with '" ~ fname ~ "': " ~ 
                                       toDString( iluErrorString( ilGetError() ) ) );
 
         int w = ilGetInteger( IL_IMAGE_WIDTH );
