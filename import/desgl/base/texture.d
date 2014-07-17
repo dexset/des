@@ -195,3 +195,4 @@ class GLTexture(ubyte DIM) if( DIM == 1 || DIM == 2 || DIM == 3 ) : ExternalMemo
 }
 
 alias GLTexture!2 GLTexture2D;
+alias GLTexture!3 GLTexture3D;
