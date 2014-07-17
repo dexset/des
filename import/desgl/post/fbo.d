@@ -68,6 +68,8 @@ public:
 
         tex = registerChildEMM( new GLTexture2D );
         tex.image( sz, 4, GL_RGBA, GL_FLOAT );
+        tex.parameteri( GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        tex.parameteri( GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
         // Render buffer
         glGenRenderbuffers( 1, &rboID );
