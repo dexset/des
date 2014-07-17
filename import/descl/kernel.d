@@ -62,7 +62,7 @@ class CLKernel : CLReference
 
             static if( is( Arg : CLMemory ) )
             {
-                auto aid = (cast(CLMemory)(arg)).id;
+                auto aid = (cast(CLMemory)arg).id;
                 value = &aid;
                 size = aid.sizeof;
             }

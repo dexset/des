@@ -241,7 +241,7 @@ public:
 class GLSpecObj : GLObj
 {
 protected:
-    final void setAttribSpec( GLVBO buffer, in AttribSpecInner spec )
+    final void setAttribSpec( GLBuffer buffer, in AttribSpecInner spec )
     { setAttribPointer( buffer, spec.loc, spec.vt.fullSize, spec.vt.glType ); }
 }
 

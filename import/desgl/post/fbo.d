@@ -48,7 +48,7 @@ private:
     uint rboID;
     uint fboID;
 
-    GLTexture2D tex;
+    GLTexture tex;
 
     static this() { fboStack ~= 0; }
 
@@ -66,8 +66,8 @@ public:
     {
         sz = ivec2( 1, 1 );
 
-        tex = registerChildEMM( new GLTexture2D );
-        tex.image( sz, 4, GL_RGBA, GL_FLOAT );
+        tex = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
+        tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
 
         // Render buffer
         glGenRenderbuffers( 1, &rboID );
@@ -98,7 +98,7 @@ public:
 
             debug log( "reshape FBO: [ %d x %d ]", sz.w, sz.h );
 
-            tex.image( sz, 4, GL_RGBA, GL_FLOAT );
+            tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
             tex.genMipmap();
 
             glBindRenderbuffer( GL_RENDERBUFFER, rboID );
@@ -127,7 +127,9 @@ public:
     final nothrow void bindTexture() { tex.bind(); }
     final nothrow void unbindTexture() { tex.unbind(); }
 
-    final void getImage( ref Image img, uint level=0, GLenum fmt=GL_RGB, GLenum rtype=GL_UNSIGNED_BYTE )
+    final void getImage( ref Image img, uint level=0, 
+            GLTexture.Format fmt=GLTexture.Format.RGB, 
+            GLBaseType rtype=GLBaseType.UNSIGNED_BYTE )
     { tex.getImage( img, level, fmt, rtype ); }
 
     nothrow @property auto size() const { return sz; }
@@ -144,7 +146,7 @@ class FBORect: GLObj
 {
 private:
     GLFBO fbo;
-    GLVBO pos, uv;
+    GLBuffer pos, uv;
     ivec2 wsz = ivec2(800,800);
 public:
 
@@ -163,17 +165,19 @@ public:
         auto pos_dt = [ vec2(-1, 1), vec2(1, 1), vec2(-1,-1), vec2(1,-1) ];
         auto uv_dt =  [ vec2( 0, 1), vec2(1, 1), vec2( 0, 0), vec2(1, 0) ];
 
-        pos = new GLVBO( pos_dt, GL_ARRAY_BUFFER, GL_STATIC_DRAW );
+        pos = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        pos.setData( pos_dt, GLBuffer.Usage.STATIC_DRAW );
         setAttribPointer( pos, pos_loc, 2, GL_FLOAT );
-        uv = new GLVBO( uv_dt, GL_ARRAY_BUFFER, GL_STATIC_DRAW );
+
+        uv = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        pos.setData( uv_dt, GLBuffer.Usage.STATIC_DRAW );
         setAttribPointer( uv, uv_loc, 2, GL_FLOAT );
     }
 
     void bind(bool clear=true)
     { 
         fbo.bind();
-        if( clear )
-            glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        if( clear ) glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     }
 
     void resize( in ivec2 sz )

@@ -31,7 +31,7 @@ import derelict.opengl3.gl3;
 
 import desmath.linear.vector;
 
-public import desutil.helpers: ExternalMemoryManager;
+public import desutil.emm;
 import desutil.logger;
 
 mixin( PrivateLoggerMixin );

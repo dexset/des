@@ -41,13 +41,13 @@ public:
         ALLOC_HOST_PTR = CL_MEM_ALLOC_HOST_PTR,
         COPY_HOST_PTR  = CL_MEM_COPY_HOST_PTR
     }
-    static bool checkFlags( ulong flags )
+
+    static pure
     {
-        ulong check;
-        /+ filter bad input flags +/
-        foreach( f; [EnumMembers!Flags] )
-            check |= (flags & f) ? f : 0;
-        return check == flags;
+        bool checkFlags( ulong flags ) { return filterFlags(flags) == flags; }
+
+        ulong filterFlags( ulong flags )
+        { return reduce!((r,f)=>r|=(flags&f)?f:0UL)(0UL,[EnumMembers!Flags]); }
     }
 
     private ulong _flags;

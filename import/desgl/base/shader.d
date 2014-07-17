@@ -242,7 +242,7 @@ public:
     { 
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        enforce( ret >= 0, new ShaderException( format( "bad uniform name: '%s'", name ) ) );
+        //enforce( ret >= 0, new ShaderException( format( "bad uniform name: '%s'", name ) ) );
         return ret;
     }
 
@@ -306,7 +306,7 @@ public:
                     "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
         else
             mixin( "glUniformMatrix" ~ to!string(h) ~ "x" ~ to!string(w) ~
-                    "fv( loc, cast(int)mtr.length GL_TRUE, cast(float*)mtr.ptr ); " );
+                    "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
         debug checkGL;
     }
 
