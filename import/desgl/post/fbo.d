@@ -61,6 +61,8 @@ public:
 
         tex = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
         tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
+        tex.parameteri( GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+        tex.parameteri( GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
         // Render buffer
         rbo = registerChildEMM( new GLRenderBuffer );
