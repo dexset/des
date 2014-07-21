@@ -78,9 +78,17 @@ public:
         RECTANGLE             = GL_TEXTURE_RECTANGLE,
         CUBE_MAP              = GL_TEXTURE_CUBE_MAP,
         CUBE_MAP_ARRAY        = GL_TEXTURE_CUBE_MAP_ARRAY,
-        //BUFFER                = GL_TEXTURE_BUFFER,
-        //T2D_MULTISAMPLE       = GL_TEXTURE_2D_MULTISAMPLE,
-        //T2D_MULTISAMPLE_ARRAY = GL_TEXTURE_2D_MULTISAMPLE_ARRAY
+
+        BUFFER                = GL_TEXTURE_BUFFER,
+        T2D_MULTISAMPLE       = GL_TEXTURE_2D_MULTISAMPLE,
+        T2D_MULTISAMPLE_ARRAY = GL_TEXTURE_2D_MULTISAMPLE_ARRAY,
+
+        CUBE_MAP_POSITIVE_X = GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+        CUBE_MAP_NEGATIVE_X = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+        CUBE_MAP_POSITIVE_Y = GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+        CUBE_MAP_NEGATIVE_Y = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        CUBE_MAP_POSITIVE_Z = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+        CUBE_MAP_NEGATIVE_Z = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
     }
 
     enum Parameter
@@ -205,6 +213,7 @@ public:
     }
 
     this( Target tp )
+    in { assert( isBase(tp) ); } body
     {
         glGenTextures( 1, &_id );
         debug checkGL;
@@ -341,6 +350,23 @@ public:
 
     protected static
     {
+
+        bool isBase( Target trg )
+        {
+            switch(trg)
+            {
+            case Target.T1D:
+            case Target.T2D:
+            case Target.T3D:
+            case Target.T1D_ARRAY:
+            case Target.T2D_ARRAY:
+            case Target.RECTANGLE:
+            case Target.CUBE_MAP:
+            case Target.CUBE_MAP_ARRAY: return true;
+            default: return false;
+            }
+        }
+
         bool isParametric( Target trg )
         {
             switch(trg)
@@ -425,7 +451,6 @@ public:
             default: return false; // is integer;
             }
         }
-
     }
 }
 

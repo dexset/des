@@ -27,34 +27,27 @@ module desgl.post.fbo;
 import derelict.opengl3.gl3;
 
 import desmath.linear;
-import desil.rect;
 import desutil.signal;
+import desutil.emm;
 
-public import desgl.base;
-import desgl.util;
+import desgl.base;
+import desutil.signal;
+import desil;
 
 import desutil.logger;
 mixin( PrivateLoggerMixin );
 
-import desil.image;
-
-class GLFBOException : Exception 
-{ @safe pure nothrow this( string msg ){ super( msg ); } }
-
-class GLFBO : ExternalMemoryManager
+class SimpleFBO : ExternalMemoryManager
 {
-    mixin( getMixinChildEMM );
-private:
-    uint rboID;
-    uint fboID;
+mixin( getMixinChildEMM );
+protected:
+    
+    GLRenderBuffer rbo;
+    GLFrameBuffer fbo;
 
     GLTexture tex;
 
-    static this() { fboStack ~= 0; }
-
     vec!(2,int,"wh") sz;
-
-    static uint[] fboStack;
 
 public:
 
@@ -70,27 +63,16 @@ public:
         tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
 
         // Render buffer
-        glGenRenderbuffers( 1, &rboID );
-        glBindRenderbuffer( GL_RENDERBUFFER, rboID );
-        glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, sz.w, sz.h );
-        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+        rbo = registerChildEMM( new GLRenderBuffer );
+        rbo.storage( sz.wh, rbo.Format.DEPTH_COMPONENT24 );
 
+        fbo = registerChildEMM( new GLFrameBuffer );
         // Frame buffer
-        glGenFramebuffers( 1, &fboID );
-        glBindFramebuffer( GL_FRAMEBUFFER, fboID );
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                GL_TEXTURE_2D, tex.id, 0 );
-        glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
-                                   GL_RENDERBUFFER, rboID );
+        fbo.texture( tex, fbo.Attachment.COLOR0 );
+        fbo.renderBuffer( rbo, fbo.Attachment.DEPTH );
+        fbo.unbind();
 
-        GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
-        import std.string;
-        if( status != GL_FRAMEBUFFER_COMPLETE )
-            throw new GLFBOException( format( "status isn't GL_FRAMEBUFFER_COMPLETE, it's %#x", status ) );
-
-        glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-        debug log( "create FBO [fbo:%d], [rbo:%d], [tex:%d]", fboID, rboID, tex.id );
+        debug log( "create FBO [fbo:%d], [rbo:%d], [tex:%d]", fbo.id, rbo.id, tex.id );
 
         resize.connect( (nsz)
         {
@@ -101,31 +83,20 @@ public:
             tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
             tex.genMipmap();
 
-            glBindRenderbuffer( GL_RENDERBUFFER, rboID );
-            glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sz.w, sz.h );
-            glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+            rbo.storage( sz.wh, rbo.Format.DEPTH_COMPONENT24 );
         });
 
         resize( ivec2(1,1) );
     }
 
-    final nothrow void bind() 
-    { 
-        glBindFramebuffer( GL_FRAMEBUFFER, fboID ); 
-        fboStack ~= fboID;
-    }
+    final nothrow
+    {
+        void bind() { fbo.bind(); }
+        void unbind() { fbo.unbind(); }
 
-    final nothrow void unbind() 
-    { 
-        if( fboStack.length > 1 )
-        {
-            glBindFramebuffer( GL_FRAMEBUFFER, fboStack[$-2] ); 
-            fboStack = fboStack[ 0 .. $-1 ];
-        }
+        void textureBind() { tex.bind(); }
+        void textureUnbind() { tex.unbind(); }
     }
-
-    final nothrow void bindTexture() { tex.bind(); }
-    final nothrow void unbindTexture() { tex.unbind(); }
 
     final void getImage( ref Image img, uint level=0, 
             GLTexture.Format fmt=GLTexture.Format.RGB, 
@@ -137,15 +108,14 @@ public:
     protected void selfDestroy()
     {
         unbind();
-        glDeleteFramebuffers( 1, &fboID );
-        glDeleteRenderbuffers( 1, &rboID );
+        textureUnbind();
     }
 }
 
 class FBORect: GLObj
 {
 private:
-    GLFBO fbo;
+    SimpleFBO sfbo;
     GLBuffer pos, uv;
     ivec2 wsz = ivec2(800,800);
 public:
@@ -155,9 +125,9 @@ public:
     this( in ShaderSource ss )
     {
         shader = registerChildEMM( new CommonShaderProgram(ss) );
-        fbo = registerChildEMM( new GLFBO );
+        sfbo = registerChildEMM( new SimpleFBO );
 
-        fbo.resize( wsz );
+        sfbo.resize( wsz );
 
         int pos_loc = shader.getAttribLocation( "vertex" );
         int uv_loc = shader.getAttribLocation( "uv" );
@@ -167,32 +137,32 @@ public:
 
         pos = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
         pos.setData( pos_dt, GLBuffer.Usage.STATIC_DRAW );
-        setAttribPointer( pos, pos_loc, 2, GL_FLOAT );
+        setAttribPointer( pos, pos_loc, 2, GLBaseType.FLOAT );
 
         uv = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
         pos.setData( uv_dt, GLBuffer.Usage.STATIC_DRAW );
-        setAttribPointer( uv, uv_loc, 2, GL_FLOAT );
+        setAttribPointer( uv, uv_loc, 2, GLBaseType.FLOAT );
     }
 
     void bind(bool clear=true)
     { 
-        fbo.bind();
+        sfbo.bind();
         if( clear ) glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     }
 
     void resize( in ivec2 sz )
     {
         wsz = sz;
-        fbo.resize( wsz );
+        sfbo.resize( wsz );
     }
 
-    void unbind() { fbo.unbind(); }
+    void unbind() { sfbo.unbind(); }
 
     void predraw()
     {
         vao.bind();
         shader.use();
-        fbo.bindTexture();
+        sfbo.textureBind();
         shader.setUniformVec( "winsize", vec2(wsz) );
     }
 

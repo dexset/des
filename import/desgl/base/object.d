@@ -29,6 +29,7 @@ import std.c.string;
 import derelict.opengl3.gl3;
 
 import desgl.util.ext;
+import desgl.base.type;
 
 import desutil;
 mixin( PrivateLoggerMixin );
@@ -212,18 +213,19 @@ protected:
 
     final nothrow
     {
-        void setAttribPointer( GLBuffer buffer, int index, uint size, GLenum attype, bool norm=false )
-        { setAttribPointer( buffer, index, size, attype, 0, 0, norm ); }
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+                GLBaseType attype, bool norm=false )
+        { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
-        void setAttribPointer( GLBuffer buffer, int index, uint size, 
-                GLenum attype, size_t stride, size_t offset, bool norm=false )
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+                GLBaseType attype, size_t stride, size_t offset, bool norm=false )
         {
             vao.bind();
             vao.enable( index );
 
             buffer.bind();
-            glVertexAttribPointer( index, cast(int)size, attype, norm, 
-                    cast(int)stride, cast(void*)offset );
+            glVertexAttribPointer( index, cast(int)per_element,
+                    cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
             buffer.unbind();
         }
     }
