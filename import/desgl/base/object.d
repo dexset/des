@@ -214,11 +214,11 @@ protected:
     final nothrow
     {
         void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
-                GLBaseType attype, bool norm=false )
+                GLType attype, bool norm=false )
         { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
         void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
-                GLBaseType attype, size_t stride, size_t offset, bool norm=false )
+                GLType attype, size_t stride, size_t offset, bool norm=false )
         {
             vao.bind();
             vao.enable( index );

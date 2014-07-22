@@ -84,7 +84,7 @@ unittest
 
 struct ShaderSource { string vert, frag, geom; }
 
-class ShaderException : DesGLException 
+class GLShaderException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
@@ -136,7 +136,7 @@ protected:
             {
                 auto chlog = new char[logLen];
                 glGetShaderInfoLog( shader, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "shader compile error: \n" ~ chlog.idup );
+                throw new GLShaderException( "shader compile error: \n" ~ chlog.idup );
             }
         }
 
@@ -156,7 +156,7 @@ protected:
             {
                 auto chlog = new char[logLen];
                 glGetProgramInfoLog( prog, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "program link error: \n" ~ chlog.idup );
+                throw new GLShaderException( "program link error: \n" ~ chlog.idup );
             }
         }
         debug checkGL;
@@ -165,7 +165,7 @@ protected:
     void construct( in ShaderSource src )
     {
         if( src.vert.length == 0 ) 
-            throw new ShaderException( "vertex shader source is empty" );
+            throw new GLShaderException( "vertex shader source is empty" );
 
         program = glCreateProgram();
 
@@ -190,7 +190,7 @@ protected:
     }
 
     void checkLocation( int loc )
-    { enforce( loc >= 0, new ShaderException( format( "bad location: '%d'", loc ) ) ); }
+    { enforce( loc >= 0, new GLShaderException( format( "bad location: '%d'", loc ) ) ); }
 
     void selfDestroy()
     {
@@ -226,7 +226,7 @@ public:
     { 
         auto ret = glGetAttribLocation( program, name.toStringz ); 
         debug checkGL;
-        //enforce( ret >= 0, new ShaderException( format( "bad attribute name: '%s'", name ) ) );
+        //enforce( ret >= 0, new GLShaderException( format( "bad attribute name: '%s'", name ) ) );
         return ret;
     }
 
@@ -242,7 +242,7 @@ public:
     { 
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        //enforce( ret >= 0, new ShaderException( format( "bad uniform name: '%s'", name ) ) );
+        //enforce( ret >= 0, new GLShaderException( format( "bad uniform name: '%s'", name ) ) );
         return ret;
     }
 

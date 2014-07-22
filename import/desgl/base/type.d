@@ -26,28 +26,6 @@ module desgl.base.type;
 
 import derelict.opengl3.gl3;
 
-enum GLBaseType
-{
-    UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,
-    BYTE           = GL_BYTE,
-    UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
-    SHORT          = GL_SHORT,
-    UNSIGNED_INT   = GL_UNSIGNED_INT,
-    INT            = GL_INT,
-    FLOAT          = GL_FLOAT
-}
-
-size_t sizeofGLBaseType( GLBaseType tp )
-{
-    final switch(tp)
-    {
-        case GLBaseType.UNSIGNED_BYTE: case GLBaseType.BYTE: return byte.sizeof;
-        case GLBaseType.UNSIGNED_SHORT: case GLBaseType.SHORT: return short.sizeof;
-        case GLBaseType.UNSIGNED_INT: case GLBaseType.INT: return int.sizeof;
-        case GLBaseType.FLOAT: return float.sizeof;
-    }
-}
-
 enum GLType
 {
     UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,
@@ -57,17 +35,25 @@ enum GLType
     UNSIGNED_INT   = GL_UNSIGNED_INT,
     INT            = GL_INT,
     FLOAT          = GL_FLOAT,
+}
 
-    UNSIGNED_BYTE_3_3_2         = GL_UNSIGNED_BYTE_3_3_2,
-    UNSIGNED_BYTE_2_3_3_REV     = GL_UNSIGNED_BYTE_2_3_3_REV,
-    UNSIGNED_SHORT_5_6_5        = GL_UNSIGNED_SHORT_5_6_5,
-    UNSIGNED_SHORT_5_6_5_REV    = GL_UNSIGNED_SHORT_5_6_5_REV,
-    UNSIGNED_SHORT_4_4_4_4      = GL_UNSIGNED_SHORT_4_4_4_4,
-    UNSIGNED_SHORT_4_4_4_4_REV  = GL_UNSIGNED_SHORT_4_4_4_4_REV,
-    UNSIGNED_SHORT_5_5_5_1      = GL_UNSIGNED_SHORT_5_5_5_1,
-    UNSIGNED_SHORT_1_5_5_5_REV  = GL_UNSIGNED_SHORT_1_5_5_5_REV,
-    UNSIGNED_INT_8_8_8_8        = GL_UNSIGNED_INT_8_8_8_8,
-    UNSIGNED_INT_8_8_8_8_REV    = GL_UNSIGNED_INT_8_8_8_8_REV,
-    UNSIGNED_INT_10_10_10_2     = GL_UNSIGNED_INT_10_10_10_2,
-    UNSIGNED_INT_2_10_10_10_REV = GL_UNSIGNED_INT_2_10_10_10_REV
+size_t sizeofGLType( GLType type )
+{
+    final switch(type)
+    {
+    case GLType.BYTE:
+    case GLType.UNSIGNED_BYTE:
+        return byte.sizeof;
+
+    case GLType.SHORT:
+    case GLType.UNSIGNED_SHORT:
+        return short.sizeof;
+
+    case GLType.INT:
+    case GLType.UNSIGNED_INT:
+        return int.sizeof;
+
+    case GLType.FLOAT:
+        return float.sizeof;
+    }
 }

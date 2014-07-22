@@ -60,9 +60,9 @@ public:
         sz = ivec2( 1, 1 );
 
         tex = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
-        tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
-        tex.parameteri( GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-        tex.parameteri( GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+        tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLTexture.Type.FLOAT );
+        tex.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
+        tex.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
 
         // Render buffer
         rbo = registerChildEMM( new GLRenderBuffer );
@@ -82,7 +82,7 @@ public:
 
             debug log( "reshape FBO: [ %d x %d ]", sz.w, sz.h );
 
-            tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLType.FLOAT );
+            tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLTexture.Type.FLOAT );
             tex.genMipmap();
 
             rbo.storage( sz.wh, rbo.Format.DEPTH_COMPONENT24 );
@@ -102,8 +102,8 @@ public:
 
     final void getImage( ref Image img, uint level=0, 
             GLTexture.Format fmt=GLTexture.Format.RGB, 
-            GLBaseType rtype=GLBaseType.UNSIGNED_BYTE )
-    { tex.getImage( img, level, fmt, rtype ); }
+            GLTexture.Type rtype=GLTexture.Type.UNSIGNED_BYTE )
+    { tex.getImage( img, fmt, rtype, level ); }
 
     nothrow @property auto size() const { return sz; }
 
@@ -139,11 +139,11 @@ public:
 
         pos = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
         pos.setData( pos_dt, GLBuffer.Usage.STATIC_DRAW );
-        setAttribPointer( pos, pos_loc, 2, GLBaseType.FLOAT );
+        setAttribPointer( pos, pos_loc, 2, GLType.FLOAT );
 
         uv = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
         pos.setData( uv_dt, GLBuffer.Usage.STATIC_DRAW );
-        setAttribPointer( uv, uv_loc, 2, GLBaseType.FLOAT );
+        setAttribPointer( uv, uv_loc, 2, GLType.FLOAT );
     }
 
     void bind(bool clear=true)

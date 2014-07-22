@@ -24,7 +24,7 @@ The MIT License (MIT)
 
 module desgl.base.texture;
 
-import std.string : format;
+import std.string;
 
 public import derelict.opengl3.gl3;
 
@@ -37,7 +37,7 @@ import desil;
 import std.algorithm;
 import desutil.algo;
 
-class TextureException : DesGLException 
+class GLTextureException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
@@ -212,6 +212,35 @@ public:
         BGRA = GL_BGRA
     }
 
+    enum Type
+    {
+        UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,
+        BYTE           = GL_BYTE,
+        UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
+        SHORT          = GL_SHORT,
+        UNSIGNED_INT   = GL_UNSIGNED_INT,
+        INT            = GL_INT,
+        HALF_FLOAT     = GL_HALF_FLOAT,
+        FLOAT          = GL_FLOAT,
+
+        UNSIGNED_BYTE_3_3_2             = GL_UNSIGNED_BYTE_3_3_2,
+        UNSIGNED_BYTE_2_3_3_REV         = GL_UNSIGNED_BYTE_2_3_3_REV,
+        UNSIGNED_SHORT_5_6_5            = GL_UNSIGNED_SHORT_5_6_5,
+        UNSIGNED_SHORT_5_6_5_REV        = GL_UNSIGNED_SHORT_5_6_5_REV,
+        UNSIGNED_SHORT_4_4_4_4          = GL_UNSIGNED_SHORT_4_4_4_4,
+        UNSIGNED_SHORT_4_4_4_4_REV      = GL_UNSIGNED_SHORT_4_4_4_4_REV,
+        UNSIGNED_SHORT_5_5_5_1          = GL_UNSIGNED_SHORT_5_5_5_1,
+        UNSIGNED_SHORT_1_5_5_5_REV      = GL_UNSIGNED_SHORT_1_5_5_5_REV,
+        UNSIGNED_INT_8_8_8_8            = GL_UNSIGNED_INT_8_8_8_8,
+        UNSIGNED_INT_8_8_8_8_REV        = GL_UNSIGNED_INT_8_8_8_8_REV,
+        UNSIGNED_INT_10_10_10_2         = GL_UNSIGNED_INT_10_10_10_2,
+        UNSIGNED_INT_2_10_10_10_REV     = GL_UNSIGNED_INT_2_10_10_10_REV,
+        UNSIGNED_INT_24_8               = GL_UNSIGNED_INT_24_8,
+        UNSIGNED_INT_10F_11F_11F_REV    = GL_UNSIGNED_INT_10F_11F_11F_REV,
+        UNSIGNED_INT_5_9_9_9_REV        = GL_UNSIGNED_INT_5_9_9_9_REV,
+        FLOAT_32_UNSIGNED_INT_24_8_REV  = GL_FLOAT_32_UNSIGNED_INT_24_8_REV
+    }
+
     this( Target tp )
     in { assert( isBase(tp) ); } body
     {
@@ -230,21 +259,25 @@ public:
     }
 
     void setParameter(T)( Parameter pname, T[] val... )
-        if( is(T==int) || is(T==float) )
+        if( is(T==int) || is(T==float) || isParameterEnum!T )
     in
     {
         assert( val.length > 0 );
         assert( isParametric(_type) );
-        assert( checkPosibleParamValues( pname, val ) );
+        static if( !is(T==float) )
+            assert( checkPosibleIntParamValues( pname, amap!(a=>cast(int)(a))(val) ) );
+        else
+            assert( checkPosibleFloatParamValues( pname, val ) );
     }
     body
     {
         bind();
-        auto ts = is(T==int) ? "i" : "f";
+        enum ts = is(T==float) ? "f" : "i";
+        enum cs = is(T==float) ? "float" : "int";
         if( val.length == 1 )
-            mixin( format("glTexParameter%s( gltype, cast(GLenum)pname, val[0] );", ts) );
+            mixin( format("glTexParameter%s( gltype, cast(GLenum)pname, cast(%s)val[0] );", ts, cs) );
         else 
-            mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, val.ptr );", ts) ); 
+            mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
 
         debug checkGL;
     }
@@ -257,7 +290,7 @@ public:
     }
 
     void image(T)( in T sz, InternalFormat internal_format, 
-            Format data_format, GLType data_type, in void* data=null )
+            Format data_format, Type data_type, in void* data=null )
         if( isCompVector!(1,size_t,T) || isCompVector!(2,size_t,T) || isCompVector!(3,size_t,T) )
     {
         enum N = sz.length;
@@ -272,7 +305,7 @@ public:
         debug checkGL;
     }
 
-    final void getImage( ref Image img, uint level=0, Format fmt=Format.RGB, GLBaseType rtype=GLBaseType.UNSIGNED_BYTE )
+    final void getImage( ref Image img, Format fmt=Format.RGB, Type type=Type.UNSIGNED_BYTE, uint level=0 )
     in { assert( _type == Target.T2D ); } body
     {
         bind();
@@ -284,32 +317,14 @@ public:
         glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &(h));
         debug checkGL;
 
-        import std.string;
-
-        size_t elemSize = 1;
-
-        final switch(fmt)
-        {
-            case Format.RED: break;
-            case Format.RG:  elemSize = 2; break;
-
-            case Format.RGB:
-            case Format.BGR:
-                elemSize = 3; break;
-
-            case Format.RGBA:
-            case Format.BGRA:
-                elemSize = 4; break;
-        }
-
-        elemSize *= sizeofGLBaseType(rtype);
+        auto elemSize = formatElemCount(fmt) * sizeofType(type);
 
         auto dsize = w * h * elemSize;
 
         if( img.size != imsize_t(w,h) || img.type.bpp != elemSize )
             img.allocate( imsize_t(w,h), ImageType( elemSize ) );
 
-        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)rtype, img.data.ptr );
+        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
         debug checkGL;
         unbind();
         debug checkGL;
@@ -318,39 +333,42 @@ public:
     final void image( in Image img )
     in { assert( type == Target.T2D ); } body
     {
-        GLenum fmt, type;
+        InternalFormat ifmt;
+        Format fmt;
+        Type type;
+
         switch( img.type.comp )
         {
             case ImCompType.RAWBYTE: case ImCompType.UBYTE:
-                type = GL_UNSIGNED_BYTE; break;
+                type = Type.UNSIGNED_BYTE; break;
             case ImCompType.FLOAT: case ImCompType.NORM_FLOAT:
-                type = GL_FLOAT; break;
+                type = Type.FLOAT; break;
             default:
-                throw new TextureException( "uncompatible image component type" );
+                throw new GLTextureException( "uncompatible image component type" );
         }
+
         switch( img.type.channels )
         {
-            case 1: fmt = GL_RED;  break;
-            case 2: fmt = GL_RG;   break;
-            case 3: fmt = GL_RGB;  break;
-            case 4: fmt = GL_RGBA; break;
+            case 1: fmt = Format.RED;  ifmt = InternalFormat.RED;  break;
+            case 2: fmt = Format.RG;   ifmt = InternalFormat.RG;   break;
+            case 3: fmt = Format.RGB;  ifmt = InternalFormat.RGB;  break;
+            case 4: fmt = Format.RGBA; ifmt = InternalFormat.RGBA; break;
             default:
-                throw new TextureException( "uncompatible image chanels count" );
+                throw new GLTextureException( "uncompatible image chanels count" );
         }
-        image( img.size, cast(InternalFormat)img.type.channels, 
-                cast(Format)fmt, cast(GLType)type, img.data.ptr );
+
+        image( img.size, ifmt, fmt, type, img.data.ptr );
     }
 
     final void image( in ImageReadAccess ira )
     in { assert( type == Target.T2D ); } body
     { 
         if( ira !is null ) image( ira.selfImage() ); 
-        else image( ivec2(1,1), InternalFormat.RGB, Format.RGB, GLType.UNSIGNED_BYTE );
+        else image( ivec2(1,1), InternalFormat.RGB, Format.RGB, Type.UNSIGNED_BYTE );
     }
 
     protected static
     {
-
         bool isBase( Target trg )
         {
             switch(trg)
@@ -396,7 +414,7 @@ public:
             }
         }
 
-        bool checkPosibleParamValues( Parameter pname, int[] valbuf... )
+        bool checkPosibleIntParamValues( Parameter pname, int[] valbuf... )
         {
             if( valbuf.length == 0 ) return false;
 
@@ -433,7 +451,7 @@ public:
             }
         }
 
-        bool checkPosibleParamValues( Parameter pname, float[] valbuf... )
+        bool checkPosibleFloatParamValues( Parameter pname, float[] valbuf... )
         {
             if( valbuf.length == 0 ) return false;
 
@@ -450,6 +468,70 @@ public:
             case Parameter.BORDER_COLOR: return count == 4;
             default: return false; // is integer;
             }
+        }
+
+        size_t formatElemCount( Format fmt )
+        {
+            final switch(fmt)
+            {
+                case Format.RED: return 1;
+                case Format.RG:  return 2;
+
+                case Format.RGB:
+                case Format.BGR:
+                    return 3;
+
+                case Format.RGBA:
+                case Format.BGRA:
+                    return 4;
+            }
+        }
+
+        size_t sizeofType( Type type )
+        {
+            final switch(type)
+            {
+            case Type.BYTE:          
+            case Type.UNSIGNED_BYTE:
+            case Type.UNSIGNED_BYTE_3_3_2:
+            case Type.UNSIGNED_BYTE_2_3_3_REV:
+                return byte.sizeof;
+
+            case Type.SHORT:
+            case Type.UNSIGNED_SHORT:
+            case Type.UNSIGNED_SHORT_5_6_5:
+            case Type.UNSIGNED_SHORT_5_6_5_REV:
+            case Type.UNSIGNED_SHORT_4_4_4_4:
+            case Type.UNSIGNED_SHORT_4_4_4_4_REV:
+            case Type.UNSIGNED_SHORT_5_5_5_1:
+            case Type.UNSIGNED_SHORT_1_5_5_5_REV:
+                return short.sizeof;
+
+            case Type.INT:
+            case Type.UNSIGNED_INT:
+            case Type.UNSIGNED_INT_8_8_8_8:
+            case Type.UNSIGNED_INT_8_8_8_8_REV:
+            case Type.UNSIGNED_INT_10_10_10_2:
+            case Type.UNSIGNED_INT_2_10_10_10_REV:
+            case Type.UNSIGNED_INT_24_8:
+            case Type.UNSIGNED_INT_10F_11F_11F_REV:
+            case Type.UNSIGNED_INT_5_9_9_9_REV:
+            case Type.FLOAT_32_UNSIGNED_INT_24_8_REV:
+                return int.sizeof;
+
+            case Type.HALF_FLOAT: return float.sizeof / 2;
+            case Type.FLOAT: return float.sizeof;
+            }
+        }
+
+        @property bool isParameterEnum(T)()
+        {
+            return is(T==DepthStencilTextureMode) ||
+                   is(T==CompareFunc) ||
+                   is(T==CompareMode) ||
+                   is(T==Filter) ||
+                   is(T==Swizzle) ||
+                   is(T==Wrap);
         }
     }
 }

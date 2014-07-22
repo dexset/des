@@ -27,7 +27,7 @@ module desgl.base.frame;
 import derelict.opengl3.gl3;
 
 import desmath.linear;
-import desutil.emm;;
+import desutil.emm;
 
 import desgl.base.texture;
 import desgl.util;
@@ -37,8 +37,11 @@ mixin( PrivateLoggerMixin );
 
 import desil.image;
 
-class GLFBOException : Exception
-{ @safe pure nothrow this( string msg ){ super( msg ); } }
+class GLFBOException : DesGLException 
+{ 
+    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    { super( msg, file, line ); } 
+}
 
 class GLRenderBuffer : ExternalMemoryManager
 {
