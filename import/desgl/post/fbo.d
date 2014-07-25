@@ -100,7 +100,7 @@ public:
         void textureUnbind() { tex.unbind(); }
     }
 
-    final void getImage( ref Image img, uint level=0, 
+    final void getImage( ref Image!2 img, uint level=0, 
             GLTexture.Format fmt=GLTexture.Format.RGB, 
             GLTexture.Type rtype=GLTexture.Type.UNSIGNED_BYTE )
     { tex.getImage( img, fmt, rtype, level ); }

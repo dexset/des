@@ -305,7 +305,7 @@ public:
         debug checkGL;
     }
 
-    final void getImage( ref Image img, Format fmt=Format.RGB, Type type=Type.UNSIGNED_BYTE, uint level=0 )
+    final void getImage( ref Image!2 img, Format fmt=Format.RGB, Type type=Type.UNSIGNED_BYTE, uint level=0 )
     in { assert( _type == Target.T2D ); } body
     {
         bind();
@@ -321,8 +321,8 @@ public:
 
         auto dsize = w * h * elemSize;
 
-        if( img.size != imsize_t(w,h) || img.type.bpp != elemSize )
-            img.allocate( imsize_t(w,h), ImageType( elemSize ) );
+        if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
+            img.allocate( ivec2(w,h), PixelType( elemSize ) );
 
         glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
         debug checkGL;
@@ -330,41 +330,21 @@ public:
         debug checkGL;
     }
 
-    final void image( in Image img )
-    in { assert( type == Target.T2D ); } body
+    final void image(N)( in Image!N img ) if( N >= 1 && N <= 3 )
+    in
     {
-        InternalFormat ifmt;
-        Format fmt;
-        Type type;
-
-        switch( img.type.comp )
+        switch( N )
         {
-            case ImCompType.RAWBYTE: case ImCompType.UBYTE:
-                type = Type.UNSIGNED_BYTE; break;
-            case ImCompType.FLOAT: case ImCompType.NORM_FLOAT:
-                type = Type.FLOAT; break;
-            default:
-                throw new GLTextureException( "uncompatible image component type" );
+            case 1: assert( type == Target.T1D ); break;
+            case 2: assert( type == Target.T2D ); break;
+            case 3: assert( type == Target.T3D ); break;
         }
-
-        switch( img.type.channels )
-        {
-            case 1: fmt = Format.RED;  ifmt = InternalFormat.RED;  break;
-            case 2: fmt = Format.RG;   ifmt = InternalFormat.RG;   break;
-            case 3: fmt = Format.RGB;  ifmt = InternalFormat.RGB;  break;
-            case 4: fmt = Format.RGBA; ifmt = InternalFormat.RGBA; break;
-            default:
-                throw new GLTextureException( "uncompatible image chanels count" );
-        }
-
-        image( img.size, ifmt, fmt, type, img.data.ptr );
     }
-
-    final void image( in ImageReadAccess ira )
-    in { assert( type == Target.T2D ); } body
-    { 
-        if( ira !is null ) image( ira.selfImage() ); 
-        else image( ivec2(1,1), InternalFormat.RGB, Format.RGB, Type.UNSIGNED_BYTE );
+    body
+    {
+        Type type = typeFromImageComponentType( img.type.comp );
+        auto fmt = formatFromImageChanelsCount( img.type.chanels );
+        image( img.size, fmt[0], fmt[1], type, img.data.ptr );
     }
 
     protected static
@@ -532,6 +512,37 @@ public:
                    is(T==Filter) ||
                    is(T==Swizzle) ||
                    is(T==Wrap);
+        }
+
+        Type typeFromImageComponentType( ComponentType ctype )
+        {
+            switch( ctype )
+            {
+                case ComponentType.BYTE:     return Type.BYTE;
+                case ComponentType.UBYTE:
+                case ComponentType.RAWBYTE:  return Type.UNSIGNED_BYTE;
+                case ComponentType.SHORT:    return Type.SHORT;
+                case ComponentType.USHORT:   return Type.UNSIGNED_SHORT;
+                case ComponentType.INT:      return Type.INT;
+                case ComponentType.UINT:     return Type.UNSIGNED_INT;
+                case ComponentType.FLOAT:
+                case ComponentType.NORM_FLOAT: return Type.FLOAT;
+                default:
+                    throw new GLTextureException( "uncompatible image component type" );
+            }
+        }
+
+        auto formatFromImageChanelsCount( size_t channels )
+        {
+            switch( channels )
+            {
+                case 1: return tuple(Format.RED,  InternalFormat.RED );
+                case 2: return tuple(Format.RG,   InternalFormat.RG  );
+                case 3: return tuple(Format.RGB,  InternalFormat.RGB );
+                case 4: return tuple(Format.RGBA, InternalFormat.RGBA);
+                default:
+                    throw new GLTextureException( "uncompatible image chanels count" );
+            }
         }
     }
 }
