@@ -22,11 +22,38 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgui.core.style;
+module desgl.base.type;
 
-public import desgui.core.draw;
+import derelict.opengl3.gl3;
 
-interface DiStyle
+enum GLType
 {
-    DiSubstrate getSubstrate( string name );
+    UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,
+    BYTE           = GL_BYTE,
+    UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
+    SHORT          = GL_SHORT,
+    UNSIGNED_INT   = GL_UNSIGNED_INT,
+    INT            = GL_INT,
+    FLOAT          = GL_FLOAT,
+}
+
+size_t sizeofGLType( GLType type )
+{
+    final switch(type)
+    {
+    case GLType.BYTE:
+    case GLType.UNSIGNED_BYTE:
+        return byte.sizeof;
+
+    case GLType.SHORT:
+    case GLType.UNSIGNED_SHORT:
+        return short.sizeof;
+
+    case GLType.INT:
+    case GLType.UNSIGNED_INT:
+        return int.sizeof;
+
+    case GLType.FLOAT:
+        return float.sizeof;
+    }
 }

@@ -84,14 +84,15 @@ unittest
 
 struct ShaderSource { string vert, frag, geom; }
 
-class ShaderException : DesGLException 
+class GLShaderException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
 }
 
-class BaseShaderProgram
+class BaseShaderProgram : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
 private:
     static GLint inUse = -1;
 
@@ -135,7 +136,7 @@ protected:
             {
                 auto chlog = new char[logLen];
                 glGetShaderInfoLog( shader, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "shader compile error: \n" ~ chlog.idup );
+                throw new GLShaderException( "shader compile error: \n" ~ chlog.idup );
             }
         }
 
@@ -155,35 +156,16 @@ protected:
             {
                 auto chlog = new char[logLen];
                 glGetProgramInfoLog( prog, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "program link error: \n" ~ chlog.idup );
+                throw new GLShaderException( "program link error: \n" ~ chlog.idup );
             }
         }
-        debug checkGL;
-    }
-
-    void destruct()
-    {
-        thisInUse = false;
-
-        if( frag_sh ) glDetachShader( program, frag_sh );
-        if( geom_sh ) glDetachShader( program, geom_sh );
-
-        glDetachShader( program, vert_sh );
-
-        glDeleteProgram( program );
-
-        if( frag_sh ) glDeleteShader( frag_sh );
-        if( geom_sh ) glDeleteShader( geom_sh );
-
-        glDeleteShader( vert_sh );
-
         debug checkGL;
     }
 
     void construct( in ShaderSource src )
     {
         if( src.vert.length == 0 ) 
-            throw new ShaderException( "vertex shader source is empty" );
+            throw new GLShaderException( "vertex shader source is empty" );
 
         program = glCreateProgram();
 
@@ -208,11 +190,29 @@ protected:
     }
 
     void checkLocation( int loc )
-    { enforce( loc >= 0, new ShaderException( format( "bad location: '%d'", loc ) ) ); }
+    { enforce( loc >= 0, new GLShaderException( format( "bad location: '%d'", loc ) ) ); }
+
+    void selfDestroy()
+    {
+        thisInUse = false;
+
+        if( frag_sh ) glDetachShader( program, frag_sh );
+        if( geom_sh ) glDetachShader( program, geom_sh );
+
+        glDetachShader( program, vert_sh );
+
+        glDeleteProgram( program );
+
+        if( frag_sh ) glDeleteShader( frag_sh );
+        if( geom_sh ) glDeleteShader( geom_sh );
+
+        glDeleteShader( vert_sh );
+
+        debug checkGL;
+    }
 
 public:
     this( in ShaderSource src ) { construct( src ); }
-    ~this() { destruct(); }
 
     final nothrow void use() { thisInUse = true; }
 }
@@ -226,7 +226,7 @@ public:
     { 
         auto ret = glGetAttribLocation( program, name.toStringz ); 
         debug checkGL;
-        enforce( ret >= 0, new ShaderException( format( "bad attribute name: '%s'", name ) ) );
+        //enforce( ret >= 0, new GLShaderException( format( "bad attribute name: '%s'", name ) ) );
         return ret;
     }
 
@@ -242,7 +242,7 @@ public:
     { 
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        enforce( ret >= 0, new ShaderException( format( "bad uniform name: '%s'", name ) ) );
+        //enforce( ret >= 0, new GLShaderException( format( "bad uniform name: '%s'", name ) ) );
         return ret;
     }
 
@@ -270,7 +270,7 @@ public:
         auto cnt = vals.length / sz;
         use();
         mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
-                "v( loc, cast(int)cnt, vlas.ptr );" );
+                "v( loc, cast(int)cnt, vals.ptr );" );
         debug checkGL;
     }
 
@@ -306,7 +306,7 @@ public:
                     "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
         else
             mixin( "glUniformMatrix" ~ to!string(h) ~ "x" ~ to!string(w) ~
-                    "fv( loc, cast(int)mtr.length GL_TRUE, cast(float*)mtr.ptr ); " );
+                    "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
         debug checkGL;
     }
 

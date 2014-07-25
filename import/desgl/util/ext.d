@@ -31,7 +31,7 @@ import derelict.opengl3.gl3;
 
 import desmath.linear.vector;
 
-import desutil.helpers;
+public import desutil.emm;
 import desutil.logger;
 
 mixin( PrivateLoggerMixin );

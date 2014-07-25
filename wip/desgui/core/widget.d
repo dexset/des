@@ -25,7 +25,6 @@ The MIT License (MIT)
 module desgui.core.widget;
 
 public import desutil.signal;
-
 public import desgui.core.event;
 public import desgui.core.context;
 
@@ -48,7 +47,7 @@ alias Signal!(in_irect) ReshapeSignal;
 
 class DiWidgetException : DiException 
 { 
-    @safe pure nothrow this( string msg, string file=__FILE__, int ln=__LINE__ )
+    this( string msg, string file=__FILE__, int ln=__LINE__ ) @safe pure nothrow
     { super( msg, file, ln ); } 
 }
 
@@ -101,13 +100,6 @@ private:
 
         changeChildsList.connect({ relayout(); update(); });
 
-        changeStyle.connect( (st)
-        {
-            foreach( ch; childs )
-                ch.changeStyle( st );
-            update();
-        });
-
         reshape.connect( (r) 
         {
             auto old_bbox_size = bbox.size;
@@ -117,15 +109,14 @@ private:
             draw_rect = irect(0,0,bbox.size);
         });
 
-
         draw.addBegin({ draw_rect = ctx.drawStack.push( this ); });
 
         draw.addEnd(
         { 
             if( draw_rect.area > 0 )
                 foreach_reverse( ch; childs ) 
-                    if( ch !is null && ch.visible ) 
-                        ch.draw(); 
+                    if( ch !is null && !ch.isDestructed && ch.visible ) 
+                        ch.draw();
             ctx.drawStack.pull();
         });
 
@@ -158,7 +149,7 @@ private:
         mixin( prepareCond( "evtext" ) );
 
         release.connect(
-        { 
+        {
             if( cur !is null ) cur.release(); 
             if( parent !is null && focus ) focus = false;
         });
@@ -214,7 +205,7 @@ protected:
         foreach( w; childs ) 
         {
             foreach( e; list )
-                if( w is e || w is null ) 
+                if( w is e || w is null || w.isDestructed ) 
                 {
                     rem ~= w;
                     continue m1;
@@ -237,7 +228,6 @@ protected:
     }
 
     EmptySignal changeChildsList;
-    Signal!string changeStyle;
 
     /++ пределы для размера bbox +/
     size_lim_t!int size_lim;
@@ -313,8 +303,6 @@ protected:
 
     bool is_visible = true;
 
-    string style_name = "widget";
-
 public:
 
     this( DiWidget par )
@@ -354,8 +342,6 @@ public:
 
         const(DiArea) activeArea() const { return act_area; }
 
-        string styleName() const { return style_name; }
-
         final
         {
             /++ возвращает копию прямоугольника +/
@@ -393,31 +379,40 @@ public:
     CondDiJoySignal joystick;
     CondDiTextSignal evtext;
 
-    ~this()
+    EmptySignal onDestruct;
+
+    final void destruct()
     {
+        onDestruct();
+
         release();
         if( focus ) focus = 0;
 
-        foreach( ref ch; childs )
-            ch.parent = null;
+        foreach( ref ch; childs ) ch.parent = null;
         childs.length = 0;
 
-        if( parent ) 
-        {
-            ptrdiff_t no = -1;
-            foreach( i, pc; parent.childs )
-                if( pc is this )
-                {
-                    no = i;
-                    break;
-                }
-            if( no >= 0 ) 
-                parent.childs = parent.childs[0 .. no] ~ 
-                    ( no < parent.childs.length ? parent.childs[no+1 .. $] : [] );
-        }
+        if( parent ) parent.removeChilds( this );
+
+        reshape.clear();
+        relayout.clear();
+        activate.clear();
+        release.clear();
+        update.clear();
+        idle.clear();
+        draw.clear();
+        keyboard.clear();
+        mouse.clear();
+        joystick.clear();
+        evtext.clear();
+        changeChildsList.clear();
+        onDestruct.clear();
 
         parent = null;
+        destructed = true;
     }
+
+    private bool destructed = false;
+    final @property bool isDestructed() const { return destructed; }
 }
 
 unittest

@@ -24,11 +24,14 @@ The MIT License (MIT)
 
 module desgl.base.object;
 
+import std.c.string;
+
 import derelict.opengl3.gl3;
 
 import desgl.util.ext;
+import desgl.base.type;
 
-import desutil.logger;
+import desutil;
 mixin( PrivateLoggerMixin );
 
 class GLObjException : DesGLException 
@@ -37,19 +40,66 @@ class GLObjException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class GLVBO
+class GLBuffer : ExternalMemoryManager
 {
+mixin( getMixinChildEMM );
 protected:
-    uint vboID;
-    GLenum type;
-public:
-    static nothrow void unbind( GLenum tp ){ glBindBuffer( tp, 0 ); }
+    uint _id;
+    Target type;
 
-    this(E=float)( in E[] data_arr=[], GLenum Type=GL_ARRAY_BUFFER, GLenum mem=GL_DYNAMIC_DRAW )
+    size_t data_size;
+    size_t element_count;
+
+    void selfDestroy() { glDeleteBuffers( 1, &_id ); }
+
+    nothrow @property GLenum gltype() const { return cast(GLenum)type; }
+
+public:
+
+    enum Usage
     {
-        glGenBuffers( 1, &vboID );
-        type = Type;
-        if( data_arr !is null && data_arr.length ) setData( data_arr, mem );
+        STREAM_DRAW = GL_STREAM_DRAW,
+        STREAM_READ = GL_STREAM_READ,
+        STREAM_COPY = GL_STREAM_COPY,
+        STATIC_DRAW = GL_STATIC_DRAW,
+        STATIC_READ = GL_STATIC_READ,
+        STATIC_COPY = GL_STATIC_COPY,
+        DYNAMIC_DRAW = GL_DYNAMIC_DRAW,
+        DYNAMIC_READ = GL_DYNAMIC_READ,
+        DYNAMIC_COPY = GL_DYNAMIC_COPY
+    }
+
+    enum Access
+    {
+        READ_ONLY  = GL_READ_ONLY,
+        WRITE_ONLY = GL_WRITE_ONLY,
+        READ_WRITE = GL_READ_WRITE
+    }
+
+    enum Target
+    {
+        ARRAY_BUFFER              = GL_ARRAY_BUFFER,
+        ATOMIC_COUNTER_BUFFER     = GL_ATOMIC_COUNTER_BUFFER,
+        COPY_READ_BUFFER          = GL_COPY_READ_BUFFER,
+        COPY_WRITE_BUFFER         = GL_COPY_WRITE_BUFFER,
+        DRAW_INDIRECT_BUFFER      = GL_DRAW_INDIRECT_BUFFER,
+        DISPATCH_INDIRECT_BUFFER  = GL_DISPATCH_INDIRECT_BUFFER,
+        ELEMENT_ARRAY_BUFFER      = GL_ELEMENT_ARRAY_BUFFER,
+        PIXEL_PACK_BUFFER         = GL_PIXEL_PACK_BUFFER,
+        PIXEL_UNPACK_BUFFER       = GL_PIXEL_UNPACK_BUFFER,
+        SHADER_STORAGE_BUFFER     = GL_SHADER_STORAGE_BUFFER,
+        TEXTURE_BUFFER            = GL_TEXTURE_BUFFER,
+        TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER,
+        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER
+    }
+
+    static nothrow void unbind( Target trg )
+    { glBindBuffer( cast(GLenum)trg, 0 ); }
+
+    this( Target tp=Target.ARRAY_BUFFER )
+    {
+        glGenBuffers( 1, &_id );
+        type = tp;
 
         debug checkGL;
     }
@@ -58,44 +108,81 @@ public:
     {
         nothrow
         {
-            void bind() { glBindBuffer( type, vboID ); }
-            void unbind(){ glBindBuffer( type, 0 ); }
-            @property uint id() const { return vboID; }
+            void bind() { glBindBuffer( gltype, _id ); }
+            void unbind(){ glBindBuffer( gltype, 0 ); }
+            @property uint id() const { return _id; }
         }
         
-        void setData(E)( in E[] data_arr, GLenum mem=GL_DYNAMIC_DRAW )
+        void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
         {
             auto size = E.sizeof * data_arr.length;
             if( !size ) throw new GLObjException( "buffer data size is 0" );
 
-            glBindBuffer( type, vboID );
-            glBufferData( type, size, data_arr.ptr, mem );
-            glBindBuffer( type, 0 );
+            bind();
+            glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
+            unbind();
+
+            element_count = data_arr.length;
+            data_size = size;
 
             debug checkGL;
-            debug log( "vbo setData (%d byte)", size );
         }
-    }
 
-    ~this() { glDeleteBuffers( 1, &vboID ); }
+        E[] getData(E)() { return cast(E[])getUntypedData(); }
+
+        void[] getUntypedData()
+        {
+            auto buf = new void[]( data_size );
+            bind();
+            auto mp = map( Access.READ_ONLY );
+            memcpy( buf.ptr, mp, data_size );
+            unmap();
+            unbind();
+            return buf;
+        }
+
+        @property
+        {
+            const
+            {
+                size_t elementCount() { return element_count; }
+                size_t dataSize() { return data_size; }
+
+                size_t elementSize()
+                { return element_count ? data_size / element_count : 0; }
+            }
+        }
+
+        void* map( Access access=Access.READ_ONLY )
+        {
+            debug scope(exit) checkGL;
+            return glMapBuffer( gltype, cast(GLenum)access );
+        }
+
+        void unmap() { glUnmapBuffer( gltype ); }
+    }
 }
 
-final class GLVAO
+final class GLVAO : ExternalMemoryManager
 {
+    mixin( getMixinChildEMM );
+
 protected:
-    uint vaoID;
+    uint _id;
+
+    void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
 
 public:
     static nothrow void unbind(){ glBindVertexArray(0); }
 
-    this() { glGenVertexArrays( 1, &vaoID ); }
+    this() { glGenVertexArrays( 1, &_id ); }
 
     nothrow 
     {
         void bind() 
         { 
-            glBindVertexArray( vaoID ); 
-            debug log( "bind:  %d", vaoID );
+            glBindVertexArray( _id ); 
+            debug log( "bind:  %d", _id );
             debug checkGL;
         }
 
@@ -103,7 +190,7 @@ public:
         { 
             bind();
             glEnableVertexAttribArray( n ); 
-            debug log_info( "enable attrib %d for vao %d", n, vaoID );
+            debug log_info( "enable attrib %d for vao %d", n, _id );
             debug checkGL;
         }
 
@@ -111,33 +198,34 @@ public:
         { 
             bind();
             glDisableVertexAttribArray( n ); 
-            debug log_info( "disable attrib %d for vao %d", n, vaoID );
+            debug log_info( "disable attrib %d for vao %d", n, _id );
             debug checkGL;
         }
     }
-
-    ~this() { glDeleteVertexArrays( 1, &vaoID ); }
 }
 
-class GLObj
+class GLObj: ExternalMemoryManager
 {
+    mixin( getMixinAllEMMFuncs );
+
 protected:
     GLVAO vao;
 
     final nothrow
     {
-        void setAttribPointer( GLVBO buffer, int index, uint size, GLenum attype, bool norm=false )
-        { setAttribPointer( buffer, index, size, attype, 0, 0, norm ); }
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+                GLType attype, bool norm=false )
+        { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
-        void setAttribPointer( GLVBO buffer, int index, uint size, 
-                GLenum attype, size_t stride, size_t offset, bool norm=false )
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+                GLType attype, size_t stride, size_t offset, bool norm=false )
         {
             vao.bind();
             vao.enable( index );
 
             buffer.bind();
-            glVertexAttribPointer( index, cast(int)size, attype, norm, 
-                    cast(int)stride, cast(void*)offset );
+            glVertexAttribPointer( index, cast(int)per_element,
+                    cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
             buffer.unbind();
         }
     }
@@ -146,9 +234,7 @@ public:
 
     this()
     {
-        vao = new GLVAO;
+        vao = registerChildEMM( new GLVAO );
         debug checkGL;
     }
-
-    ~this() { destroy(vao); }
 }

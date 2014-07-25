@@ -28,73 +28,89 @@ public import desgui.core.draw;
 
 import desgui.base.glcontext;
 
-//import desgl.draw.rectshape;
 import desgl.base;
 
 import desil;
 
-//class DiGLDrawRect : DiDrawRect
-//{
-//private:
-//    ShaderProgram shader;
-//    GLTexture2D texture;
-//    UseTexture ut = UseTexture.NONE;
-//    ColorTexRect!() plane;
-//    col4 clr = col4(0,0,0,0);
-//
-//public:
-//
-//    this()
-//    {
-//        shader = DiGuiShader.get();
-//
-//        int ploc = shader.getAttribLocation( "vertex" );
-//        int cloc = shader.getAttribLocation( "color" );
-//        int tloc = shader.getAttribLocation( "uv" );
-//
-//        plane = new ColorTexRect!()( ploc, cloc, tloc );
-//
-//        texture = new GLTexture2D;
-//
-//        plane.draw.addBegin(
-//        {
-//            shader.use();
-//            shader.setUniform!int( "ttu", GL_TEXTURE0 );
-//            shader.setUniform!int( "use_texture", cast(int)useTexture );
-//            texture.bind();
-//        });
-//
-//        color = clr;
-//    }
-//
-//    @property
-//    {
-//        ref UseTexture useTexture() { return ut; }
-//        ref const(UseTexture) useTexture() const { return ut; }
-//        irect rect() const { return plane.rect; }
-//
-//        col4 color() const { return clr; }
-//        void color( in col4 c )
-//        {
-//            plane.setColor( c );
-//            clr = c;
-//        }
-//    }
-//
-//    void reshape( in irect r ) { plane.reshape( r ); }
-//
-//    void draw() { plane.draw(); }
-//
-//    void image( in Image img ) { texture.image( img ); }
-//
-//    void image( in ImageReadAccess ira )
-//    {
-//        texture.image( ira );
-//        if( !ira ) useTexture = UseTexture.NONE;
-//    }
-//}
-//
-//class DiGLDrawFactory : DiDrawFactory
-//{
-//    @property DiDrawRect rect() { return new DiGLDrawRect(); }
-//}
+auto dataArray(V)( size_t n, in V v )
+    if( isVector!V )
+{
+    v.datatype[] ret;
+    foreach( i; 0 .. n )
+        ret ~= v.data;
+    return ret;
+}
+
+class DiGLDrawRect : GLObj, DiDrawRect
+{
+private:
+    GLVBO pos, col, uv;
+    CommonShaderProgram shader;
+    GLTexture2D texture;
+    UseTexture ut = UseTexture.NONE;
+    col4 clr = col4(0,0,0,0);
+    irect last_rect;
+
+public:
+
+    this()
+    {
+        shader = DiGuiShader.get();
+        int[] loc = shader.getAttribLocations( "vertex", "color", "uv" );
+
+        pos = new GLVBO( [ 0.0f, 0, 1, 0, 0, 1, 1, 1 ] );
+        setAttribPointer( pos, loc[0], 2, GL_FLOAT );
+
+        col = new GLVBO( dataArray( 4, col4(1,1,1,1) ) );
+        setAttribPointer( col, loc[1], 4, GL_FLOAT );
+
+        uv = new GLVBO( [ 0.0f, 0, 1, 0, 0, 1, 1, 1 ], 
+                        GL_ARRAY_BUFFER, GL_STATIC_DRAW );
+        setAttribPointer( uv, loc[2], 2, GL_FLOAT );
+
+        texture = new GLTexture2D;
+    }
+
+    @property
+    {
+        ref UseTexture useTexture() { return ut; }
+        ref const(UseTexture) useTexture() const { return ut; }
+        irect rect() const { return last_rect; }
+
+        col4 color() const { return clr; }
+        void color( in col4 c )
+        {
+            col.setData( dataArray( 4, c ) );
+            clr = c;
+        }
+    }
+
+    void reshape( in irect r )
+    {
+        last_rect = r;
+        pos.setData( r.points!float ); 
+    }
+
+    void draw()
+    {
+        vao.bind();
+        shader.use();
+        shader.setUniform!int( "ttu", GL_TEXTURE0 );
+        shader.setUniform!int( "use_texture", cast(int)useTexture );
+        texture.bind();
+        glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 ); 
+    }
+
+    void image( in Image img ) { texture.image( img ); }
+
+    void image( in ImageReadAccess ira )
+    {
+        texture.image( ira );
+        if( !ira ) useTexture = UseTexture.NONE;
+    }
+}
+
+class DiGLDrawFactory : DiDrawFactory
+{
+    @property DiDrawRect rect() { return new DiGLDrawRect(); }
+}

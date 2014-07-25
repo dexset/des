@@ -24,12 +24,31 @@ The MIT License (MIT)
 
 module desgui.ready.button;
 
-import desgui.core.panel;
+import desgui.core.widget;
 import desgui.core.label;
 import desgui.core.reaction;
 
-class DiButton : DiPanel
+class DiButton : DiWidget
 {
+private:
+
+    void changeStyle( string str )
+    {
+        switch( str )
+        {
+            case "active":
+                break;
+            case "":
+                break;
+            case "press":
+                break;
+            case "click":
+                break;
+            default:
+                break;
+        }
+    }
+
     private void prepareStyles()
     {
         activate.connect({ changeStyle( "active" ); });
@@ -40,14 +59,14 @@ class DiButton : DiPanel
         changeStyle( "" );
     }
 
+public:
+
     mixin( ButtonReaction!SIGNALS );
     DiLabel label;
 
     this( DiWidget par, in irect rr, wstring str=""w, void delegate() onclick=null )
     {
         super( par );
-        style_name = "button";
-        setSubstrate( ctx.style.getSubstrate( styleName ) );
         mixin( ButtonReaction!CONNECT );
 
         label = new DiLabel( this, irect(0,0,100,20), str );
@@ -61,5 +80,3 @@ class DiButton : DiPanel
         reshape( rr );
     }
 }
-
-

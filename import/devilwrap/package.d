@@ -17,7 +17,7 @@ static this()
     ilEnable( IL_FILE_OVERWRITE );
 }
 
-Image loadImageFromFile( string fname )
+Image!2 loadImageFromFile( string fname )
 {
         ILuint im;
         ilGenImages( 1, &im );
@@ -25,7 +25,7 @@ Image loadImageFromFile( string fname )
         ilBindImage( im );
 
         if( ilLoadImage( fname.toStringz ) == false )
-            throw new ImageException( "ilLoadImage fails: " ~ 
+            throw new ImageException( "ilLoadImage fails with '" ~ fname ~ "': " ~ 
                                       toDString( iluErrorString( ilGetError() ) ) );
 
         int w = ilGetInteger( IL_IMAGE_WIDTH );
@@ -38,10 +38,10 @@ Image loadImageFromFile( string fname )
         
         foreach( i, ref d; data ) d = raw[i];
 
-        return Image( imsize_t( w, h ), ImageType( ImCompType.UBYTE, cast(ubyte)(c) ), data );
+        return Image!2( ivec2(w,h), PixelType( ComponentType.UBYTE, cast(ubyte)(c) ), data );
 }
 
-void saveImageToFile( in Image img, string fname )
+void saveImageToFile( in Image!2 img, string fname )
 {
     ILenum format, type;
 
@@ -53,11 +53,20 @@ void saveImageToFile( in Image img, string fname )
         default: throw new ImageException( "Bad image channels count for saving" );
     }
 
-    switch( img.type.comp )
+    final switch( img.type.comp )
     {
-        case ImCompType.UBYTE: type = IL_UNSIGNED_BYTE; break;
-        case ImCompType.NORM_FLOAT: type = IL_FLOAT; break;
-        default: throw new ImageException( "Bad image type for saving" );
+        case ComponentType.BYTE: type = IL_BYTE; break;
+        case ComponentType.UBYTE: type = IL_UNSIGNED_BYTE; break;
+        case ComponentType.SHORT: type = IL_SHORT; break;
+        case ComponentType.USHORT: type = IL_UNSIGNED_SHORT; break;
+        case ComponentType.INT: type = IL_INT; break;
+        case ComponentType.UINT: type = IL_UNSIGNED_INT; break;
+        case ComponentType.FLOAT: type = IL_FLOAT; break;
+        case ComponentType.NORM_FLOAT: type = IL_FLOAT; break;
+        case ComponentType.DOUBLE: type = IL_DOUBLE; break;
+        case ComponentType.NORM_DOUBLE: type = IL_DOUBLE; break;
+        case ComponentType.RAWBYTE: 
+            throw new ImageException( "Bad image type for saving (rawbyte), please retype image" );
     }
 
     ILuint im;
@@ -66,7 +75,7 @@ void saveImageToFile( in Image img, string fname )
     ilBindImage( im );
 
     if( IL_TRUE != ilTexImage( cast(uint)(img.size.w), cast(uint)(img.size.h), 
-                1, cast(ubyte)(img.type.channels), format, type, cast(void*)(img.data.ptr) ) )
+                1, cast(ubyte)(img.type.channels), format, type, cast(void*)img.data.ptr ) )
         throw new ImageException( "ilTexImage fails: " ~ toDString( iluErrorString(ilGetError()) ) );
 
     iluFlipImage();
