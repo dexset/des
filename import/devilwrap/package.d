@@ -4,7 +4,7 @@ import derelict.devil.il;
 import derelict.devil.ilu;
 
 import desil.image;
-import desutil.helpers;
+import desutil.string;
 
 import std.string;
 
