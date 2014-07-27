@@ -183,6 +183,19 @@ static:
         return ret.join(",");
     }
 
+    /+
+        чтобы в compile time работала функция toUpper
+        нужно поправить в std.uni функцию toCase,
+        там к массиву result прибавляется элемент,
+        который имеет тип dchar, хотя сам массив 
+        result имеет тип входящей строки, следовательно,
+        зачастую, это string, и элементы char.
+        нужно принудительно конвертировать переменную 'c',
+        добавляемую к массиву result к типу элементов этого массива.
+
+        пример:
+            result ~= cast(typeof(result).init[0])c;
+    +/
     string getEventName( string signame )
     { return "SDL_WINDOWEVENT_" ~ signame.toSnakeCase.toUpper; }
 }
