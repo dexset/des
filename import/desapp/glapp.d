@@ -177,6 +177,10 @@ public:
             if( context is null )
                 throw new GLAppException( "Couldn't create GL context: " ~ toDString( SDL_GetError() ) );
             DerelictGL3.reload();
+
+            glClearColor( 0.0, 0.0, 0.0, 0.0 );
+            glEnable( GL_BLEND );
+            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         }
 
         win.setApp( this );
