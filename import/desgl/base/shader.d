@@ -189,8 +189,15 @@ protected:
         debug checkGL;
     }
 
-    void checkLocation( int loc )
-    { enforce( loc >= 0, new GLShaderException( format( "bad location: '%d'", loc ) ) ); }
+    bool checkLocation( int loc )
+    {
+        debug(glshader) 
+        {
+            import std.stdio;
+            if( loc < 0 ) stderr.writeln( "bad location" );
+        }
+        return loc >= 0;
+    }
 
     void selfDestroy()
     {
@@ -249,7 +256,8 @@ public:
     void setUniform(S,T...)( int loc, T vals ) 
         if( checkUniform!(S,T) )
     {
-        checkLocation( loc ); use();
+        if( !checkLocation( loc ) ) return;
+        use();
         mixin( "glUniform" ~ to!string(T.length) ~ glPostfix!S ~ "( loc, " ~ 
                 castArgsString!(S,"vals",T) ~ " );" );
         /* workaround: 
@@ -266,7 +274,7 @@ public:
     void setUniformArr(size_t sz,T)( int loc, in T[] vals )
         if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
     {
-        checkLocation( loc );
+        if( !checkLocation( loc ) ) return;
         auto cnt = vals.length / sz;
         use();
         mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
@@ -281,7 +289,7 @@ public:
     void setUniformVec(size_t N,T,string AS)( int loc, vec!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
     {
-        checkLocation( loc ); 
+        if( !checkLocation( loc ) ) return;
         use();
 
         T[] data;
@@ -299,7 +307,7 @@ public:
     void setUniformMat(size_t h, size_t w)( int loc, in mat!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
     {
-        checkLocation( loc );
+        if( !checkLocation( loc ) ) return;
         use();
         static if( w == h )
             mixin( "glUniformMatrix" ~ to!string(w) ~ 
