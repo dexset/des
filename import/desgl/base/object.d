@@ -182,23 +182,25 @@ public:
         void bind() 
         { 
             glBindVertexArray( _id ); 
-            debug log( "bind:  %d", _id );
+            debug(glvao) log( "bind:  %d", _id );
             debug checkGL;
         }
 
         void enable( int n )
-        { 
+        {
+            debug log_info( "enable attrib %d for vao %d", n, _id );
+            if( n < 0 ) return;
             bind();
             glEnableVertexAttribArray( n ); 
-            debug log_info( "enable attrib %d for vao %d", n, _id );
             debug checkGL;
         }
 
         void disable( int n )
-        { 
+        {
+            debug log_info( "disable attrib %d for vao %d", n, _id );
+            if( n < 0 ) return;
             bind();
             glDisableVertexAttribArray( n ); 
-            debug log_info( "disable attrib %d for vao %d", n, _id );
             debug checkGL;
         }
     }
