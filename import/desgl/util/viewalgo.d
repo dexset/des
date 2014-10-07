@@ -68,13 +68,16 @@ mat4 perspective(float fov, float aspect, float znear, float zfar)
                   0, 0, -1, 0 ]);
 }
 
+alias Vector!(2,float,"w h") sz_vec;
+alias Vector!(2,float,"near far") z_vec;
+
 mat4 ortho( sz_vec sz, z_vec z )
 {
-    float x = z.n - z.f;
+    float x = z.near - z.far;
     return mat4([ 2/sz.w, 0,      0,       0,
                   0,      2/sz.h, 0,       0,
                   0,      0,      -1/x,    0,
-                  0,      0,      z.n/x,   1 ]);
+                  0,      0,      z.near/x,   1 ]);
 }
 
 mat4 ortho( float w, float h, float znear, float zfar )

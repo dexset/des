@@ -65,7 +65,7 @@ protected:
 
 public:
 
-    alias vec!(3,size_t,"whd") texsize_t; 
+    alias Vector!(3,size_t,"w h d") texsize_t; 
     @property Target type() const { return _type; }
 
     enum Target
@@ -291,7 +291,7 @@ public:
 
     void image(T)( in T sz, InternalFormat internal_format, 
             Format data_format, Type data_type, in void* data=null )
-        if( isCompVector!(1,size_t,T) || isCompVector!(2,size_t,T) || isCompVector!(3,size_t,T) )
+        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
     {
         enum N = sz.length;
         img_size = texsize_t( sz, [1,1][0 .. 3-N] );
@@ -322,7 +322,10 @@ public:
         auto dsize = w * h * elemSize;
 
         if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
-            img.allocate( ivec2(w,h), PixelType( elemSize ) );
+        {
+            img.size = ivec2( w, h );
+            img.type = PixelType( elemSize );
+        }
 
         glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
         debug checkGL;

@@ -286,7 +286,7 @@ public:
         if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
     { setUniformArr!sz( getUniformLocation( name ), vals ); }
 
-    void setUniformVec(size_t N,T,string AS)( int loc, vec!(N,T,AS)[] vals... )
+    void setUniformVec(size_t N,T,string AS)( int loc, Vector!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
     {
         if( !checkLocation( loc ) ) return;
@@ -300,11 +300,11 @@ public:
         debug checkGL;
     }
 
-    void setUniformVec(size_t N,T,string AS)( string name, vec!(N,T,AS)[] vals... )
+    void setUniformVec(size_t N,T,string AS)( string name, Vector!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
     { setUniformVec( getUniformLocation( name ), vals ); }
     
-    void setUniformMat(size_t h, size_t w)( int loc, in mat!(h,w,float)[] mtr... )
+    void setUniformMat(size_t h, size_t w)( int loc, in Matrix!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
     {
         if( !checkLocation( loc ) ) return;
@@ -318,7 +318,7 @@ public:
         debug checkGL;
     }
 
-    void setUniformMat(size_t h, size_t w)( string name, in mat!(h,w,float)[] mtr... )
+    void setUniformMat(size_t h, size_t w)( string name, in Matrix!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
     { setUniformMat( getUniformLocation( name ), mtr ); }
 }

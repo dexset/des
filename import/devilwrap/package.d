@@ -1,5 +1,7 @@
 module devilwrap;
 
+import desmath.linear.vector;
+
 import derelict.devil.il;
 import derelict.devil.ilu;
 

@@ -72,7 +72,7 @@ public:
     void unbind() { glBindRenderbuffer( GL_RENDERBUFFER, 0 ); }
 
     void storage(T)( in T sz, Format fmt )
-    if( isCompVector!(2,uint,T) )
+    if( isCompatibleVector!(2,uint,T) )
     in
     {
         assert( sz[0] < GL_MAX_RENDERBUFFER_SIZE );

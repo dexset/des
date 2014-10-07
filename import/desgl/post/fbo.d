@@ -47,7 +47,7 @@ protected:
 
     GLTexture tex;
 
-    vec!(2,int,"wh") sz;
+    Vector!(2,int,"w h") sz;
 
 public:
 
