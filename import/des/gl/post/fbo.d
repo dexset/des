@@ -22,19 +22,19 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.post.fbo;
+module des.gl.post.fbo;
 
 import derelict.opengl3.gl3;
 
-import desmath.linear;
-import desutil.signal;
-import desutil.emm;
+import des.math.linear;
+import des.util.signal;
+import des.util.emm;
 
-import desgl.base;
-import desutil.signal;
-import desil;
+import des.gl.base;
+import des.util.signal;
+import des.il;
 
-import desutil.logger;
+import des.util.logger;
 mixin( PrivateLoggerMixin );
 
 class SimpleFBO : ExternalMemoryManager

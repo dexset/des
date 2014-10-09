@@ -22,7 +22,7 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.type;
+module des.gl.base.type;
 
 import derelict.opengl3.gl3;
 

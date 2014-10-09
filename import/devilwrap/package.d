@@ -1,12 +1,12 @@
 module devilwrap;
 
-import desmath.linear.vector;
+import des.math.linear.vector;
 
 import derelict.devil.il;
 import derelict.devil.ilu;
 
-import desil.image;
-import desutil.string;
+import des.il.image;
+import des.util.string;
 
 import std.string;
 

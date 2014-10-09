@@ -22,22 +22,22 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.util.viewalgo;
+module des.gl.util.viewalgo;
 
-public import desmath.linear;
+public import des.math.linear;
 
 import std.math;
 
 mat4 lookAt( in vec3 pos, in vec3 to, in vec3 up )
 {
     auto z = (pos-to).e;
-    auto x = (up * z).e;
+    auto x = cross(up,z).e;
     vec3 y;
-    if( x ) y = (z * x).e;
+    if( x ) y = cross(z,x).e;
     else
     {
-        y = (z * vec3(1,0,0)).e;
-        x = (y * z).e;
+        y = cross(z,vec3(1,0,0)).e;
+        x = cross(y,z).e;
     }
     return mat4([ x.x, y.x, z.x, pos.x,
                   x.y, y.y, z.y, pos.y,
@@ -81,6 +81,4 @@ mat4 ortho( sz_vec sz, z_vec z )
 }
 
 mat4 ortho( float w, float h, float znear, float zfar )
-{
-    return ortho( sz_vec( w, h ), z_vec( znear, zfar ) );
-}
+{ return ortho( sz_vec( w, h ), z_vec( znear, zfar ) ); }

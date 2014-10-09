@@ -22,17 +22,17 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.util.ext;
+module des.gl.util.ext;
 
 import std.stdio;
 import std.string;
 
 import derelict.opengl3.gl3;
 
-import desmath.linear.vector;
+import des.math.linear.vector;
 
-public import desutil.emm;
-import desutil.logger;
+public import des.util.emm;
+import des.util.logger;
 
 mixin( PrivateLoggerMixin );
 

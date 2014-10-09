@@ -22,16 +22,16 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.object;
+module des.gl.base.object;
 
 import std.c.string;
 
 import derelict.opengl3.gl3;
 
-import desgl.util.ext;
-import desgl.base.type;
+import des.gl.util.ext;
+import des.gl.base.type;
 
-import desutil;
+import des.util;
 mixin( PrivateLoggerMixin );
 
 class GLObjException : DesGLException 

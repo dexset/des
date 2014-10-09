@@ -1,4 +1,4 @@
-module desapp.base;
+module des.app.base;
 
 class AppException : Exception
 {

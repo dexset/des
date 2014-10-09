@@ -22,20 +22,20 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.frame;
+module des.gl.base.frame;
 
 import derelict.opengl3.gl3;
 
-import desmath.linear;
-import desutil.emm;
+import des.math.linear;
+import des.util.emm;
 
-import desgl.base.texture;
-import desgl.util;
+import des.gl.base.texture;
+import des.gl.util;
 
-import desutil.logger;
+import des.util.logger;
 mixin( PrivateLoggerMixin );
 
-import desil.image;
+import des.il.image;
 
 class GLFBOException : DesGLException 
 { 

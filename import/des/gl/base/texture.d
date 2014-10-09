@@ -22,20 +22,20 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.texture;
+module des.gl.base.texture;
 
 import std.string;
 
 public import derelict.opengl3.gl3;
 
-import desgl.base.type;
-import desgl.util.ext;
+import des.gl.base.type;
+import des.gl.util.ext;
 
-import desmath.linear.vector;
-import desil;
+import des.math.linear.vector;
+import des.il;
 
 import std.algorithm;
-import desutil.algo;
+import des.util.algo;
 
 class GLTextureException : DesGLException 
 { 

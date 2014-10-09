@@ -1,16 +1,17 @@
-module desapp.sdlevproc;
+module des.app.sdlevproc;
 
 public import derelict.sdl2.sdl;
 
-public import desapp.event;
+public import des.app.event;
 
-public import desmath.linear.vector;
-public import desutil.signal;
+public import des.math.linear.vector;
+public import des.util.signal;
 
 import std.string;
 import std.range;
 
-import desutil.string;
+import des.util.string;
+import des.util.signal;
 
 class AppEventProcException : Exception
 {
@@ -20,7 +21,6 @@ class AppEventProcException : Exception
 
 interface EventProcessor { bool opCall( const ref SDL_Event ); }//Возвращает true, если событие было обработано
 
-import desutil.signal;
 class KeyboardEventProcessor : EventProcessor
 {
     SignalBox!( const(KeyboardEvent) ) key;

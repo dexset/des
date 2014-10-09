@@ -22,20 +22,20 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.shader;
+module des.gl.base.shader;
 
 import std.conv;
 import std.string;
 import std.exception;
 
-import desmath.linear;
+import des.math.linear;
 
 import derelict.opengl3.gl3;
 
-import desutil.logger;
+import des.util.logger;
 mixin( PrivateLoggerMixin );
 
-import desgl.util.ext;
+import des.gl.util.ext;
 
 @property private string castArgsString(S,string data,T...)()
 {

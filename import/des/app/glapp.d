@@ -1,13 +1,13 @@
-module desapp.glapp;
+module des.app.glapp;
 
-import desapp.base;
+import des.app.base;
 
 import std.stdio;
 
 public import derelict.opengl3.gl3;
-public import desutil.emm;
-public import desutil.string;
-public import desapp.sdlevproc;
+public import des.util.emm;
+public import des.util.string;
+public import des.app.sdlevproc;
 
 class GLAppException : AppException
 {

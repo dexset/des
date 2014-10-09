@@ -1,6 +1,6 @@
-module desapp.event;
+module des.app.event;
 
-public import desmath.linear;
+public import des.math.linear;
 
 /++
  события клавиатуры

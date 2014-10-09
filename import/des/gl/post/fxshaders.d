@@ -22,9 +22,9 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.post.fxshaders;
+module des.gl.post.fxshaders;
 
-public import desgl.base.shader;
+public import des.gl.base.shader;
 
 enum ShaderSource SS_WINSZ_SIMPLE_FBO_FX = 
 {
