@@ -9,6 +9,7 @@ public import des.util.signal;
 
 import std.string;
 import std.range;
+import std.traits;
 
 import des.util.string;
 import des.util.signal;
@@ -63,28 +64,43 @@ public:
             case SDL_MOUSEMOTION:
                 auto e = ev.motion;
                 main_event.type = MouseEvent.Type.MOTION;
+                main_event.btn = MouseEvent.Button.NONE;
                 main_event.pos = ivec2( e.x, e.y );
                 main_event.rel = ivec2( e.xrel, e.yrel );
+
+                foreach( i, btn; [EnumMembers!(MouseEvent.Button)][1..$] )
+                {
+                    if( binHas( main_event.mask, btn ) )
+                        main_event.relPress[i] = main_event.pos - main_event.posPress[i];
+                    else
+                    {
+                        main_event.posPress[i] = main_event.pos;
+                        main_event.relPress[i] = ivec2(0,0);
+                    }
+                }
                 mouse( main_event );
             return true;
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
                 auto e = ev.button;
+                main_event.btn = cast(MouseEvent.Button)SDL_BUTTON(e.button);
                 if( e.state == SDL_PRESSED )
                 {
                     main_event.type = MouseEvent.Type.PRESSED;
-                    main_event.btn |= SDL_BUTTON(e.button);
+                    main_event.appendButton( SDL_BUTTON(e.button) );
+                    main_event.posPress[main_event.buttonIndex(main_event.btn)] = main_event.pos;
                 }
                 else
                 {
                     main_event.type = MouseEvent.Type.RELEASED;
-                    main_event.btn &= SDL_BUTTON(e.button);
+                    main_event.removeButton( SDL_BUTTON(e.button) );
                 }
                 mouse( main_event );
             return true;
             case SDL_MOUSEWHEEL:
                 auto e = ev.wheel;
                 main_event.type = MouseEvent.Type.WHEEL;
+                main_event.btn = MouseEvent.Button.NONE;
                 main_event.whe = ivec2( e.x, e.y );
                 mouse( main_event );
             return true;
