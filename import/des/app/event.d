@@ -3,6 +3,7 @@ module des.app.event;
 public import des.math.linear;
 
 import std.traits;
+import std.string;
 
 /++
  события клавиатуры
@@ -375,7 +376,7 @@ struct MouseEvent
     {
         foreach( i, lb; [EnumMembers!Button][1..$] )
             if( lb == b ) return i;
-        assert(0,"oops");
+        assert(0,format("%s has no index",b));
     }
 }
 
