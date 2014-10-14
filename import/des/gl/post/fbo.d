@@ -114,7 +114,7 @@ public:
     }
 }
 
-class FBORect: GLObj
+class FBORect: GLObject
 {
 private:
     SimpleFBO sfbo;

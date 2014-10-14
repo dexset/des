@@ -206,7 +206,7 @@ public:
     }
 }
 
-class GLObj: ExternalMemoryManager
+class GLObject: ExternalMemoryManager
 {
     mixin( getMixinAllEMMFuncs );
 
