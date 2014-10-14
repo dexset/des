@@ -104,63 +104,63 @@ public:
         debug checkGL;
     }
 
-    final
+    final nothrow
     {
-        nothrow
-        {
-            void bind() { glBindBuffer( gltype, _id ); }
-            void unbind(){ glBindBuffer( gltype, 0 ); }
-            @property uint id() const { return _id; }
-        }
-        
-        void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
-        {
-            auto size = E.sizeof * data_arr.length;
-            if( !size ) throw new GLObjException( "buffer data size is 0" );
-
-            bind();
-            glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
-            unbind();
-
-            element_count = data_arr.length;
-            data_size = size;
-
-            debug checkGL;
-        }
-
-        E[] getData(E)() { return cast(E[])getUntypedData(); }
-
-        void[] getUntypedData()
-        {
-            auto buf = new void[]( data_size );
-            bind();
-            auto mp = map( Access.READ_ONLY );
-            memcpy( buf.ptr, mp, data_size );
-            unmap();
-            unbind();
-            return buf;
-        }
-
-        @property
-        {
-            const
-            {
-                size_t elementCount() { return element_count; }
-                size_t dataSize() { return data_size; }
-
-                size_t elementSize()
-                { return element_count ? data_size / element_count : 0; }
-            }
-        }
-
-        void* map( Access access=Access.READ_ONLY )
-        {
-            debug scope(exit) checkGL;
-            return glMapBuffer( gltype, cast(GLenum)access );
-        }
-
-        void unmap() { glUnmapBuffer( gltype ); }
+        void bind() { glBindBuffer( gltype, _id ); }
+        void unbind(){ glBindBuffer( gltype, 0 ); }
+        @property uint id() const { return _id; }
     }
+
+    void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
+    {
+        auto size = data_arr.length;
+        if( !size ) throw new GLObjException( "buffer data size is 0" );
+
+        bind();
+        glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
+        unbind();
+
+        element_count = data_arr.length / element_size;
+        data_size = size;
+
+        debug checkGL;
+    }
+
+    void[] getUntypedData()
+    {
+        auto buf = new void[]( data_size );
+        bind();
+        auto mp = map( Access.READ_ONLY );
+        memcpy( buf.ptr, mp, data_size );
+        unmap();
+        unbind();
+        return buf;
+    }
+
+    E[] getData(E)() { return cast(E[])getUntypedData(); }
+
+    void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
+    { setUntypedData( data_arr, E.sizeof, mem ); }
+
+    @property
+    {
+        const final
+        {
+            size_t elementCount() { return element_count; }
+            size_t dataSize() { return data_size; }
+
+            size_t elementSize()
+            { return element_count ? data_size / element_count : 0; }
+        }
+    }
+
+    void* map( Access access=Access.READ_ONLY )
+    {
+        debug scope(exit) checkGL;
+        return glMapBuffer( gltype, cast(GLenum)access );
+    }
+
+    void unmap() { glUnmapBuffer( gltype ); }
 }
 
 final class GLVAO : ExternalMemoryManager
@@ -215,14 +215,13 @@ protected:
 
     final nothrow
     {
-        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, bool norm=false )
         { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
-        void setAttribPointer( GLBuffer buffer, int index, uint per_element, 
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, size_t stride, size_t offset, bool norm=false )
         {
-            vao.bind();
             vao.enable( index );
 
             buffer.bind();

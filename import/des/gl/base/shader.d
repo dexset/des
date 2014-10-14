@@ -246,7 +246,7 @@ public:
     }
 
     int getUniformLocation( string name )
-    { 
+    {
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
         //enforce( ret >= 0, new GLShaderException( format( "bad uniform name: '%s'", name ) ) );
