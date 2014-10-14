@@ -5,6 +5,7 @@ import std.stdio;
 import std.string;
 
 public import des.gl.base;
+import des.gl.util;
 
 abstract class GLSimpleObject : GLObject
 {
