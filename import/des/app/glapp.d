@@ -60,8 +60,12 @@ public:
         if( win is null )
             throw new GLAppException( "Couldn't create SDL widnow: " ~ toDString( SDL_GetError() ) );
 
-        draw.addBegin( { glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); } );
-        draw.addEnd( { SDL_GL_SwapWindow( win ); } );
+        draw.addBegin(
+        {
+            glViewport( 0, 0, _size.x, _size.y );
+            glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        });
+        draw.addEnd({ SDL_GL_SwapWindow( win ); });
     }
 
     auto addEventProcessor(T)( T evproc ) if( is( T : EventProcessor ) )
@@ -80,6 +84,10 @@ public:
     void procEvents( const ref SDL_Event ev )//Предполагается, что входящее событие предназначено именно этому окну
     {
         foreach( p; processors ) if( p(ev) ) break;
+
+        if( ev.type == SDL_WINDOWEVENT &&
+            ev.window.event == SDL_WINDOWEVENT_RESIZED )
+            _size = ivec2( ev.window.data1, ev.window.data2 );
     }
 
     @property uint id(){ return SDL_GetWindowID( win ); }
