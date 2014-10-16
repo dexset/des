@@ -113,7 +113,11 @@ protected:
         TRIANGLES_ADJACENCY = GL_TRIANGLES_ADJACENCY,
     }
 
-    void preDraw() { vao.bind(); }
+    void preDraw()
+    {
+        vao.bind();
+        shader.use();
+    }
 
     void drawArrays( DrawMode mode )
     {
