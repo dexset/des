@@ -31,7 +31,6 @@ import des.util.signal;
 import des.util.emm;
 
 import des.gl.base;
-import des.util.signal;
 import des.il;
 
 import des.util.logger;
