@@ -177,6 +177,7 @@ public:
         DEPTH_COMPONENT16     = GL_DEPTH_COMPONENT16,
         DEPTH_COMPONENT24     = GL_DEPTH_COMPONENT24,
         DEPTH_COMPONENT32     = GL_DEPTH_COMPONENT32,
+        DEPTH_COMPONENT32F    = GL_DEPTH_COMPONENT32F,
         R3_G3_B2              = GL_R3_G3_B2,
         RED                   = GL_RED,
         RG                    = GL_RG,
@@ -209,7 +210,10 @@ public:
         RGBA = GL_RGBA,
 
         BGR  = GL_BGR,
-        BGRA = GL_BGRA
+        BGRA = GL_BGRA,
+
+        DEPTH = GL_DEPTH_COMPONENT,
+        DEPTH_STENCIL = GL_DEPTH_STENCIL
     }
 
     enum Type
@@ -284,7 +288,12 @@ public:
 
     final nothrow
     {
-        void bind() { glBindTexture( gltype, _id ); }
+        void bind( ubyte n=0 )
+        {
+            glActiveTexture( GL_TEXTURE0 + n );
+            glBindTexture( gltype, _id );
+        }
+
         void unbind() { glBindTexture( gltype, 0 ); }
         texsize_t size() const { return img_size; }
     }
@@ -324,7 +333,7 @@ public:
         if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
         {
             img.size = ivec2( w, h );
-            img.type = PixelType( elemSize );
+            img.type = imagePixelType( fmt, type );
         }
 
         glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
@@ -333,7 +342,7 @@ public:
         debug checkGL;
     }
 
-    final void image(N)( in Image!N img ) if( N >= 1 && N <= 3 )
+    final void image(size_t N)( in Image!N img ) if( N >= 1 && N <= 3 )
     in
     {
         switch( N )
@@ -341,12 +350,13 @@ public:
             case 1: assert( type == Target.T1D ); break;
             case 2: assert( type == Target.T2D ); break;
             case 3: assert( type == Target.T3D ); break;
+            default: assert(0);
         }
     }
     body
     {
         Type type = typeFromImageComponentType( img.type.comp );
-        auto fmt = formatFromImageChanelsCount( img.type.chanels );
+        auto fmt = formatFromImageChanelsCount( img.type.channels );
         image( img.size, fmt[0], fmt[1], type, img.data.ptr );
     }
 
@@ -467,6 +477,12 @@ public:
                 case Format.RGBA:
                 case Format.BGRA:
                     return 4;
+
+                case Format.DEPTH:
+                    return 1;
+
+                case Format.DEPTH_STENCIL:
+                    return 2;
             }
         }
 
@@ -507,6 +523,31 @@ public:
             }
         }
 
+        auto imagePixelType( Format fmt, Type type )
+        {
+            auto cnt = formatElemCount(fmt);
+            auto ict = imageComponentType(type);
+            if( ict == ComponentType.RAWBYTE )
+                return PixelType( sizeofType(type) * cnt );
+            else
+                return PixelType( ict, cnt );
+        }
+
+        ComponentType imageComponentType( Type type )
+        {
+            switch( type )
+            {
+                case Type.BYTE:           return ComponentType.BYTE;
+                case Type.UNSIGNED_BYTE:  return ComponentType.UBYTE;
+                case Type.SHORT:          return ComponentType.SHORT;
+                case Type.UNSIGNED_SHORT: return ComponentType.USHORT;
+                case Type.INT:            return ComponentType.INT;
+                case Type.UNSIGNED_INT:   return ComponentType.UINT;
+                case Type.FLOAT:          return ComponentType.FLOAT;
+                default:                  return ComponentType.RAWBYTE;
+            }
+        }
+
         @property bool isParameterEnum(T)()
         {
             return is(T==DepthStencilTextureMode) ||
@@ -539,10 +580,10 @@ public:
         {
             switch( channels )
             {
-                case 1: return tuple(Format.RED,  InternalFormat.RED );
-                case 2: return tuple(Format.RG,   InternalFormat.RG  );
-                case 3: return tuple(Format.RGB,  InternalFormat.RGB );
-                case 4: return tuple(Format.RGBA, InternalFormat.RGBA);
+                case 1: return tuple(InternalFormat.RED,  Format.RED  );
+                case 2: return tuple(InternalFormat.RG,   Format.RG   );
+                case 3: return tuple(InternalFormat.RGB,  Format.RGB  );
+                case 4: return tuple(InternalFormat.RGBA, Format.RGBA );
                 default:
                     throw new GLTextureException( "uncompatible image chanels count" );
             }
