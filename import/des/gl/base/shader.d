@@ -87,7 +87,7 @@ struct ShaderSource
     string vert, geom, frag;
 
 pure:
-    this( string v, string f )
+    this( string v, string f="" )
     {
         vert = v;
         frag = f;
