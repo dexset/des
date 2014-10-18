@@ -48,6 +48,7 @@ protected:
     static struct APInfo
     {
         string name;
+        string attrib;
         uint per_element;
         GLType type;
         size_t stride = 0;
@@ -57,14 +58,16 @@ protected:
         this( string n, uint pe, GLType t, bool req=true )
         {
             name = n;
+            attrib = n;
             per_element = pe;
             type = t; 
             required = req;
         }
 
-        this( string n, uint pe, GLType t, size_t st, size_t of, bool req=true )
+        this( string n, string a, uint pe, GLType t, size_t st, size_t of, bool req=true )
         {
             this( n, pe, t, req );
+            attrib = a;
             stride = st;
             offset = of;
         }
@@ -76,13 +79,17 @@ protected:
         GLArrayBuffer[string] ret;
         foreach( info; infos )
         {
-            auto loc = shader.getAttribLocation( info.name );
+            auto loc = shader.getAttribLocation( info.attrib );
 
             if( loc < 0 )
             {
                 if( info.required )
-                    assert( 0, format( "no attrib '%s' in shader", info.name ) );
-                else continue;
+                    assert( 0, format( "no attrib '%s' in shader", info.attrib ) );
+                else
+                {
+                    stderr.writefln( "no attrib '%s' in shader", info.attrib );
+                    continue;
+                }
             }
 
             if( info.name !in ret )
@@ -119,6 +126,7 @@ protected:
     {
         vao.bind();
         shader.use();
+        debug checkGL;
     }
 
     void drawArrays( DrawMode mode )
