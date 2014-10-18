@@ -113,6 +113,8 @@ protected:
         TRIANGLES_ADJACENCY = GL_TRIANGLES_ADJACENCY,
     }
 
+    bool draw_flag = true;
+
     void preDraw()
     {
         vao.bind();
@@ -121,6 +123,7 @@ protected:
 
     void drawArrays( DrawMode mode )
     {
+        if( !draw_flag ) return;
         preDraw();
         if( draw_count > 0 )
             glDrawArrays( mode, 0, cast(uint)draw_count );
@@ -132,6 +135,7 @@ protected:
 
     void drawElements( DrawMode mode )
     {
+        if( !draw_flag ) return;
         preDraw();
         if( index_count > 0 && draw_count > 0 )
             glDrawElements( mode, cast(uint)index_count, GL_UNSIGNED_INT, null );
