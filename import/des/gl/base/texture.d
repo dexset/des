@@ -59,14 +59,17 @@ protected:
         debug checkGL;
     }
 
-    Target _type;
+    Target _target;
 
-    nothrow @property GLenum gltype() const { return cast(GLenum)_type; }
+    nothrow @property GLenum gltype() const { return cast(GLenum)_target; }
+
+    Format lformat;
+    Type ltype;
 
 public:
 
     alias Vector!(3,size_t,"w h d") texsize_t; 
-    @property Target type() const { return _type; }
+    @property Target target() const { return _target; }
 
     enum Target
     {
@@ -245,18 +248,18 @@ public:
         FLOAT_32_UNSIGNED_INT_24_8_REV  = GL_FLOAT_32_UNSIGNED_INT_24_8_REV
     }
 
-    this( Target tp )
-    in { assert( isBase(tp) ); } body
+    this( Target tg )
+    in { assert( isBase(tg) ); } body
     {
         glGenTextures( 1, &_id );
         debug checkGL;
-        _type = tp;
+        _target = tg;
     }
 
     final pure const @property uint id() { return _id; }
 
     void genMipmap()
-    in { assert( isMipmapable(_type) ); } body
+    in { assert( isMipmapable(_target) ); } body
     {
         bind();
         glGenerateMipmap(gltype);
@@ -267,7 +270,7 @@ public:
     in
     {
         assert( val.length > 0 );
-        assert( isParametric(_type) );
+        assert( isParametric(_target) );
         static if( !is(T==float) )
             assert( checkPosibleIntParamValues( pname, amap!(a=>cast(int)(a))(val) ) );
         else
@@ -305,6 +308,9 @@ public:
         enum N = sz.length;
         img_size = texsize_t( sz, [1,1][0 .. 3-N] );
 
+        lformat = data_format;
+        ltype = data_type;
+
         bind();
         mixin( format(`
         glTexImage%1dD( gltype, 0, cast(int)internal_format, %s, 0,
@@ -313,12 +319,16 @@ public:
 
         debug checkGL;
     }
+    final void getImage( ref Image!2 img )
+    in { assert( _target == Target.T2D ); } body
+    { getImage( img, ltype ); }
 
-    final void getImage( ref Image!2 img, Format fmt=Format.RGB, Type type=Type.UNSIGNED_BYTE, uint level=0 )
-    in { assert( _type == Target.T2D ); } body
+    final void getImage( ref Image!2 img, Type type )
+    in { assert( _target == Target.T2D ); } body
     {
+        enum uint level = 0;
+
         bind();
-        if( level ) glGenerateMipmap(GL_TEXTURE_2D);
         debug checkGL;
         int w, h;
         glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &(w));
@@ -326,17 +336,17 @@ public:
         glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &(h));
         debug checkGL;
 
-        auto elemSize = formatElemCount(fmt) * sizeofType(type);
+        auto elemSize = formatElemCount(lformat) * sizeofType(type);
 
         auto dsize = w * h * elemSize;
 
         if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
         {
             img.size = ivec2( w, h );
-            img.type = imagePixelType( fmt, type );
+            img.type = imagePixelType( lformat, type );
         }
 
-        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
+        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)lformat, cast(GLenum)type, img.data.ptr );
         debug checkGL;
         unbind();
         debug checkGL;
@@ -347,9 +357,9 @@ public:
     {
         switch( N )
         {
-            case 1: assert( type == Target.T1D ); break;
-            case 2: assert( type == Target.T2D ); break;
-            case 3: assert( type == Target.T3D ); break;
+            case 1: assert( target == Target.T1D ); break;
+            case 2: assert( target == Target.T2D ); break;
+            case 3: assert( target == Target.T3D ); break;
             default: assert(0);
         }
     }

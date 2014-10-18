@@ -137,8 +137,8 @@ public:
     }
 
     void texture( GLTexture tex, Attachment attachment )
-    in { assert( isValidTextureTarget(tex.type) ); }
-    body { texture( tex, attachment, tex.type ); }
+    in { assert( isValidTextureTarget(tex.target) ); }
+    body { texture( tex, attachment, tex.target ); }
 
     void texture( GLTexture tex, Attachment attachment, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
@@ -148,7 +148,7 @@ public:
         if( trg == tex.Target.T1D )
             glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)attachment,
                                     cast(GLenum)trg, tex.id, 0 );
-        else if( tex.type == tex.Target.T3D )
+        else if( tex.target == tex.Target.T3D )
             glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)attachment,
                                     cast(GLenum)trg, tex.id, 0, 0 );
         else

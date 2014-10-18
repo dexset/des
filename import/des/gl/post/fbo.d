@@ -99,10 +99,8 @@ public:
         void textureUnbind() { tex.unbind(); }
     }
 
-    final void getImage( ref Image!2 img, uint level=0, 
-            GLTexture.Format fmt=GLTexture.Format.RGB, 
-            GLTexture.Type rtype=GLTexture.Type.UNSIGNED_BYTE )
-    { tex.getImage( img, fmt, rtype, level ); }
+    final void getImage( ref Image!2 img, GLTexture.Type rtype=GLTexture.Type.UNSIGNED_BYTE )
+    { tex.getImage( img, rtype ); }
 
     nothrow @property auto size() const { return sz; }
 
