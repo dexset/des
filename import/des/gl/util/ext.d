@@ -36,14 +36,25 @@ import des.util.logger;
 
 mixin( PrivateLoggerMixin );
 
+enum GLError
+{
+    NO                = GL_NO_ERROR,
+    INVALID_ENUM      = GL_INVALID_ENUM,
+    INVALID_VALUE     = GL_INVALID_VALUE,
+    INVALID_OPERATION = GL_INVALID_OPERATION,
+    STACK_OVERFLOW    = 0x0503,
+    STACK_UNDERFLOW   = 0x0504,
+    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY
+}
+
 nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
 {
-    auto err = glGetError();
+    auto err = cast(GLError)glGetError();
     try 
     {
-        if( err != GL_NO_ERROR )
+        if( err != GLError.NO )
         {
-            auto errstr = format( " ## GL ERROR ## %s at line: %s: 0x%04x", md, ln, err );
+            auto errstr = format( " ## GL ERROR ## %s at line: %s: %s", md, ln, err );
             if( except ) throw new Exception( errstr );
             else stderr.writefln( errstr );
         }

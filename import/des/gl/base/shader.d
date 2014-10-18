@@ -82,7 +82,24 @@ unittest
     assert( getFloats!"v"( 1.0f, 2u, -3 ) == "cast(float)v[0],cast(float)v[1],cast(float)v[2]" );
 }
 
-struct ShaderSource { string vert, frag, geom; }
+struct ShaderSource
+{
+    string vert, geom, frag;
+
+pure:
+    this( string v, string f )
+    {
+        vert = v;
+        frag = f;
+    }
+
+    this( string v, string g, string f )
+    {
+        vert = v;
+        geom = g;
+        frag = f;
+    }
+}
 
 class GLShaderException : DesGLException 
 { 

@@ -26,8 +26,7 @@ module des.gl.post.fxshaders;
 
 public import des.gl.base.shader;
 
-enum ShaderSource SS_WINSZ_SIMPLE_FBO_FX = 
-{
+enum SS_WINSZ_SIMPLE_FBO_FX = ShaderSource(
 `#version 120
 uniform vec2 winsize;
 attribute vec2 vertex;
@@ -73,10 +72,9 @@ void main(void)
     gl_FragColor = res;
     //gl_FragColor = vec4( res.xyz, res.w * length(res.xyz) );
 }`
-};
+);
 
-enum ShaderSource SS_WINSZ_SIMPLE_FBO = 
-{
+enum SS_WINSZ_SIMPLE_FBO = ShaderSource(
 `#version 120
 uniform vec2 winsize;
 attribute vec2 vertex;
@@ -102,4 +100,4 @@ void main(void)
     res.w *= kk;
     gl_FragColor = res;
 }`
-};
+);
