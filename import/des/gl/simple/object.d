@@ -13,9 +13,11 @@ private:
     size_t draw_count;
     size_t index_count;
 
+protected:
+
     class GLArrayBuffer : GLBuffer
     {
-        override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
+        final override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
         {
             super.setUntypedData( data_arr, element_size, mem );
             draw_count = elementCount;
@@ -26,7 +28,7 @@ private:
 
     class GLIndexBuffer : GLBuffer
     {
-        override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
+        final override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
         {
             enforce( element_size == uint.sizeof );
             super.setUntypedData( data_arr, uint.sizeof, mem );
@@ -35,8 +37,6 @@ private:
 
         this() { super( Target.ELEMENT_ARRAY_BUFFER ); }
     }
-
-protected:
 
     CommonShaderProgram shader;
     bool warn_if_empty = true;
