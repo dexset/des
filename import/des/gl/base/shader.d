@@ -101,6 +101,41 @@ pure:
     }
 }
 
+@property ShaderSource staticLoadShaderSource(string name)()
+{
+    string src = import(name);
+    string[3] sep;
+
+    string sepLineStart = "//###";
+    size_t cur = 0;
+
+    foreach( ln; src.splitLines() )
+        if( ln.startsWith(sepLineStart) )
+        {
+            auto section = ln.chompPrefix(sepLineStart).strip().toLower;
+            switch( section )
+            {
+                case "vert":
+                case "vertex":
+                    cur = 0;
+                    break;
+                case "geom":
+                case "geometry":
+                    cur = 1;
+                    break;
+                case "frag":
+                case "fragment":
+                    cur = 2;
+                    break;
+                default:
+                    throw new GLShaderException( "static load shader source: unknown section '" ~ section ~ "'" );
+            }
+        }
+        else sep[cur] ~= ln ~ '\n';
+
+    return ShaderSource(sep[0],sep[1],sep[2]);
+}
+
 class GLShaderException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
