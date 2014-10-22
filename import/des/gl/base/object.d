@@ -118,7 +118,7 @@ public:
     void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
         auto size = data_arr.length;
-        if( !size ) throw new GLObjException( "buffer data size is 0" );
+        if( !size ) throw new GLObjException( "set buffer data size is 0" );
 
         bind();
         glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
@@ -139,21 +139,51 @@ public:
         debug checkGL;
     }
 
+    void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
+    {
+        auto size = data_arr.length;
+
+        if( !size ) throw new GLObjException( "set sub buffer data size is 0" );
+        if( offset + size > data_size )
+            throw new GLObjException( "set sub buffer data: offset+size > data_size" );
+
+        bind();
+        glBufferSubData( gltype, offset, size, data_arr.ptr );
+        unbind();
+    }
+
     void[] getUntypedData()
     {
-        auto buf = new void[]( data_size );
         bind();
         auto mp = map( Access.READ_ONLY );
+        auto buf = new void[]( data_size );
         memcpy( buf.ptr, mp, data_size );
         unmap();
         unbind();
         return buf;
     }
 
-    E[] getData(E)() { return cast(E[])getUntypedData(); }
+    void[] getSubUntypedData( size_t offset, size_t length )
+    {
+        bind();
+        auto mp = mapRange( offset, length, Access.READ_ONLY );
+        auto buf = new void[]( length );
+        memcpy( buf.ptr, mp, length );
+        unmap();
+        unbind();
+        return buf;
+    }
 
     void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
     { setUntypedData( data_arr, E.sizeof, mem ); }
+
+    void setSubData(E)( size_t offset, in E[] data_arr )
+    { setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof ); }
+
+    E[] getData(E)() { return cast(E[])getUntypedData(); }
+
+    E[] getSubData(E)( size_t offset, size_t count )
+    { return cast(E[])getSubUntypedData( E.sizeof * offset, E.sizeof * count ); }
 
     @property
     {
@@ -171,6 +201,14 @@ public:
     {
         debug scope(exit) checkGL;
         return glMapBuffer( gltype, cast(GLenum)access );
+    }
+
+    void* mapRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
+    { 
+        debug scope(exit) checkGL;
+        if( offset + length > data_size )
+            throw new GLObjException( "map buffer range: offset + length > data_size" );
+        return glMapBufferRange( gltype, offset, length, cast(GLenum)access );
     }
 
     void unmap() { glUnmapBuffer( gltype ); }
