@@ -111,6 +111,10 @@ public:
         @property uint id() const { return _id; }
     }
 
+    void delegate(size_t) elementCountCallback;
+    void delegate(size_t) dataSizeCallback;
+    void delegate(size_t) elementSizeCallback;
+
     void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
         auto size = data_arr.length;
@@ -122,6 +126,15 @@ public:
 
         element_count = data_arr.length / element_size;
         data_size = size;
+
+        if( elementCountCallback !is null )
+            elementCountCallback( element_count );
+
+        if( dataSizeCallback !is null )
+            dataSizeCallback( data_size );
+
+        if( elementSizeCallback !is null )
+            elementSizeCallback( element_size );
 
         debug checkGL;
     }

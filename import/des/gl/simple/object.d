@@ -15,34 +15,21 @@ private:
 
 protected:
 
-    class GLArrayBuffer : GLBuffer
-    {
-        final override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
-        {
-            super.setUntypedData( data_arr, element_size, mem );
-            draw_count = elementCount;
-        }
+    void setDrawCount( size_t cnt )
+    { draw_count = cnt; }
 
-        this() { super( Target.ARRAY_BUFFER ); }
-    }
-
-    class GLIndexBuffer : GLBuffer
-    {
-        final override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
-        {
-            enforce( element_size == uint.sizeof );
-            super.setUntypedData( data_arr, uint.sizeof, mem );
-            index_count = elementCount;
-        }
-
-        this() { super( Target.ELEMENT_ARRAY_BUFFER ); }
-    }
+    void setIndexCount( size_t cnt )
+    { index_count = cnt; }
 
     CommonShaderProgram shader;
     bool warn_if_empty = true;
 
     auto createArrayBuffer()
-    { return registerChildEMM( new GLArrayBuffer ); }
+    {
+        auto buf = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        buf.elementCountCallback = &setDrawCount;
+        return buf;
+    }
 
     /+ ??? под вопросом +/
     static struct APInfo
@@ -76,7 +63,7 @@ protected:
     /+ ??? под вопросом +/
     auto createArrayBuffersFromAttributeInfo( in APInfo[] infos... )
     {
-        GLArrayBuffer[string] ret;
+        GLBuffer[string] ret;
         foreach( info; infos )
         {
             auto loc = shader.getAttribLocation( info.attrib );
@@ -103,7 +90,14 @@ protected:
     }
 
     auto createIndexBuffer()
-    { return registerChildEMM( new GLIndexBuffer ); }
+    {
+        auto buf = registerChildEMM( new GLBuffer( GLBuffer.Target.ELEMENT_ARRAY_BUFFER ) );
+        buf.elementCountCallback = &setIndexCount;
+        buf.elementSizeCallback = (sz){
+            enforce( sz == uint.sizeof, "set to index buffer not uint data" );
+        };
+        return buf;
+    }
 
     enum DrawMode
     {
