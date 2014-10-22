@@ -42,8 +42,8 @@ public:
 
     this()
     {
-        depth = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
-        color = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
+        depth = newEMM!GLTexture(GLTexture.Target.T2D);
+        color = newEMM!GLTexture(GLTexture.Target.T2D);
 
         depth.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
         depth.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
@@ -57,7 +57,7 @@ public:
 
         resize( ivec2(1,1) );
 
-        fbo = registerChildEMM( new GLFrameBuffer );
+        fbo = newEMM!GLFrameBuffer;
         fbo.texture( depth, fbo.Attachment.DEPTH );
         fbo.texture( color, fbo.Attachment.COLOR0 );
         fbo.unbind();

@@ -26,7 +26,7 @@ protected:
 
     auto createArrayBuffer()
     {
-        auto buf = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        auto buf = newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER );
         buf.elementCountCallback = &setDrawCount;
         return buf;
     }
@@ -91,7 +91,7 @@ protected:
 
     auto createIndexBuffer()
     {
-        auto buf = registerChildEMM( new GLBuffer( GLBuffer.Target.ELEMENT_ARRAY_BUFFER ) );
+        auto buf = newEMM!GLBuffer( GLBuffer.Target.ELEMENT_ARRAY_BUFFER );
         buf.elementCountCallback = &setIndexCount;
         buf.elementSizeCallback = (sz){
             enforce( sz == uint.sizeof, "set to index buffer not uint data" );
@@ -150,7 +150,7 @@ protected:
 public:
 
     this( in ShaderSource ss )
-    { shader = registerChildEMM( new CommonShaderProgram(ss) ); }
+    { shader = newEMM!CommonShaderProgram(ss); }
 
     this( CommonShaderProgram sh )
     in{ assert( sh !is null ); } body

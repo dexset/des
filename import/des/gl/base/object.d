@@ -248,7 +248,7 @@ public:
 
     this()
     {
-        vao = registerChildEMM( new GLVAO );
+        vao = newEMM!GLVAO;
         debug checkGL;
     }
 }

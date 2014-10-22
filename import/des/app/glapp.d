@@ -77,7 +77,7 @@ public:
     auto addNewEventProcessor(T, Args...)( Args args )
         if( is( T : EventProcessor ) )
     {
-        auto evproc = registerChildEMM( new T(args) );
+        auto evproc = newEMM!T(args);
         return addEventProcessor( evproc );
     }
 

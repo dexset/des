@@ -58,16 +58,16 @@ public:
     {
         sz = ivec2( 1, 1 );
 
-        tex = registerChildEMM( new GLTexture(GLTexture.Target.T2D) );
+        tex = newEMM!GLTexture(GLTexture.Target.T2D);
         tex.image( sz, tex.InternalFormat.RGBA, tex.Format.RGBA, GLTexture.Type.FLOAT );
         tex.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
         tex.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
 
         // Render buffer
-        rbo = registerChildEMM( new GLRenderBuffer );
+        rbo = newEMM!GLRenderBuffer;
         rbo.storage( sz.wh, rbo.Format.DEPTH_COMPONENT24 );
 
-        fbo = registerChildEMM( new GLFrameBuffer );
+        fbo = newEMM!GLFrameBuffer;
         // Frame buffer
         fbo.texture( tex, fbo.Attachment.COLOR0 );
         fbo.renderBuffer( rbo, fbo.Attachment.DEPTH );
@@ -123,8 +123,8 @@ public:
 
     this( in ShaderSource ss )
     {
-        shader = registerChildEMM( new CommonShaderProgram(ss) );
-        sfbo = registerChildEMM( new SimpleFBO );
+        shader = newEMM!CommonShaderProgram(ss);
+        sfbo = newEMM!SimpleFBO;
 
         sfbo.resize( wsz );
 
@@ -134,11 +134,11 @@ public:
         auto pos_dt = [ vec2(-1, 1), vec2(1, 1), vec2(-1,-1), vec2(1,-1) ];
         auto uv_dt =  [ vec2( 0, 1), vec2(1, 1), vec2( 0, 0), vec2(1, 0) ];
 
-        pos = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        pos = newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER );
         pos.setData( pos_dt, GLBuffer.Usage.STATIC_DRAW );
         setAttribPointer( pos, pos_loc, 2, GLType.FLOAT );
 
-        uv = registerChildEMM( new GLBuffer( GLBuffer.Target.ARRAY_BUFFER ) );
+        uv = newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER );
         pos.setData( uv_dt, GLBuffer.Usage.STATIC_DRAW );
         setAttribPointer( uv, uv_loc, 2, GLType.FLOAT );
     }
