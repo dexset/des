@@ -48,17 +48,47 @@ class GLRenderBuffer : ExternalMemoryManager
 mixin( getMixinChildEMM );
 protected:
     uint _id;
+    Format _format;
 public:
 
     enum Format
     {
-        RGBA4             = GL_RGBA4,
-        RGB5              = GL_RGB5,
-        RGB5_A1           = GL_RGB5_A1,
-        DEPTH_COMPONENT16 = GL_DEPTH_COMPONENT16,
-        DEPTH_COMPONENT24 = GL_DEPTH_COMPONENT24,
-        STENCIL_INDEX8    = GL_STENCIL_INDEX8
+        R8                 = GL_R8,
+        R8UI               = GL_R8UI,
+        R8I                = GL_R8I,
+        R16UI              = GL_R16UI,
+        R16I               = GL_R16I,
+        R32UI              = GL_R32UI,
+        R32I               = GL_R32I,
+        RG8                = GL_RG8,
+        RG8UI              = GL_RG8UI,
+        RG8I               = GL_RG8I,
+        RG16UI             = GL_RG16UI,
+        RG16I              = GL_RG16I,
+        RG32UI             = GL_RG32UI,
+        RG32I              = GL_RG32I,
+        RGB8               = GL_RGB8,
+        RGBA8              = GL_RGBA8,
+        SRGB8_ALPHA8       = GL_SRGB8_ALPHA8,
+        RGB5_A1            = GL_RGB5_A1,
+        RGBA4              = GL_RGBA4,
+        RGB10_A2           = GL_RGB10_A2,
+        RGBA8UI            = GL_RGBA8UI,
+        RGBA8I             = GL_RGBA8I,
+        RGB10_A2UI         = GL_RGB10_A2UI,
+        RGBA16UI           = GL_RGBA16UI,
+        RGBA16I            = GL_RGBA16I,
+        RGBA32I            = GL_RGBA32I,
+        RGBA32UI           = GL_RGBA32UI,
+        DEPTH_COMPONENT16  = GL_DEPTH_COMPONENT16,
+        DEPTH_COMPONENT24  = GL_DEPTH_COMPONENT24,
+        DEPTH_COMPONENT32F = GL_DEPTH_COMPONENT32F,
+        DEPTH24_STENCIL8   = GL_DEPTH24_STENCIL8,
+        DEPTH32F_STENCIL8  = GL_DEPTH32F_STENCIL8,
+        STENCIL_INDEX8     = GL_STENCIL_INDEX8
     }
+
+    @property Format format() { return _format; }
 
     this()
     {
@@ -83,10 +113,15 @@ public:
     body
     {
         bind(); scope(exit) unbind();
+        _format = fmt;
         glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
         debug checkGL;
         unbind();
     }
+
+    void resize(T)( in T sz )
+    if( isCompatibleVector!(2,uint,T) )
+    { storage( sz, _format ); }
 
 protected:
     void selfDestroy()
@@ -134,6 +169,15 @@ public:
             id_stack.length--;
             glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
         }
+    }
+
+    void setAttachment(T)( T obj, Attachment attachment )
+        if( is( T : GLTexture ) || is( T : GLRenderBuffer ) )
+    {
+        static if( is( T : GLTexture ) )
+            texture( obj, attachment );
+        else static if( is( T : GLRenderBuffer ) )
+            renderBuffer( obj, attachment );
     }
 
     void texture( GLTexture tex, Attachment attachment )
