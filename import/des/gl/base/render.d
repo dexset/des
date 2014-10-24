@@ -22,14 +22,14 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module des.gl.post.render;
+module des.gl.base.render;
 
 import des.util.emm;
 import des.math.linear;
 import des.gl.base;
 import des.il;
 
-template staticChoise(bool s,A,B)
+private template staticChoise(bool s,A,B)
 {
     static if(s)
         alias A staticChoise;
@@ -37,7 +37,7 @@ template staticChoise(bool s,A,B)
         alias B staticChoise;
 }
 
-template createNew(bool buffer)
+private template createNew(bool buffer)
 {
     auto fnc()
     {
@@ -151,3 +151,4 @@ alias GLRender!(false,false) GLRenderToTex;
 alias GLRender!(true,true) GLRenderToRB;
 alias GLRender!(false,true) GLRenderColorToTexDepthToRB;
 alias GLRender!(true,false) GLRenderColorToRBDepthToTex;
+

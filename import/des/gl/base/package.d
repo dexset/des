@@ -5,3 +5,4 @@ public import des.gl.base.shader;
 public import des.gl.base.texture;
 public import des.gl.base.type;
 public import des.gl.base.frame;
+public import des.gl.base.render;
