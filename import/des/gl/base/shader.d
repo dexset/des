@@ -33,7 +33,6 @@ import des.math.linear;
 import derelict.opengl3.gl3;
 
 import des.util.logger;
-mixin( PrivateLoggerMixin );
 
 import des.gl.util.ext;
 

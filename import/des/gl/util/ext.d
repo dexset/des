@@ -34,8 +34,6 @@ import des.math.linear.vector;
 public import des.util.emm;
 import des.util.logger;
 
-mixin( PrivateLoggerMixin );
-
 enum GLError
 {
     NO                = GL_NO_ERROR,
@@ -59,7 +57,7 @@ nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
             if( except ) throw new Exception( errstr );
             else stderr.writefln( errstr );
         }
-        else{ log( "GL OK %s at line: %s", md, ln ); }
+        else{ log_trace( "GL OK %s at line: %s", md, ln ); }
     } 
     catch( Exception e )
     {

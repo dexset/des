@@ -33,7 +33,6 @@ import des.gl.base.texture;
 import des.gl.util;
 
 import des.util.logger;
-mixin( PrivateLoggerMixin );
 
 import des.il.image;
 

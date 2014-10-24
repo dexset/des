@@ -32,7 +32,6 @@ import des.gl.util.ext;
 import des.gl.base.type;
 
 import des.util;
-mixin( PrivateLoggerMixin );
 
 class GLObjException : DesGLException 
 { 
