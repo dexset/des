@@ -63,6 +63,7 @@ protected:
 
     nothrow @property GLenum gltype() const { return cast(GLenum)_target; }
 
+    InternalFormat liformat;
     Format lformat;
     Type ltype;
 
@@ -301,6 +302,10 @@ public:
         texsize_t size() const { return img_size; }
     }
 
+    void resize(T)( in T sz )
+        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
+    { image( sz, liformat, lformat, ltype ); }
+
     void image(T)( in T sz, InternalFormat internal_format, 
             Format data_format, Type data_type, in void* data=null )
         if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
@@ -308,6 +313,7 @@ public:
         enum N = sz.length;
         img_size = texsize_t( sz, [1,1][0 .. 3-N] );
 
+        liformat = internal_format;
         lformat = data_format;
         ltype = data_type;
 
