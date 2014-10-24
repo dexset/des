@@ -36,14 +36,22 @@ protected:
 
     GLFrameBuffer fbo;
 
+    GLTexture createDepthTexture()
+    out(t) { assert( t.target == GLTexture.Target.T2D ); }
+    body { return new GLTexture(GLTexture.Target.T2D); }
+
+    GLTexture createColorTexture()
+    out(t) { assert( t.target == GLTexture.Target.T2D ); }
+    body { return new GLTexture(GLTexture.Target.T2D); }
+
 public:
 
     GLTexture depth, color;
 
     this()
     {
-        depth = newEMM!GLTexture(GLTexture.Target.T2D);
-        color = newEMM!GLTexture(GLTexture.Target.T2D);
+        depth = registerChildEMM( createDepthTexture() );
+        color = registerChildEMM( createColorTexture() );
 
         depth.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
         depth.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
