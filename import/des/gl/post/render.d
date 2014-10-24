@@ -45,7 +45,7 @@ template createNew(bool buffer)
             return new GLRenderBuffer;
         else
         {
-            auto tex = GLTexture( GLTexture.Target.T2D );
+            auto tex = new GLTexture( GLTexture.Target.T2D );
 
             tex.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
             tex.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
@@ -115,8 +115,23 @@ public:
 
 protected:
 
-    DepthObject createDepth() { return createNew!DB(); }
-    ColorObject createColor() { return createNew!CB(); }
+    DepthObject createDepth()
+    {
+        auto tmp = createNew!DB();
+        static if(DB) tmp.storage( ivec2(1,1), tmp.Format.DEPTH_COMPONENT32F );
+        else tmp.image( ivec2(1,1), tmp.InternalFormat.DEPTH_COMPONENT,
+                tmp.Format.DEPTH, tmp.Type.FLOAT );
+        return tmp;
+    }
+
+    ColorObject createColor()
+    {
+        auto tmp = createNew!CB();
+        static if(CB) tmp.storage( ivec2(1,1), tmp.Format.RGBA8 );
+        else tmp.image( ivec2(1,1), tmp.InternalFormat.RGBA,
+                tmp.Format.RGBA, tmp.Type.FLOAT );
+        return tmp;
+    }
 
     void resize( ivec2 sz )
     {
