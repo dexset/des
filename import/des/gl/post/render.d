@@ -29,45 +29,61 @@ import des.math.linear;
 import des.gl.base;
 import des.il;
 
-class Render : ExternalMemoryManager
+template staticChoise(bool s,A,B)
+{
+    static if(s)
+        alias A staticChoise;
+    else
+        alias B staticChoise;
+}
+
+template createNew(bool buffer)
+{
+    auto fnc()
+    {
+        static if(buffer)
+            return new GLRenderBuffer;
+        else
+        {
+            auto tex = GLTexture( GLTexture.Target.T2D );
+
+            tex.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
+            tex.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
+            tex.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
+            tex.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
+
+            return tex;
+        }
+    }
+
+    alias createNew=fnc;
+}
+
+class GLRender(bool CB, bool DB) : ExternalMemoryManager
 {
     mixin( getMixinChildEMM );
 protected:
 
     GLFrameBuffer fbo;
 
-    GLTexture createDepthTexture()
-    out(t) { assert( t.target == GLTexture.Target.T2D ); }
-    body { return new GLTexture(GLTexture.Target.T2D); }
-
-    GLTexture createColorTexture()
-    out(t) { assert( t.target == GLTexture.Target.T2D ); }
-    body { return new GLTexture(GLTexture.Target.T2D); }
-
 public:
 
-    GLTexture depth, color;
+    alias staticChoise!(CB,GLRenderBuffer,GLTexture) ColorObject;
+    alias staticChoise!(DB,GLRenderBuffer,GLTexture) DepthObject;
+
+    DepthObject depth;
+    ColorObject color;
 
     this()
     {
-        depth = registerChildEMM( createDepthTexture() );
-        color = registerChildEMM( createColorTexture() );
-
-        depth.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
-        depth.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
-        depth.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
-        depth.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
-
-        color.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
-        color.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
-        color.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
-        color.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
+        depth = registerChildEMM( createDepth() );
+        color = registerChildEMM( createColor() );
 
         resize( ivec2(1,1) );
 
         fbo = newEMM!GLFrameBuffer;
-        fbo.texture( depth, fbo.Attachment.DEPTH );
-        fbo.texture( color, fbo.Attachment.COLOR0 );
+        fbo.setAttachment( depth, fbo.Attachment.DEPTH );
+        fbo.setAttachment( color, fbo.Attachment.COLOR0 );
         fbo.unbind();
     }
 
@@ -99,16 +115,24 @@ public:
 
 protected:
 
+    DepthObject createDepth() { return createNew!DB(); }
+    ColorObject createColor() { return createNew!CB(); }
+
     void resize( ivec2 sz )
     {
-        depth.image( sz, GLTexture.InternalFormat.DEPTH_COMPONENT, GLTexture.Format.DEPTH, GLTexture.Type.FLOAT );
-        color.image( sz, GLTexture.InternalFormat.RGBA, GLTexture.Format.RGBA, GLTexture.Type.FLOAT );
+        depth.resize( sz );
+        color.resize( sz );
     }
 
     void selfDestroy()
     {
         fbo.unbind();
-        depth.unbind();
-        color.unbind();
+        static if(!DB) depth.unbind();
+        static if(!CB) color.unbind();
     }
 }
+
+alias GLRender!(false,false) GLRenderToTex;
+alias GLRender!(true,true) GLRenderToRB;
+alias GLRender!(false,true) GLRenderColorToTexDepthToRB;
+alias GLRender!(true,false) GLRenderColorToRBDepthToTex;
