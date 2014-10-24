@@ -44,7 +44,8 @@ enum GLError
     INVALID_OPERATION = GL_INVALID_OPERATION,
     STACK_OVERFLOW    = 0x0503,
     STACK_UNDERFLOW   = 0x0504,
-    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY
+    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,
+    INVALID_FRAMEBUFFER_OPERATION = 0x0506
 }
 
 nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
