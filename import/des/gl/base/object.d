@@ -41,10 +41,13 @@ class GLObjException : DesGLException
 
 class GLBuffer : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
+
 protected:
     uint _id;
     Target type;
+
 
     size_t data_size;
     size_t element_count;
@@ -53,7 +56,7 @@ protected:
     {
         glDeleteBuffers( 1, &_id );
         debug checkGL;
-        debug log_debug( "delete buffer [%d]", _id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     nothrow @property GLenum gltype() const { return cast(GLenum)type; }
@@ -106,7 +109,7 @@ public:
         type = tp;
 
         debug checkGL;
-        debug log_debug( "generate buffer [%d] with type [%s]", _id, type );
+        debug logger.Debug( "[%d] with type [%s]", _id, type );
     }
 
     final nothrow
@@ -115,13 +118,13 @@ public:
         {
             glBindBuffer( gltype, _id );
             debug checkGL;
-            debug log_trace( "bind buffer [%d] with type [%s]", _id, type );
+            debug logger.trace( "[%d] with type [%s]", _id, type );
         }
         void unbind()
         {
             glBindBuffer( gltype, 0 );
             debug checkGL;
-            debug log_trace( "unbind buffer type [%s]", type );
+            debug logger.trace( "type [%s]", type );
         }
         @property uint id() const { return _id; }
     }
@@ -152,7 +155,7 @@ public:
             elementSizeCallback( element_size );
 
         debug checkGL;
-        debug log_trace( "buffer [%d] [%s] data: size [%d], element size [%d], usage [%s]",
+        debug logger.trace( "[%d] [%s]: size [%d], element size [%d], usage [%s]",
                 id, type, size, element_size, mem );
     }
 
@@ -169,7 +172,7 @@ public:
         unbind();
 
         debug checkGL;
-        debug log_trace( "buffer [%d] [%s] sub data: offset [%d], size [%d], element size [%d]",
+        debug logger.trace( "[%d] [%s]: offset [%d], size [%d], element size [%d]",
                 id, type, offset, size, element_size );
     }
 
@@ -221,7 +224,7 @@ public:
     void* map( Access access=Access.READ_ONLY )
     {
         debug scope(exit) checkGL;
-        debug log_trace( "map buffer [%d] by access [%s]", id, access );
+        debug logger.trace( "[%d] by access [%s]", id, access );
         return glMapBuffer( gltype, cast(GLenum)access );
     }
 
@@ -230,7 +233,7 @@ public:
         debug scope(exit) checkGL;
         if( offset + length > data_size )
             throw new GLObjException( "map buffer range: offset + length > data_size" );
-        debug log_trace( "map buffer range [%d] by access [%s]: offset [%d], length [%d]",
+        debug logger.trace( "[%d] by access [%s]: offset [%d], length [%d]",
                 id, access, offset, length );
         return glMapBufferRange( gltype, offset, length, cast(GLenum)access );
     }
@@ -238,13 +241,14 @@ public:
     void unmap()
     {
         glUnmapBuffer( gltype );
-        debug log_trace( "unmap buffer [%d]", id );
+        debug logger.trace( "[%d]", id );
     }
 }
 
 final class GLVAO : ExternalMemoryManager
 {
-    mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
 
 protected:
     uint _id;
@@ -258,7 +262,7 @@ public:
     {
         glGenVertexArrays( 1, &_id );
         debug checkGL;
-        debug log_debug( "generate VAO [%d]", _id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     nothrow 
@@ -267,12 +271,12 @@ public:
         { 
             glBindVertexArray( _id ); 
             debug checkGL;
-            debug log_trace( "bind VAO [%d]", _id );
+            debug logger.trace( "[%d]", _id );
         }
 
         void enable( int n )
         {
-            debug scope(exit) log_debug( "for VAO [%d] enable attrib %d", _id, n );
+            debug scope(exit) logger.Debug( "[%d] [%d]", _id, n );
             if( n < 0 ) return;
             bind();
             glEnableVertexAttribArray( n ); 
@@ -281,7 +285,7 @@ public:
 
         void disable( int n )
         {
-            debug scope(exit) log_debug( "for VAO [%d] disable attrib %d", _id, n );
+            debug scope(exit) logger.Debug( "[%d] [%d]", _id, n );
             if( n < 0 ) return;
             bind();
             glDisableVertexAttribArray( n ); 
@@ -292,7 +296,8 @@ public:
 
 class GLObject: ExternalMemoryManager
 {
-    mixin( getMixinAllEMMFuncs );
+    mixin ParentEMM;
+    mixin AnywayLogger;
 
 protected:
     GLVAO vao;
@@ -314,13 +319,13 @@ protected:
             debug checkGL;
             buffer.unbind();
 
-            debug log_debug( "set vertex attrib pointer: VAO [%d], buffer [%d], "~
+            debug logger.Debug( "VAO [%d], buffer [%d], "~
                              "index [%d], per element [%d][%s]"~
                              "%s%s",
                              vao._id, buffer.id,
                              index, per_element, attype, 
-                             stride != 0 ? ntformat(", stride [%d], offset [%d]", stride, offset ) : "",
-                             norm ? ntformat( ", norm [%s]", norm ) : "" );
+                             stride != 0 ? toMessage(", stride [%d], offset [%d]", stride, offset ) : "",
+                             norm ? toMessage( ", norm [%s]", norm ) : "" );
         }
     }
 
@@ -330,6 +335,5 @@ public:
     {
         vao = newEMM!GLVAO;
         debug checkGL;
-        debug log_debug( "create GLObject" );
     }
 }

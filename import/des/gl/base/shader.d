@@ -143,7 +143,8 @@ class GLShaderException : DesGLException
 
 class BaseShaderProgram : ExternalMemoryManager
 {
-    mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
 private:
     static GLint inUse = -1;
 
@@ -179,7 +180,7 @@ protected:
     static GLuint makeShader( ShaderType type, string src )
     {
         GLuint shader = glCreateShader( cast(GLenum)type );
-        debug log_trace( "create shader [%s] with type [%s]", shader, type ); 
+        debug log_trace( "[%s] with type [%s]", shader, type ); 
         auto srcptr = src.toStringz;
         glShaderSource( shader, 1, &(srcptr), null );
         glCompileShader( shader );
@@ -263,7 +264,7 @@ protected:
 
         glDeleteShader( vert_sh );
 
-        debug log_debug( "delete shader program [%d]", program );
+        debug logger.Debug( "[%d]", program );
 
         debug checkGL;
     }
@@ -272,7 +273,7 @@ public:
     this( in ShaderSource src )
     {
         construct( src );
-        debug log_debug( "create shader program [%d] from source [%s]", program, src.name );
+        debug logger.Debug( "[%d] from source [%s]", program, src.name );
     }
 
     final nothrow void use() { thisInUse = true; }
@@ -287,7 +288,7 @@ public:
     { 
         auto ret = glGetAttribLocation( program, name.toStringz ); 
         debug checkGL;
-        debug if(ret<0) log_warn( "shader [%d] bad attribute name: '%s'", program, name );
+        debug if(ret<0) logger.warn( "[%d] bad attribute name: '%s'", program, name );
         return ret;
     }
 
@@ -303,7 +304,7 @@ public:
     {
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        debug if(ret<0) log_warn( "shader [%d] bad uniform name: '%s'", program, name );
+        debug if(ret<0) logger.warn( "[%d] bad uniform name: '%s'", program, name );
         return ret;
     }
 

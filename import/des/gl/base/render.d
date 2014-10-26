@@ -62,7 +62,8 @@ private template createNew(bool buffer)
 
 class GLRender(bool CB, bool DB) : ExternalMemoryManager
 {
-    mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
 protected:
 
     GLFrameBuffer fbo;
@@ -87,7 +88,7 @@ public:
         fbo.setAttachment( color, fbo.Attachment.COLOR0 );
         fbo.unbind();
 
-        debug log_debug( "create render: FBO [%d], color [%s][%d], depth [%s][%d]",
+        debug logger.Debug( "FBO [%d], color [%s][%d], depth [%s][%d]",
                 fbo.id, CB?"RB":"Tex", color.id, DB?"RB":"Tex", depth.id );
     }
 
@@ -116,7 +117,7 @@ public:
 
         glViewport( vpbuf[0], vpbuf[1], vpbuf[2], vpbuf[3] );
 
-        debug log_trace( "render: FBO [%d], size [%d,%d]", fbo.id, sz[0], sz[1] );
+        debug logger.trace( "FBO [%d], size [%d,%d]", fbo.id, sz[0], sz[1] );
     }
 
 protected:

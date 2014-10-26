@@ -44,10 +44,13 @@ class GLFBOException : DesGLException
 
 class GLRenderBuffer : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
+
 protected:
     uint _id;
     Format _format;
+
 public:
 
     enum Format
@@ -91,7 +94,7 @@ public:
     {
         glGenRenderbuffers( 1, &_id );
         debug checkGL;
-        debug log_debug( "generate render buffer [%d]", _id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     final pure const @property
@@ -104,14 +107,14 @@ public:
     {
         glBindRenderbuffer( GL_RENDERBUFFER, _id );
         debug checkGL;
-        debug log_trace( "bind render buffer [%d]", id );
+        debug logger.trace( "[%d]", id );
     }
 
     void unbind()
     {
         glBindRenderbuffer( GL_RENDERBUFFER, 0 );
         debug checkGL;
-        debug log_trace( "unbind render buffer" );
+        debug logger.trace( "call from [%d]", _id );
     }
 
     void storage( in uivec2 sz, Format fmt )
@@ -127,7 +130,7 @@ public:
         glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
         debug checkGL;
         unbind();
-        debug log_debug( "render buffer [%d] storage: size [%d,%d], format [%s]", id, sz[0], sz[1], fmt );
+        debug logger.Debug( "[%d]: size [%d,%d], format [%s]", id, sz[0], sz[1], fmt );
     }
 
     void resize( in uivec2 sz ) { storage( sz, _format ); }
@@ -152,13 +155,15 @@ protected:
         unbind();
         glDeleteRenderbuffers( 1, &_id );
         debug checkGL;
-        debug log_debug( "delete render buffer [%d]", id );
+        debug logger.Debug( "[%d]", id );
     }
 }
 
 class GLFrameBuffer : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
+
 protected:
     uint _id;
     static uint[] id_stack;
@@ -175,7 +180,7 @@ public:
 
         glGenFramebuffers( 1, &_id );
         debug checkGL;
-        debug log_debug( "generate frame buffer: %d", _id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     final pure const @property uint id() { return _id; }
@@ -188,7 +193,7 @@ public:
             glBindFramebuffer( GL_FRAMEBUFFER, _id );
             id_stack ~= _id;
             debug checkGL;
-            debug log_trace( "bind frame buffer [%d]", _id );
+            debug logger.trace( "[%d]", _id );
         }
 
         void unbind()
@@ -197,7 +202,7 @@ public:
             id_stack.length--;
             glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
             debug checkGL;
-            debug log_trace( "rebind frame buffer [%d] to [%d]", _id, id_stack[$-1] );
+            debug logger.trace( "[%d] to [%d]", _id, id_stack[$-1] );
         }
     }
 
@@ -230,7 +235,7 @@ public:
                                     cast(GLenum)trg, tex.id, 0 );
 
         debug checkGL;
-        debug log_debug( "set frame buffer [%d] texture [%s] as attachment [%s]", id, tex.id, att );
+        debug logger.Debug( "[%d] [%s] as [%s]", id, tex.id, att );
     }
 
     void renderBuffer( GLRenderBuffer rbo, Attachment att )
@@ -241,7 +246,7 @@ public:
                                    GL_RENDERBUFFER, rbo.id );
 
         debug checkGL;
-        debug log_debug( "set frame buffer [%d] render buffer [%d] as attachment [%s]", id, rbo.id, att );
+        debug logger.Debug( "[%d] [%d] as [%s]", id, rbo.id, att );
     }
 
     void check()
@@ -259,7 +264,7 @@ protected:
     {
         unbind();
         glDeleteFramebuffers( 1, &_id );
-        debug log_debug( "delete frame buffer [%d]", id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     @property static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)()

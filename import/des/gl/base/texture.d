@@ -47,7 +47,8 @@ class GLTextureException : DesGLException
 
 class GLTexture : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
 private:
     uint _id;
 
@@ -257,7 +258,7 @@ public:
         glGenTextures( 1, &_id );
         debug checkGL;
         _target = tg;
-        debug log_debug( "generate texture [%d] with target [%s]", _id, _target );
+        debug logger.Debug( "[%d] with target [%s]", _id, _target );
     }
 
     final pure const @property uint id() { return _id; }
@@ -267,6 +268,7 @@ public:
     {
         bind();
         glGenerateMipmap(gltype);
+        debug logger.Debug( "[%d] with target [%s]", _id, _target );
     }
 
     void setParameter(T)( Parameter pname, T[] val... )
@@ -291,7 +293,7 @@ public:
             mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
 
         debug checkGL;
-        debug log_debug( "set texture [%d] parameter [%s]: %s", _id, pname, val );
+        debug logger.Debug( "[%d] [%s]: %s", _id, pname, val );
     }
 
     final nothrow
@@ -301,9 +303,14 @@ public:
             glActiveTexture( GL_TEXTURE0 + n );
             glBindTexture( gltype, _id );
             debug checkGL;
+            debug logger.trace( "[%d]", _id );
         }
 
-        void unbind() { glBindTexture( gltype, 0 ); }
+        void unbind()
+        {
+            glBindTexture( gltype, 0 );
+            debug logger.trace( "[%d]", _id );
+        }
         texsize_t size() const { return img_size; }
     }
 
@@ -329,7 +336,7 @@ public:
         `, N, accessVecFields!(sz) ) );
 
         debug checkGL;
-        debug log_trace( "set texture [%d] image: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+        debug logger.trace( "[%d]: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
                 _id, sz.data.dup, internal_format, data_format, data_type, data?true:false );
     }
     final void getImage( ref Image!2 img )
@@ -363,6 +370,7 @@ public:
         debug checkGL;
         unbind();
         debug checkGL;
+        debug logger.trace( "[%d] size [%d,%d], format [%s], type [%s]", _id, w,h, lformat, type );
     }
 
     final void image(size_t N)( in Image!N img ) if( N >= 1 && N <= 3 )

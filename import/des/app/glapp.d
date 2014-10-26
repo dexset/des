@@ -17,7 +17,7 @@ class GLAppException : AppException
 
 class GLWindow : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
 protected:
     void selfDestroy()
     {
@@ -99,7 +99,7 @@ private:
 
 class GLApp : App, ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
 protected:
     SDL_GLContext context = null;
     GLWindow[uint] windows;

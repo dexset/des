@@ -46,18 +46,18 @@ enum GLError
     INVALID_FRAMEBUFFER_OPERATION = 0x0506
 }
 
-nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
+nothrow void checkGL(string fnc=__FUNCTION__)( bool except=false, string md=__FILE__, size_t ln=__LINE__ )
 {
     auto err = cast(GLError)glGetError();
     try 
     {
         if( err != GLError.NO )
         {
-            auto errstr = format( " ## GL ERROR ## %s at line: %s: %s", md, ln, err );
+            auto errstr = format( " ## GL ERROR ## [%s:%d]: %s", md, ln, err );
             if( except ) throw new Exception( errstr );
-            else log_error( errstr );
+            else log_error!fnc( errstr );
         }
-        else{ log_trace( "GL OK %s at line: %s", md, ln ); }
+        else{ log_trace!fnc( "GL OK" ); }
     } 
     catch( Exception e )
     {
