@@ -55,7 +55,7 @@ nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
         {
             auto errstr = format( " ## GL ERROR ## %s at line: %s: %s", md, ln, err );
             if( except ) throw new Exception( errstr );
-            else stderr.writefln( errstr );
+            else log_error( errstr );
         }
         else{ log_trace( "GL OK %s at line: %s", md, ln ); }
     } 

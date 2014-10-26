@@ -28,6 +28,8 @@ import std.string;
 
 public import derelict.opengl3.gl3;
 
+import des.util.logger;
+
 import des.gl.base.type;
 import des.gl.util.ext;
 
@@ -255,6 +257,7 @@ public:
         glGenTextures( 1, &_id );
         debug checkGL;
         _target = tg;
+        debug log_debug( "generate texture [%d] with target [%s]", _id, _target );
     }
 
     final pure const @property uint id() { return _id; }
@@ -288,6 +291,7 @@ public:
             mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
 
         debug checkGL;
+        debug log_debug( "set texture [%d] parameter [%s]: %s", _id, pname, val );
     }
 
     final nothrow
@@ -296,6 +300,7 @@ public:
         {
             glActiveTexture( GL_TEXTURE0 + n );
             glBindTexture( gltype, _id );
+            debug checkGL;
         }
 
         void unbind() { glBindTexture( gltype, 0 ); }
@@ -324,6 +329,8 @@ public:
         `, N, accessVecFields!(sz) ) );
 
         debug checkGL;
+        debug log_trace( "set texture [%d] image: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                _id, sz.data.dup, internal_format, data_format, data_type, data?true:false );
     }
     final void getImage( ref Image!2 img )
     in { assert( _target == Target.T2D ); } body

@@ -25,6 +25,7 @@ The MIT License (MIT)
 module des.gl.base.render;
 
 import des.util.emm;
+import des.util.logger;
 import des.math.linear;
 import des.gl.base;
 import des.il;
@@ -79,15 +80,18 @@ public:
         depth = registerChildEMM( createDepth() );
         color = registerChildEMM( createColor() );
 
-        resize( ivec2(1,1) );
+        resize( uivec2(1,1) );
 
         fbo = newEMM!GLFrameBuffer;
         fbo.setAttachment( depth, fbo.Attachment.DEPTH );
         fbo.setAttachment( color, fbo.Attachment.COLOR0 );
         fbo.unbind();
+
+        debug log_debug( "create render: FBO [%d], color [%s][%d], depth [%s][%d]",
+                fbo.id, CB?"RB":"Tex", color.id, DB?"RB":"Tex", depth.id );
     }
 
-    void opCall( ivec2 sz, void delegate() draw_func )
+    void opCall( uivec2 sz, void delegate() draw_func )
     in
     {
         assert( sz.x > 0 );
@@ -111,6 +115,8 @@ public:
         fbo.unbind();
 
         glViewport( vpbuf[0], vpbuf[1], vpbuf[2], vpbuf[3] );
+
+        debug log_trace( "render: FBO [%d], size [%d,%d]", fbo.id, sz[0], sz[1] );
     }
 
 protected:
@@ -133,7 +139,7 @@ protected:
         return tmp;
     }
 
-    void resize( ivec2 sz )
+    void resize( uivec2 sz )
     {
         depth.resize( sz );
         color.resize( sz );

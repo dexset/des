@@ -39,7 +39,7 @@ import des.il.image;
 class GLFBOException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
-    { super( msg, file, line ); } 
+    { super( msg, file, line ); }
 }
 
 class GLRenderBuffer : ExternalMemoryManager
@@ -87,46 +87,72 @@ public:
         STENCIL_INDEX8     = GL_STENCIL_INDEX8
     }
 
-    @property Format format() { return _format; }
-
     this()
     {
         glGenRenderbuffers( 1, &_id );
         debug checkGL;
+        debug log_debug( "generate render buffer [%d]", _id );
     }
 
-    final pure const @property uint id() { return _id; }
+    final pure const @property
+    {
+        uint id() { return _id; }
+        Format format() { return _format; }
+    }
 
-    void bind() { glBindRenderbuffer( GL_RENDERBUFFER, _id ); }
-    void unbind() { glBindRenderbuffer( GL_RENDERBUFFER, 0 ); }
+    void bind()
+    {
+        glBindRenderbuffer( GL_RENDERBUFFER, _id );
+        debug checkGL;
+        debug log_trace( "bind render buffer [%d]", id );
+    }
+
+    void unbind()
+    {
+        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+        debug checkGL;
+        debug log_trace( "unbind render buffer" );
+    }
+
+    void storage( in uivec2 sz, Format fmt )
+    in
+    {
+        assert( sz[0] < GL_MAX_RENDERBUFFER_SIZE );
+        assert( sz[1] < GL_MAX_RENDERBUFFER_SIZE );
+    }
+    body
+    {
+        bind();
+        _format = fmt;
+        glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
+        debug checkGL;
+        unbind();
+        debug log_debug( "render buffer [%d] storage: size [%d,%d], format [%s]", id, sz[0], sz[1], fmt );
+    }
+
+    void resize( in uivec2 sz ) { storage( sz, _format ); }
 
     void storage(T)( in T sz, Format fmt )
     if( isCompatibleVector!(2,uint,T) )
     in
     {
-        assert( sz[0] < GL_MAX_RENDERBUFFER_SIZE );
         assert( sz[0] >= 0 );
-        assert( sz[1] < GL_MAX_RENDERBUFFER_SIZE );
         assert( sz[1] >= 0 );
     }
-    body
-    {
-        bind(); scope(exit) unbind();
-        _format = fmt;
-        glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
-        debug checkGL;
-        unbind();
-    }
+    body { storage( uivec2(sz), fmt ); }
 
     void resize(T)( in T sz )
     if( isCompatibleVector!(2,uint,T) )
-    { storage( sz, _format ); }
+    { resize( uivec2(sz) ); }
 
 protected:
+
     void selfDestroy()
     {
         unbind();
         glDeleteRenderbuffers( 1, &_id );
+        debug checkGL;
+        debug log_debug( "delete render buffer [%d]", id );
     }
 }
 
@@ -149,6 +175,7 @@ public:
 
         glGenFramebuffers( 1, &_id );
         debug checkGL;
+        debug log_debug( "generate frame buffer: %d", _id );
     }
 
     final pure const @property uint id() { return _id; }
@@ -160,6 +187,8 @@ public:
             if( id_stack[$-1] == _id ) return;
             glBindFramebuffer( GL_FRAMEBUFFER, _id );
             id_stack ~= _id;
+            debug checkGL;
+            debug log_trace( "bind frame buffer [%d]", _id );
         }
 
         void unbind()
@@ -167,48 +196,52 @@ public:
             if( id_stack.length < 2 && id_stack[$-1] != _id ) return;
             id_stack.length--;
             glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
+            debug checkGL;
+            debug log_trace( "rebind frame buffer [%d] to [%d]", _id, id_stack[$-1] );
         }
     }
 
-    void setAttachment(T)( T obj, Attachment attachment )
+    void setAttachment(T)( T obj, Attachment att )
         if( is( T : GLTexture ) || is( T : GLRenderBuffer ) )
     {
         static if( is( T : GLTexture ) )
-            texture( obj, attachment );
+            texture( obj, att );
         else static if( is( T : GLRenderBuffer ) )
-            renderBuffer( obj, attachment );
+            renderBuffer( obj, att );
     }
 
-    void texture( GLTexture tex, Attachment attachment )
+    void texture( GLTexture tex, Attachment att )
     in { assert( isValidTextureTarget(tex.target) ); }
-    body { texture( tex, attachment, tex.target ); }
+    body { texture( tex, att, tex.target ); }
 
-    void texture( GLTexture tex, Attachment attachment, GLTexture.Target trg )
+    void texture( GLTexture tex, Attachment att, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
     {
         bind(); scope(exit) unbind();
 
         if( trg == tex.Target.T1D )
-            glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+            glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0 );
         else if( tex.target == tex.Target.T3D )
-            glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+            glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0, 0 );
         else
-            glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+            glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0 );
 
         debug checkGL;
+        debug log_debug( "set frame buffer [%d] texture [%s] as attachment [%s]", id, tex.id, att );
     }
 
-    void renderBuffer( GLRenderBuffer rbo, Attachment attachment )
+    void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
         bind(); scope(exit) unbind();
 
-        glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)attachment, 
+        glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
                                    GL_RENDERBUFFER, rbo.id );
 
         debug checkGL;
+        debug log_debug( "set frame buffer [%d] render buffer [%d] as attachment [%s]", id, rbo.id, att );
     }
 
     void check()
@@ -226,6 +259,7 @@ protected:
     {
         unbind();
         glDeleteFramebuffers( 1, &_id );
+        debug log_debug( "delete frame buffer [%d]", id );
     }
 
     @property static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)()
@@ -269,4 +303,3 @@ protected:
         }
     }
 }
-

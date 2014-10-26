@@ -83,17 +83,17 @@ unittest
 
 struct ShaderSource
 {
+    string name;
     string vert, geom, frag;
 
 pure:
-    this( string v, string f="" )
-    {
-        vert = v;
-        frag = f;
-    }
+    this( string v, string f="" ) { this("",v,"",f); }
 
-    this( string v, string g, string f )
+    this( string v, string g, string f ) { this("",v,g,f); }
+
+    this( string n, string v, string g, string f )
     {
+        name = n;
         vert = v;
         geom = g;
         frag = f;
@@ -132,7 +132,7 @@ pure:
         }
         else sep[cur] ~= ln ~ '\n';
 
-    return ShaderSource(sep[0],sep[1],sep[2]);
+    return ShaderSource(name,sep[0],sep[1],sep[2]);
 }
 
 class GLShaderException : DesGLException 
@@ -155,6 +155,13 @@ protected:
 
     GLuint program = 0;
 
+    enum ShaderType
+    {
+        VERTEX   = GL_VERTEX_SHADER,
+        GEOMETRY = GL_GEOMETRY_SHADER,
+        FRAGMENT = GL_FRAGMENT_SHADER
+    };
+
     final nothrow @property 
     {
         bool thisInUse() const { return inUse == program; }
@@ -169,10 +176,10 @@ protected:
         }
     }
 
-    static GLuint makeShader( GLenum type, string src )
+    static GLuint makeShader( ShaderType type, string src )
     {
-        GLuint shader = glCreateShader( type );
-        debug log_info( "create shader %s with type %s", shader, type ); 
+        GLuint shader = glCreateShader( cast(GLenum)type );
+        debug log_trace( "create shader [%s] with type [%s]", shader, type ); 
         auto srcptr = src.toStringz;
         glShaderSource( shader, 1, &(srcptr), null );
         glCompileShader( shader );
@@ -220,12 +227,12 @@ protected:
 
         program = glCreateProgram();
 
-        vert_sh = makeShader( GL_VERTEX_SHADER, src.vert );
+        vert_sh = makeShader( ShaderType.VERTEX, src.vert );
 
         if( src.geom.length )
-            geom_sh = makeShader( GL_GEOMETRY_SHADER, src.geom );
+            geom_sh = makeShader( ShaderType.GEOMETRY, src.geom );
         if( src.frag.length )
-            frag_sh = makeShader( GL_FRAGMENT_SHADER, src.frag );
+            frag_sh = makeShader( ShaderType.FRAGMENT, src.frag );
 
         glAttachShader( program, vert_sh );
 
@@ -238,16 +245,6 @@ protected:
         checkProgram( program );
 
         debug checkGL;
-    }
-
-    bool checkLocation( int loc )
-    {
-        debug(glshader) 
-        {
-            import std.stdio;
-            if( loc < 0 ) stderr.writeln( "bad location" );
-        }
-        return loc >= 0;
     }
 
     void selfDestroy()
@@ -266,11 +263,17 @@ protected:
 
         glDeleteShader( vert_sh );
 
+        debug log_debug( "delete shader program [%d]", program );
+
         debug checkGL;
     }
 
 public:
-    this( in ShaderSource src ) { construct( src ); }
+    this( in ShaderSource src )
+    {
+        construct( src );
+        debug log_debug( "create shader program [%d] from source [%s]", program, src.name );
+    }
 
     final nothrow void use() { thisInUse = true; }
 }
@@ -284,7 +287,7 @@ public:
     { 
         auto ret = glGetAttribLocation( program, name.toStringz ); 
         debug checkGL;
-        //enforce( ret >= 0, new GLShaderException( format( "bad attribute name: '%s'", name ) ) );
+        debug if(ret<0) log_warn( "shader [%d] bad attribute name: '%s'", program, name );
         return ret;
     }
 
@@ -300,14 +303,14 @@ public:
     {
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        //enforce( ret >= 0, new GLShaderException( format( "bad uniform name: '%s'", name ) ) );
+        debug if(ret<0) log_warn( "shader [%d] bad uniform name: '%s'", program, name );
         return ret;
     }
 
     void setUniform(S,T...)( int loc, T vals ) 
         if( checkUniform!(S,T) )
     {
-        if( !checkLocation( loc ) ) return;
+        if( loc < 0 ) return;
         use();
         mixin( "glUniform" ~ to!string(T.length) ~ glPostfix!S ~ "( loc, " ~ 
                 castArgsString!(S,"vals",T) ~ " );" );
@@ -325,7 +328,7 @@ public:
     void setUniformArr(size_t sz,T)( int loc, in T[] vals )
         if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
     {
-        if( !checkLocation( loc ) ) return;
+        if( loc < 0 ) return;
         auto cnt = vals.length / sz;
         use();
         mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
@@ -340,7 +343,7 @@ public:
     void setUniformVec(size_t N,T,string AS)( int loc, Vector!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
     {
-        if( !checkLocation( loc ) ) return;
+        if( loc < 0 ) return;
         use();
 
         T[] data;
@@ -358,7 +361,7 @@ public:
     void setUniformMat(size_t h, size_t w)( int loc, in Matrix!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
     {
-        if( !checkLocation( loc ) ) return;
+        if( loc < 0 ) return;
         use();
         static if( w == h )
             mixin( "glUniformMatrix" ~ to!string(w) ~ 

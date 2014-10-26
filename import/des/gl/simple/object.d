@@ -130,9 +130,10 @@ protected:
         if( draw_count > 0 )
             glDrawArrays( mode, 0, cast(uint)draw_count );
         else if( warn_if_empty )
-            stderr.writeln( "WARNING: draw empty object" );
+            log_warn( "simple object draw empty object" );
 
         debug checkGL;
+        debug log_trace( "simple object draw arrays: mode [%s], count [%d]", mode, draw_count );
     }
 
     void drawElements( DrawMode mode )
@@ -142,9 +143,10 @@ protected:
         if( index_count > 0 && draw_count > 0 )
             glDrawElements( mode, cast(uint)index_count, GL_UNSIGNED_INT, null );
         else if( warn_if_empty )
-            stderr.writeln( "WARNING: draw empty object" );
+            log_warn( "simple object draw empty object" );
 
         debug checkGL;
+        debug log_trace( "simple object draw elements: mode [%s], count [%d]", mode, index_count );
     }
 
 public:

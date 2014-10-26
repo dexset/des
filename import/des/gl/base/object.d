@@ -49,7 +49,12 @@ protected:
     size_t data_size;
     size_t element_count;
 
-    void selfDestroy() { glDeleteBuffers( 1, &_id ); }
+    void selfDestroy()
+    {
+        glDeleteBuffers( 1, &_id );
+        debug checkGL;
+        debug log_debug( "delete buffer [%d]", _id );
+    }
 
     nothrow @property GLenum gltype() const { return cast(GLenum)type; }
 
@@ -101,12 +106,23 @@ public:
         type = tp;
 
         debug checkGL;
+        debug log_debug( "generate buffer [%d] with type [%s]", _id, type );
     }
 
     final nothrow
     {
-        void bind() { glBindBuffer( gltype, _id ); }
-        void unbind(){ glBindBuffer( gltype, 0 ); }
+        void bind()
+        {
+            glBindBuffer( gltype, _id );
+            debug checkGL;
+            debug log_trace( "bind buffer [%d] with type [%s]", _id, type );
+        }
+        void unbind()
+        {
+            glBindBuffer( gltype, 0 );
+            debug checkGL;
+            debug log_trace( "unbind buffer type [%s]", type );
+        }
         @property uint id() const { return _id; }
     }
 
@@ -136,6 +152,8 @@ public:
             elementSizeCallback( element_size );
 
         debug checkGL;
+        debug log_trace( "buffer [%d] [%s] data: size [%d], element size [%d], usage [%s]",
+                id, type, size, element_size, mem );
     }
 
     void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
@@ -149,6 +167,10 @@ public:
         bind();
         glBufferSubData( gltype, offset, size, data_arr.ptr );
         unbind();
+
+        debug checkGL;
+        debug log_trace( "buffer [%d] [%s] sub data: offset [%d], size [%d], element size [%d]",
+                id, type, offset, size, element_size );
     }
 
     void[] getUntypedData()
@@ -199,6 +221,7 @@ public:
     void* map( Access access=Access.READ_ONLY )
     {
         debug scope(exit) checkGL;
+        debug log_trace( "map buffer [%d] by access [%s]", id, access );
         return glMapBuffer( gltype, cast(GLenum)access );
     }
 
@@ -207,10 +230,16 @@ public:
         debug scope(exit) checkGL;
         if( offset + length > data_size )
             throw new GLObjException( "map buffer range: offset + length > data_size" );
+        debug log_trace( "map buffer range [%d] by access [%s]: offset [%d], length [%d]",
+                id, access, offset, length );
         return glMapBufferRange( gltype, offset, length, cast(GLenum)access );
     }
 
-    void unmap() { glUnmapBuffer( gltype ); }
+    void unmap()
+    {
+        glUnmapBuffer( gltype );
+        debug log_trace( "unmap buffer [%d]", id );
+    }
 }
 
 final class GLVAO : ExternalMemoryManager
@@ -225,20 +254,25 @@ protected:
 public:
     static nothrow void unbind(){ glBindVertexArray(0); }
 
-    this() { glGenVertexArrays( 1, &_id ); }
+    this()
+    {
+        glGenVertexArrays( 1, &_id );
+        debug checkGL;
+        debug log_debug( "generate VAO [%d]", _id );
+    }
 
     nothrow 
     {
         void bind() 
         { 
             glBindVertexArray( _id ); 
-            debug(glvao) log( "bind:  %d", _id );
             debug checkGL;
+            debug log_trace( "bind VAO [%d]", _id );
         }
 
         void enable( int n )
         {
-            debug log_info( "enable attrib %d for vao %d", n, _id );
+            debug scope(exit) log_debug( "for VAO [%d] enable attrib %d", _id, n );
             if( n < 0 ) return;
             bind();
             glEnableVertexAttribArray( n ); 
@@ -247,7 +281,7 @@ public:
 
         void disable( int n )
         {
-            debug log_info( "disable attrib %d for vao %d", n, _id );
+            debug scope(exit) log_debug( "for VAO [%d] disable attrib %d", _id, n );
             if( n < 0 ) return;
             bind();
             glDisableVertexAttribArray( n ); 
@@ -277,7 +311,16 @@ protected:
             buffer.bind();
             glVertexAttribPointer( index, cast(int)per_element,
                     cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
+            debug checkGL;
             buffer.unbind();
+
+            debug log_debug( "set vertex attrib pointer: VAO [%d], buffer [%d], "~
+                             "index [%d], per element [%d][%s]"~
+                             "%s%s",
+                             vao._id, buffer.id,
+                             index, per_element, attype, 
+                             stride != 0 ? ntformat(", stride [%d], offset [%d]", stride, offset ) : "",
+                             norm ? ntformat( ", norm [%s]", norm ) : "" );
         }
     }
 
@@ -287,5 +330,6 @@ public:
     {
         vao = newEMM!GLVAO;
         debug checkGL;
+        debug log_debug( "create GLObject" );
     }
 }
