@@ -6,6 +6,7 @@ import std.string;
 
 public import des.gl.base;
 import des.gl.util;
+import des.util.logger;
 
 abstract class GLSimpleObject : GLObject
 {
