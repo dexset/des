@@ -22,83 +22,148 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.frame;
+module des.gl.base.frame;
 
 import derelict.opengl3.gl3;
 
-import desmath.linear;
-import desutil.emm;
+import des.math.linear;
+import des.util.emm;
 
-import desgl.base.texture;
-import desgl.util;
+import des.gl.base.texture;
+import des.gl.util;
 
-import desutil.logger;
-mixin( PrivateLoggerMixin );
+import des.util.logger;
 
-import desil.image;
+import des.il.image;
 
 class GLFBOException : DesGLException 
 { 
     @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
-    { super( msg, file, line ); } 
+    { super( msg, file, line ); }
 }
 
 class GLRenderBuffer : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
+
 protected:
     uint _id;
+    Format _format;
+
 public:
 
     enum Format
     {
-        RGBA4             = GL_RGBA4,
-        RGB5              = GL_RGB5,
-        RGB5_A1           = GL_RGB5_A1,
-        DEPTH_COMPONENT16 = GL_DEPTH_COMPONENT16,
-        DEPTH_COMPONENT24 = GL_DEPTH_COMPONENT24,
-        STENCIL_INDEX8    = GL_STENCIL_INDEX8
+        R8                 = GL_R8,
+        R8UI               = GL_R8UI,
+        R8I                = GL_R8I,
+        R16UI              = GL_R16UI,
+        R16I               = GL_R16I,
+        R32UI              = GL_R32UI,
+        R32I               = GL_R32I,
+        RG8                = GL_RG8,
+        RG8UI              = GL_RG8UI,
+        RG8I               = GL_RG8I,
+        RG16UI             = GL_RG16UI,
+        RG16I              = GL_RG16I,
+        RG32UI             = GL_RG32UI,
+        RG32I              = GL_RG32I,
+        RGB8               = GL_RGB8,
+        RGBA8              = GL_RGBA8,
+        SRGB8_ALPHA8       = GL_SRGB8_ALPHA8,
+        RGB5_A1            = GL_RGB5_A1,
+        RGBA4              = GL_RGBA4,
+        RGB10_A2           = GL_RGB10_A2,
+        RGBA8UI            = GL_RGBA8UI,
+        RGBA8I             = GL_RGBA8I,
+        RGB10_A2UI         = GL_RGB10_A2UI,
+        RGBA16UI           = GL_RGBA16UI,
+        RGBA16I            = GL_RGBA16I,
+        RGBA32I            = GL_RGBA32I,
+        RGBA32UI           = GL_RGBA32UI,
+        DEPTH_COMPONENT16  = GL_DEPTH_COMPONENT16,
+        DEPTH_COMPONENT24  = GL_DEPTH_COMPONENT24,
+        DEPTH_COMPONENT32F = GL_DEPTH_COMPONENT32F,
+        DEPTH24_STENCIL8   = GL_DEPTH24_STENCIL8,
+        DEPTH32F_STENCIL8  = GL_DEPTH32F_STENCIL8,
+        STENCIL_INDEX8     = GL_STENCIL_INDEX8
     }
 
     this()
     {
         glGenRenderbuffers( 1, &_id );
         debug checkGL;
+        debug logger.Debug( "[%d]", _id );
     }
 
-    final pure const @property uint id() { return _id; }
+    final pure const @property
+    {
+        uint id() { return _id; }
+        Format format() { return _format; }
+    }
 
-    void bind() { glBindRenderbuffer( GL_RENDERBUFFER, _id ); }
-    void unbind() { glBindRenderbuffer( GL_RENDERBUFFER, 0 ); }
+    void bind()
+    {
+        glBindRenderbuffer( GL_RENDERBUFFER, _id );
+        debug checkGL;
+        debug logger.trace( "[%d]", id );
+    }
 
-    void storage(T)( in T sz, Format fmt )
-    if( isCompVector!(2,uint,T) )
+    void unbind()
+    {
+        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
+        debug checkGL;
+        debug logger.trace( "call from [%d]", _id );
+    }
+
+    void storage( in uivec2 sz, Format fmt )
     in
     {
         assert( sz[0] < GL_MAX_RENDERBUFFER_SIZE );
-        assert( sz[0] >= 0 );
         assert( sz[1] < GL_MAX_RENDERBUFFER_SIZE );
-        assert( sz[1] >= 0 );
     }
     body
     {
-        bind(); scope(exit) unbind();
+        bind();
+        _format = fmt;
         glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
         debug checkGL;
         unbind();
+        debug logger.Debug( "[%d]: size [%d,%d], format [%s]", id, sz[0], sz[1], fmt );
     }
 
+    void resize( in uivec2 sz ) { storage( sz, _format ); }
+
+    void storage(T)( in T sz, Format fmt )
+    if( isCompatibleVector!(2,uint,T) )
+    in
+    {
+        assert( sz[0] >= 0 );
+        assert( sz[1] >= 0 );
+    }
+    body { storage( uivec2(sz), fmt ); }
+
+    void resize(T)( in T sz )
+    if( isCompatibleVector!(2,uint,T) )
+    { resize( uivec2(sz) ); }
+
 protected:
+
     void selfDestroy()
     {
         unbind();
         glDeleteRenderbuffers( 1, &_id );
+        debug checkGL;
+        debug logger.Debug( "[%d]", id );
     }
 }
 
 class GLFrameBuffer : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
+
 protected:
     uint _id;
     static uint[] id_stack;
@@ -115,6 +180,7 @@ public:
 
         glGenFramebuffers( 1, &_id );
         debug checkGL;
+        debug logger.Debug( "[%d]", _id );
     }
 
     final pure const @property uint id() { return _id; }
@@ -126,6 +192,8 @@ public:
             if( id_stack[$-1] == _id ) return;
             glBindFramebuffer( GL_FRAMEBUFFER, _id );
             id_stack ~= _id;
+            debug checkGL;
+            debug logger.trace( "[%d]", _id );
         }
 
         void unbind()
@@ -133,39 +201,52 @@ public:
             if( id_stack.length < 2 && id_stack[$-1] != _id ) return;
             id_stack.length--;
             glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
+            debug checkGL;
+            debug logger.trace( "[%d] to [%d]", _id, id_stack[$-1] );
         }
     }
 
-    void texture( GLTexture tex, Attachment attachment )
-    in { assert( isValidTextureTarget(tex.type) ); }
-    body { texture( tex, attachment, tex.type ); }
+    void setAttachment(T)( T obj, Attachment att )
+        if( is( T : GLTexture ) || is( T : GLRenderBuffer ) )
+    {
+        static if( is( T : GLTexture ) )
+            texture( obj, att );
+        else static if( is( T : GLRenderBuffer ) )
+            renderBuffer( obj, att );
+    }
 
-    void texture( GLTexture tex, Attachment attachment, GLTexture.Target trg )
+    void texture( GLTexture tex, Attachment att )
+    in { assert( isValidTextureTarget(tex.target) ); }
+    body { texture( tex, att, tex.target ); }
+
+    void texture( GLTexture tex, Attachment att, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
     {
         bind(); scope(exit) unbind();
 
         if( trg == tex.Target.T1D )
-            glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+            glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0 );
-        else if( tex.type == tex.Target.T3D )
-            glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+        else if( tex.target == tex.Target.T3D )
+            glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0, 0 );
         else
-            glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)attachment,
+            glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0 );
 
         debug checkGL;
+        debug logger.Debug( "[%d] [%s] as [%s]", id, tex.id, att );
     }
 
-    void renderBuffer( GLRenderBuffer rbo, Attachment attachment )
+    void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
         bind(); scope(exit) unbind();
 
-        glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)attachment, 
+        glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
                                    GL_RENDERBUFFER, rbo.id );
 
         debug checkGL;
+        debug logger.Debug( "[%d] [%d] as [%s]", id, rbo.id, att );
     }
 
     void check()
@@ -183,6 +264,7 @@ protected:
     {
         unbind();
         glDeleteFramebuffers( 1, &_id );
+        debug logger.Debug( "[%d]", _id );
     }
 
     @property static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)()
@@ -226,4 +308,3 @@ protected:
         }
     }
 }
-

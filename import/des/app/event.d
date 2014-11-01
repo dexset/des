@@ -1,6 +1,9 @@
-module desapp.event;
+module des.app.event;
 
-public import desmath.linear;
+public import des.math.linear;
+
+import std.traits;
+import std.string;
 
 /++
  события клавиатуры
@@ -308,6 +311,18 @@ struct KeyboardEvent
  +/
 struct TextEvent { dchar ch; }
 
+T binAdd(T)( in T a, in T b )
+    if( isIntegral!T )
+{ return a | b; }
+
+T binRemove(T)( in T a, in T b )
+    if( isIntegral!T )
+{ return a ^ ( a & b ); }
+
+bool binHas(T)( in T a, in T b )
+    if( isIntegral!T )
+{ return ( a & b ) == b; }
+
 /++
  событие мыши
  +/
@@ -316,6 +331,7 @@ struct MouseEvent
     enum Type { PRESSED, RELEASED, MOTION, WHEEL };
     enum Button
     {
+        NONE   = 0,
         LEFT   = 1<<0,
         MIDDLE = 1<<1,
         RIGHT  = 1<<2,
@@ -325,12 +341,43 @@ struct MouseEvent
     /++ тип события +/
     Type type; 
 
+    Button btn = Button.NONE;
     /++ mask for motion, button for pressed/released, 0 for wheel+/
-    uint btn; 
+    uint mask;
 
     ivec2 pos;
     ivec2 rel;
+    ivec2[[EnumMembers!Button].length-1] posPress;
+    ivec2[[EnumMembers!Button].length-1] relPress;
     ivec2 whe;
+
+    ivec2 getPosPress( Button b ) const
+    {
+        if( b == Button.NONE ) return pos;
+        return posPress[buttonIndex(b)];
+    }
+
+    ivec2 getRelPress( Button b ) const
+    {
+        if( b == Button.NONE ) return ivec2(0,0);
+        return relPress[buttonIndex(b)];
+    }
+
+    bool isPressed( Button b ) const
+    { return binHas( mask, b ); }
+
+    void appendButton( uint b )
+    { mask = binAdd( mask, b ); }
+
+    void removeButton( uint b )
+    { mask = binRemove( mask, b ); }
+
+    static size_t buttonIndex( Button b )
+    {
+        foreach( i, lb; [EnumMembers!Button][1..$] )
+            if( lb == b ) return i;
+        assert(0,format("%s has no index",b));
+    }
 }
 
 /++

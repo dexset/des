@@ -1,13 +1,13 @@
-module desapp.glapp;
+module des.app.glapp;
 
-import desapp.base;
+import des.app.base;
 
 import std.stdio;
 
 public import derelict.opengl3.gl3;
-public import desutil.emm;
-public import desutil.string;
-public import desapp.sdlevproc;
+public import des.util.emm;
+public import des.util.string;
+public import des.app.sdlevproc;
 
 class GLAppException : AppException
 {
@@ -17,14 +17,8 @@ class GLAppException : AppException
 
 class GLWindow : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
 protected:
-    void selfDestroy()
-    {
-        if( win !is null )
-            SDL_DestroyWindow( win );
-        win = null;
-    }
 
     abstract void prepare();
     SDL_Window* win = null;
@@ -60,8 +54,12 @@ public:
         if( win is null )
             throw new GLAppException( "Couldn't create SDL widnow: " ~ toDString( SDL_GetError() ) );
 
-        draw.addBegin( { glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); } );
-        draw.addEnd( { SDL_GL_SwapWindow( win ); } );
+        draw.addBegin(
+        {
+            glViewport( 0, 0, _size.x, _size.y );
+            glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        });
+        draw.addEnd({ SDL_GL_SwapWindow( win ); });
     }
 
     auto addEventProcessor(T)( T evproc ) if( is( T : EventProcessor ) )
@@ -73,13 +71,17 @@ public:
     auto addNewEventProcessor(T, Args...)( Args args )
         if( is( T : EventProcessor ) )
     {
-        auto evproc = registerChildEMM( new T(args) );
+        auto evproc = newEMM!T(args);
         return addEventProcessor( evproc );
     }
 
     void procEvents( const ref SDL_Event ev )//Предполагается, что входящее событие предназначено именно этому окну
     {
         foreach( p; processors ) if( p(ev) ) break;
+
+        if( ev.type == SDL_WINDOWEVENT &&
+            ev.window.event == SDL_WINDOWEVENT_RESIZED )
+            _size = ivec2( ev.window.data1, ev.window.data2 );
     }
 
     @property uint id(){ return SDL_GetWindowID( win ); }
@@ -87,11 +89,20 @@ public:
 private:
     void setApp( GLApp owner ) { app = owner; }
     void makeCurrent() { SDL_GL_MakeCurrent( win, app.context );}
+
+protected:
+
+    void selfDestroy()
+    {
+        if( win !is null )
+            SDL_DestroyWindow( win );
+        win = null;
+    }
 }
 
 class GLApp : App, ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
 protected:
     SDL_GLContext context = null;
     GLWindow[uint] windows;
@@ -177,6 +188,10 @@ public:
             if( context is null )
                 throw new GLAppException( "Couldn't create GL context: " ~ toDString( SDL_GetError() ) );
             DerelictGL3.reload();
+
+            glClearColor( 0.0, 0.0, 0.0, 0.0 );
+            glEnable( GL_BLEND );
+            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         }
 
         win.setApp( this );

@@ -22,20 +22,22 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.texture;
+module des.gl.base.texture;
 
 import std.string;
 
 public import derelict.opengl3.gl3;
 
-import desgl.base.type;
-import desgl.util.ext;
+import des.util.logger;
 
-import desmath.linear.vector;
-import desil;
+import des.gl.base.type;
+import des.gl.util.ext;
+
+import des.math.linear.vector;
+import des.il;
 
 import std.algorithm;
-import desutil.algo;
+import des.util.algo;
 
 class GLTextureException : DesGLException 
 { 
@@ -45,7 +47,8 @@ class GLTextureException : DesGLException
 
 class GLTexture : ExternalMemoryManager
 {
-mixin( getMixinChildEMM );
+    mixin DirectEMM;
+    mixin AnywayLogger;
 private:
     uint _id;
 
@@ -59,14 +62,18 @@ protected:
         debug checkGL;
     }
 
-    Target _type;
+    Target _target;
 
-    nothrow @property GLenum gltype() const { return cast(GLenum)_type; }
+    nothrow @property GLenum gltype() const { return cast(GLenum)_target; }
+
+    InternalFormat liformat;
+    Format lformat;
+    Type ltype;
 
 public:
 
-    alias vec!(3,size_t,"whd") texsize_t; 
-    @property Target type() const { return _type; }
+    alias Vector!(3,size_t,"w h d") texsize_t; 
+    @property Target target() const { return _target; }
 
     enum Target
     {
@@ -177,6 +184,7 @@ public:
         DEPTH_COMPONENT16     = GL_DEPTH_COMPONENT16,
         DEPTH_COMPONENT24     = GL_DEPTH_COMPONENT24,
         DEPTH_COMPONENT32     = GL_DEPTH_COMPONENT32,
+        DEPTH_COMPONENT32F    = GL_DEPTH_COMPONENT32F,
         R3_G3_B2              = GL_R3_G3_B2,
         RED                   = GL_RED,
         RG                    = GL_RG,
@@ -209,7 +217,10 @@ public:
         RGBA = GL_RGBA,
 
         BGR  = GL_BGR,
-        BGRA = GL_BGRA
+        BGRA = GL_BGRA,
+
+        DEPTH = GL_DEPTH_COMPONENT,
+        DEPTH_STENCIL = GL_DEPTH_STENCIL
     }
 
     enum Type
@@ -241,21 +252,23 @@ public:
         FLOAT_32_UNSIGNED_INT_24_8_REV  = GL_FLOAT_32_UNSIGNED_INT_24_8_REV
     }
 
-    this( Target tp )
-    in { assert( isBase(tp) ); } body
+    this( Target tg )
+    in { assert( isBase(tg) ); } body
     {
         glGenTextures( 1, &_id );
         debug checkGL;
-        _type = tp;
+        _target = tg;
+        debug logger.Debug( "[%d] with target [%s]", _id, _target );
     }
 
     final pure const @property uint id() { return _id; }
 
     void genMipmap()
-    in { assert( isMipmapable(_type) ); } body
+    in { assert( isMipmapable(_target) ); } body
     {
         bind();
         glGenerateMipmap(gltype);
+        debug logger.Debug( "[%d] with target [%s]", _id, _target );
     }
 
     void setParameter(T)( Parameter pname, T[] val... )
@@ -263,7 +276,7 @@ public:
     in
     {
         assert( val.length > 0 );
-        assert( isParametric(_type) );
+        assert( isParametric(_target) );
         static if( !is(T==float) )
             assert( checkPosibleIntParamValues( pname, amap!(a=>cast(int)(a))(val) ) );
         else
@@ -280,21 +293,41 @@ public:
             mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
 
         debug checkGL;
+        debug logger.Debug( "[%d] [%s]: %s", _id, pname, val );
     }
 
     final nothrow
     {
-        void bind() { glBindTexture( gltype, _id ); }
-        void unbind() { glBindTexture( gltype, 0 ); }
+        void bind( ubyte n=0 )
+        {
+            glActiveTexture( GL_TEXTURE0 + n );
+            glBindTexture( gltype, _id );
+            debug checkGL;
+            debug logger.trace( "[%d]", _id );
+        }
+
+        void unbind()
+        {
+            glBindTexture( gltype, 0 );
+            debug logger.trace( "[%d]", _id );
+        }
         texsize_t size() const { return img_size; }
     }
 
+    void resize(T)( in T sz )
+        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
+    { image( sz, liformat, lformat, ltype ); }
+
     void image(T)( in T sz, InternalFormat internal_format, 
             Format data_format, Type data_type, in void* data=null )
-        if( isCompVector!(1,size_t,T) || isCompVector!(2,size_t,T) || isCompVector!(3,size_t,T) )
+        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
     {
         enum N = sz.length;
         img_size = texsize_t( sz, [1,1][0 .. 3-N] );
+
+        liformat = internal_format;
+        lformat = data_format;
+        ltype = data_type;
 
         bind();
         mixin( format(`
@@ -303,13 +336,19 @@ public:
         `, N, accessVecFields!(sz) ) );
 
         debug checkGL;
+        debug logger.trace( "[%d]: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                _id, sz.data.dup, internal_format, data_format, data_type, data?true:false );
     }
+    final void getImage( ref Image!2 img )
+    in { assert( _target == Target.T2D ); } body
+    { getImage( img, ltype ); }
 
-    final void getImage( ref Image!2 img, Format fmt=Format.RGB, Type type=Type.UNSIGNED_BYTE, uint level=0 )
-    in { assert( _type == Target.T2D ); } body
+    final void getImage( ref Image!2 img, Type type )
+    in { assert( _target == Target.T2D ); } body
     {
+        enum uint level = 0;
+
         bind();
-        if( level ) glGenerateMipmap(GL_TEXTURE_2D);
         debug checkGL;
         int w, h;
         glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &(w));
@@ -317,33 +356,38 @@ public:
         glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &(h));
         debug checkGL;
 
-        auto elemSize = formatElemCount(fmt) * sizeofType(type);
+        auto elemSize = formatElemCount(lformat) * sizeofType(type);
 
         auto dsize = w * h * elemSize;
 
         if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
-            img.allocate( ivec2(w,h), PixelType( elemSize ) );
+        {
+            img.size = ivec2( w, h );
+            img.type = imagePixelType( lformat, type );
+        }
 
-        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)fmt, cast(GLenum)type, img.data.ptr );
+        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)lformat, cast(GLenum)type, img.data.ptr );
         debug checkGL;
         unbind();
         debug checkGL;
+        debug logger.trace( "[%d] size [%d,%d], format [%s], type [%s]", _id, w,h, lformat, type );
     }
 
-    final void image(N)( in Image!N img ) if( N >= 1 && N <= 3 )
+    final void image(size_t N)( in Image!N img ) if( N >= 1 && N <= 3 )
     in
     {
         switch( N )
         {
-            case 1: assert( type == Target.T1D ); break;
-            case 2: assert( type == Target.T2D ); break;
-            case 3: assert( type == Target.T3D ); break;
+            case 1: assert( target == Target.T1D ); break;
+            case 2: assert( target == Target.T2D ); break;
+            case 3: assert( target == Target.T3D ); break;
+            default: assert(0);
         }
     }
     body
     {
         Type type = typeFromImageComponentType( img.type.comp );
-        auto fmt = formatFromImageChanelsCount( img.type.chanels );
+        auto fmt = formatFromImageChanelsCount( img.type.channels );
         image( img.size, fmt[0], fmt[1], type, img.data.ptr );
     }
 
@@ -464,6 +508,12 @@ public:
                 case Format.RGBA:
                 case Format.BGRA:
                     return 4;
+
+                case Format.DEPTH:
+                    return 1;
+
+                case Format.DEPTH_STENCIL:
+                    return 2;
             }
         }
 
@@ -504,6 +554,31 @@ public:
             }
         }
 
+        auto imagePixelType( Format fmt, Type type )
+        {
+            auto cnt = formatElemCount(fmt);
+            auto ict = imageComponentType(type);
+            if( ict == ComponentType.RAWBYTE )
+                return PixelType( sizeofType(type) * cnt );
+            else
+                return PixelType( ict, cnt );
+        }
+
+        ComponentType imageComponentType( Type type )
+        {
+            switch( type )
+            {
+                case Type.BYTE:           return ComponentType.BYTE;
+                case Type.UNSIGNED_BYTE:  return ComponentType.UBYTE;
+                case Type.SHORT:          return ComponentType.SHORT;
+                case Type.UNSIGNED_SHORT: return ComponentType.USHORT;
+                case Type.INT:            return ComponentType.INT;
+                case Type.UNSIGNED_INT:   return ComponentType.UINT;
+                case Type.FLOAT:          return ComponentType.FLOAT;
+                default:                  return ComponentType.RAWBYTE;
+            }
+        }
+
         @property bool isParameterEnum(T)()
         {
             return is(T==DepthStencilTextureMode) ||
@@ -536,10 +611,10 @@ public:
         {
             switch( channels )
             {
-                case 1: return tuple(Format.RED,  InternalFormat.RED );
-                case 2: return tuple(Format.RG,   InternalFormat.RG  );
-                case 3: return tuple(Format.RGB,  InternalFormat.RGB );
-                case 4: return tuple(Format.RGBA, InternalFormat.RGBA);
+                case 1: return tuple(InternalFormat.RED,  Format.RED  );
+                case 2: return tuple(InternalFormat.RG,   Format.RG   );
+                case 3: return tuple(InternalFormat.RGB,  Format.RGB  );
+                case 4: return tuple(InternalFormat.RGBA, Format.RGBA );
                 default:
                     throw new GLTextureException( "uncompatible image chanels count" );
             }

@@ -22,32 +22,42 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.util.ext;
+module des.gl.util.ext;
 
 import std.stdio;
 import std.string;
 
 import derelict.opengl3.gl3;
 
-import desmath.linear.vector;
+import des.math.linear.vector;
 
-public import desutil.emm;
-import desutil.logger;
+public import des.util.emm;
+import des.util.logger;
 
-mixin( PrivateLoggerMixin );
-
-nothrow void checkGL( bool except=false, string md=__FILE__, int ln=__LINE__ )
+enum GLError
 {
-    auto err = glGetError();
+    NO                = GL_NO_ERROR,
+    INVALID_ENUM      = GL_INVALID_ENUM,
+    INVALID_VALUE     = GL_INVALID_VALUE,
+    INVALID_OPERATION = GL_INVALID_OPERATION,
+    STACK_OVERFLOW    = 0x0503,
+    STACK_UNDERFLOW   = 0x0504,
+    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,
+    INVALID_FRAMEBUFFER_OPERATION = 0x0506
+}
+
+nothrow void checkGL(string fnc=__FUNCTION__)( bool except=false, string md=__FILE__, size_t ln=__LINE__ )
+{
+    auto err = cast(GLError)glGetError();
     try 
     {
-        if( err != GL_NO_ERROR )
+        if( err != GLError.NO )
         {
-            auto errstr = format( " ## GL ERROR ## %s at line: %s: 0x%04x", md, ln, err );
+            auto errstr = format( " ## GL ERROR ## [%s:%d]: %s", md, ln, err );
             if( except ) throw new Exception( errstr );
-            else stderr.writefln( errstr );
+            else log_error!fnc( errstr );
         }
-        else{ log( "GL OK %s at line: %s", md, ln ); }
+        else{ log_trace!fnc( "GL OK" ); }
     } 
     catch( Exception e )
     {

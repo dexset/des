@@ -22,7 +22,7 @@ The MIT License (MIT)
     THE SOFTWARE.
 +/
 
-module desgl.base.type;
+module des.gl.base.type;
 
 import derelict.opengl3.gl3;
 
@@ -56,4 +56,38 @@ size_t sizeofGLType( GLType type )
     case GLType.FLOAT:
         return float.sizeof;
     }
+}
+
+@property GLType toGLType(T)()
+{
+    static if( is( T == ubyte ) )
+        return GLType.UNSIGNED_BYTE;
+    else static if( is( T == byte ) )
+        return GLType.BYTE;
+    else static if( is( T == ushort ) )
+        return GLType.UNSIGNED_SHORT;
+    else static if( is( T == short ) )
+        return GLType.SHORT;
+    else static if( is( T == uint ) )
+        return GLType.UNSIGNED_INT;
+    else static if( is( T == int ) )
+        return GLType.INT;
+    else static if( is( T == float ) )
+        return GLType.FLOAT;
+    else
+    {
+        pragma(msg, "no GLType for ", T );
+        static assert(0);
+    }
+}
+
+unittest
+{
+    assert( toGLType!ubyte == GLType.UNSIGNED_BYTE );
+    assert( toGLType!byte == GLType.BYTE );
+    assert( toGLType!ushort == GLType.UNSIGNED_SHORT );
+    assert( toGLType!short == GLType.SHORT );
+    assert( toGLType!uint == GLType.UNSIGNED_INT );
+    assert( toGLType!int == GLType.INT );
+    assert( toGLType!float == GLType.FLOAT );
 }
