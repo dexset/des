@@ -3,7 +3,7 @@
     "description": "D Extended Set",
     "authors": ["Oleg Butko(deviator)", "Anton Akzhigitov(Akzwar)"],
     "license": "MIT",
-    "version": "1.1.1",
+    "version": "1.1.1-1",
 	"targetType": "sourceLibrary",
 	"importPaths": [ "import" ],
 	"sourcePaths": [ "import" ],
