@@ -19,12 +19,6 @@ class GLWindow : ExternalMemoryManager
 {
     mixin DirectEMM;
 protected:
-    void selfDestroy()
-    {
-        if( win !is null )
-            SDL_DestroyWindow( win );
-        win = null;
-    }
 
     abstract void prepare();
     SDL_Window* win = null;
@@ -95,6 +89,15 @@ public:
 private:
     void setApp( GLApp owner ) { app = owner; }
     void makeCurrent() { SDL_GL_MakeCurrent( win, app.context );}
+
+protected:
+
+    void selfDestroy()
+    {
+        if( win !is null )
+            SDL_DestroyWindow( win );
+        win = null;
+    }
 }
 
 class GLApp : App, ExternalMemoryManager
