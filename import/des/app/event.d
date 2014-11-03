@@ -311,17 +311,23 @@ struct KeyboardEvent
  +/
 struct TextEvent { dchar ch; }
 
-T binAdd(T)( in T a, in T b )
-    if( isIntegral!T )
-{ return a | b; }
+T binAdd(T)( in T a, in T b ) if( isIntegral!T ) { return a | b; }
+T binRemove(T)( in T a, in T b ) if( isIntegral!T ) { return a ^ ( a & b ); }
+bool binHas(T)( in T a, in T b ) if( isIntegral!T ) { return ( a & b ) == b; }
 
-T binRemove(T)( in T a, in T b )
-    if( isIntegral!T )
-{ return a ^ ( a & b ); }
-
-bool binHas(T)( in T a, in T b )
-    if( isIntegral!T )
-{ return ( a & b ) == b; }
+unittest
+{
+    auto a = 0b0001;
+    auto b = 0b0010;
+    auto c = binAdd(a,b);
+    assert( c == 0b0011 );
+    assert( binRemove(c,a) == b );
+    assert( binRemove(c,b) == a );
+    assert( binHas(c,a) );
+    assert( binHas(c,b) );
+    auto x = 0b0100;
+    assert( !binHas(c,x) );
+}
 
 /++
  событие мыши
