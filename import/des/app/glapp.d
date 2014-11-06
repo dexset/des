@@ -9,6 +9,8 @@ public import des.util.emm;
 public import des.util.string;
 public import des.app.sdlevproc;
 
+import des.util.logger;
+
 class GLAppException : AppException
 {
     @safe pure nothrow this( string msg, string file = __FILE__, size_t line = __LINE__ )
@@ -97,6 +99,7 @@ protected:
         if( win !is null )
             SDL_DestroyWindow( win );
         win = null;
+        debug log_debug("pass");
     }
 }
 
@@ -211,6 +214,7 @@ protected:
         if( context !is null )
             SDL_GL_DeleteContext( context );
         context = null;
+        debug log_debug("pass");
     }
 
     void shutdown() { if( SDL_Quit !is null ) SDL_Quit(); }
