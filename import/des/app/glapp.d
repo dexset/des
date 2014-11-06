@@ -128,6 +128,33 @@ protected:
         return true;
     }
 
+    void setCurrent( uint winID )
+    {
+        current = windows.get(winID,null);
+    }
+
+    void selfDestroy()
+    {
+        destroyContext();
+        shutdown();
+    }
+
+public:
+    this()
+    {
+        DerelictSDL2.load();
+        DerelictGL3.load();
+
+        if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+            throw new GLAppException( "Error initializing SDL: " ~ toDString( SDL_GetError() ) );
+
+        SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, 32 );
+        SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+
+        is_runing = true;
+    }
+
     bool step()
     {
         if( context is null )
@@ -149,34 +176,7 @@ protected:
         return true;
     }
 
-    void setCurrent( uint winID )
-    {
-        current = windows.get(winID,null);
-    }
-
-    void selfDestroy()
-    {
-        destroyContext();
-        shutdown();
-    }
-
     @property bool isRuning(){ return is_runing; }
-
-public:
-    this()
-    {
-        DerelictSDL2.load();
-        DerelictGL3.load();
-
-        if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-            throw new GLAppException( "Error initializing SDL: " ~ toDString( SDL_GetError() ) );
-
-        SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, 32 );
-        SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-        is_runing = true;
-    }
 
     GLWindow addWindow( GLWindow delegate() winFunc )
     {

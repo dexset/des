@@ -10,11 +10,12 @@ interface App
 {
 protected:
     void delay();
+
+public:
     bool step();
 
     @property bool isRuning();
 
-public:
     final void run() { while( isRuning && step() ) delay(); }
 
     void quit();
