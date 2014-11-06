@@ -86,7 +86,8 @@ public:
             _size = ivec2( ev.window.data1, ev.window.data2 );
     }
 
-    @property uint id(){ return SDL_GetWindowID( win ); }
+    uint id() @property { return SDL_GetWindowID( win ); }
+    ivec2 size() const @property { return _size; }
 
 private:
     void setApp( GLApp owner ) { app = owner; }
@@ -112,7 +113,7 @@ protected:
     GLWindow current;
     bool is_runing;
 
-    void delay(){ SDL_Delay(1); }
+    void delay() { SDL_Delay(1); }
 
     bool procEvents()
     {
