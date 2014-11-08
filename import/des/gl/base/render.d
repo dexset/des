@@ -101,20 +101,16 @@ public:
     }
     body
     {
-        resize( sz );
-
-        fbo.bind();
-
         int[4] vpbuf;
+
+        resize( sz );
+        fbo.bind();
         glGetIntegerv( GL_VIEWPORT, vpbuf.ptr );
         glViewport( 0, 0, sz.x, sz.y );
-
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
         draw_func();
 
         fbo.unbind();
-
         glViewport( vpbuf[0], vpbuf[1], vpbuf[2], vpbuf[3] );
 
         debug logger.trace( "FBO [%d], size [%d,%d]", fbo.id, sz[0], sz[1] );
