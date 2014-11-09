@@ -304,14 +304,17 @@ public:
     {
         auto ret = glGetUniformLocation( program, name.toStringz ); 
         debug checkGL;
-        debug if(ret<0) logger.warn( "[%d] bad uniform name: '%s'", program, name );
         return ret;
     }
 
     void setUniform(S,T...)( int loc, T vals ) 
         if( checkUniform!(S,T) )
     {
-        if( loc < 0 ) return;
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
+            return;
+        }
         use();
         mixin( "glUniform" ~ to!string(T.length) ~ glPostfix!S ~ "( loc, " ~ 
                 castArgsString!(S,"vals",T) ~ " );" );
@@ -324,12 +327,24 @@ public:
 
     void setUniform(S,T...)( string name, T vals ) 
         if( checkUniform!(S,T) )
-    { setUniform!S( getUniformLocation( name ), vals ); }
+    {
+        auto loc = getUniformLocation( name );
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform name: '%s'", program, name );
+            return;
+        }
+        setUniform!S( loc, vals );
+    }
 
     void setUniformArr(size_t sz,T)( int loc, in T[] vals )
         if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
     {
-        if( loc < 0 ) return;
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
+            return;
+        }
         auto cnt = vals.length / sz;
         use();
         mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
@@ -339,12 +354,24 @@ public:
 
     void setUniformArr(size_t sz,T)( string name, in T[] vals )
         if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
-    { setUniformArr!sz( getUniformLocation( name ), vals ); }
+    {
+        auto loc = getUniformLocation( name );
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform name: '%s'", program, name );
+            return;
+        }
+        setUniformArr!sz( loc, vals );
+    }
 
     void setUniformVec(size_t N,T,string AS)( int loc, Vector!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
     {
-        if( loc < 0 ) return;
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
+            return;
+        }
         use();
 
         T[] data;
@@ -357,12 +384,24 @@ public:
 
     void setUniformVec(size_t N,T,string AS)( string name, Vector!(N,T,AS)[] vals... )
         if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
-    { setUniformVec( getUniformLocation( name ), vals ); }
+    {
+        auto loc = getUniformLocation( name );
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform name: '%s'", program, name );
+            return;
+        }
+        setUniformVec( loc, vals );
+    }
     
     void setUniformMat(size_t h, size_t w)( int loc, in Matrix!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
     {
-        if( loc < 0 ) return;
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
+            return;
+        }
         use();
         static if( w == h )
             mixin( "glUniformMatrix" ~ to!string(w) ~ 
@@ -375,5 +414,13 @@ public:
 
     void setUniformMat(size_t h, size_t w)( string name, in Matrix!(h,w,float)[] mtr... )
         if( h <= 4 && w <= 4 )
-    { setUniformMat( getUniformLocation( name ), mtr ); }
+    {
+        auto loc = getUniformLocation( name );
+        if( loc < 0 )
+        {
+            logger.warn( "[%d] bad uniform name: '%s'", program, name );
+            return;
+        }
+        setUniformMat( loc, mtr );
+    }
 }
