@@ -5,6 +5,7 @@ import des.app.base;
 import std.stdio;
 
 public import derelict.opengl3.gl3;
+public import derelict.freetype.ft;
 public import des.util.emm;
 public import des.util.string;
 public import des.app.sdlevproc;
@@ -148,6 +149,7 @@ public:
     {
         DerelictSDL2.load();
         DerelictGL3.load();
+        DerelictFT.load();
 
         if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
             throw new GLAppException( "Error initializing SDL: " ~ toDString( SDL_GetError() ) );
