@@ -90,10 +90,7 @@ public:
         setAttrib( color, "color", 4, GLType.FLOAT );
         setAttrib( uv, "uv", 2, GLType.FLOAT );
 
-        color.setData( [ col4( 0.0, 0.0, 0.0, 1.0 ),
-                        col4( 1.0, 0.0, 0.0, 1.0 ), 
-                        col4( 0.0, 1.0, 0.0, 1.0 ), 
-                        col4( 1.0, 1.0, 0.0, 1.0 ) ] );
+        setColor( col4( 1.0, 1.0, 1.0, 1.0 ) );
 
         uv.setData([ vec2( 0.0, 0.0 ), vec2( 1.0, 0.0 ),
                      vec2( 0.0, 1.0 ), vec2( 1.0, 1.0 ) ]);
