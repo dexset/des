@@ -14,6 +14,8 @@ private:
     size_t draw_count;
     size_t index_count;
 
+    GLBuffer elem_buffer = null;
+
 protected:
 
     void setDrawCount( size_t cnt )
@@ -97,6 +99,7 @@ protected:
         buf.elementSizeCallback = (sz){
             enforce( sz == uint.sizeof, "set to index buffer not uint data" );
         };
+        elem_buffer = buf;
         return buf;
     }
 
@@ -106,6 +109,8 @@ protected:
     {
         vao.bind();
         shader.use();
+        if( elem_buffer !is null )
+            elem_buffer.bind();
         debug checkGL;
     }
 

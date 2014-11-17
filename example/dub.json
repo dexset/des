@@ -1,15 +1,17 @@
 {
-	"name": "des",
-    "description": "D Extended Set",
+	"name": "example",
+    "description": "D Extended Set example",
     "authors": ["Oleg Butko(deviator)", "Anton Akzhigitov(Akzwar)"],
     "license": "MIT",
-	"targetType": "sourceLibrary",
-	"importPaths": [ "import" ],
-	"sourcePaths": [ "import" ],
+    "targetPath": "bin",
+    "targetType": "executable",
+    "importPaths": [ "../import", "descore/import" ],
+    "sourcePaths": [ "src", "../import", "descore/import" ],
 	"dependencies": {
         "descore": ">=1.0.5",
         "derelict-gl3": ">=1.0.10",
         "derelict-sdl2": ">=1.2.8",
         "derelict-ft": ">=1.0.0"
 	}
+
 }
