@@ -34,17 +34,17 @@ private:
     void redraw()
     {
         grender.setParams( param );
-        checkStretched();
         tex.image( info.img );
     }
 
     void checkStretched()
     {
-        if( stretched )//TODO Stretched text not working
+        if( stretched )
         {
             trect = rrect;
+            param.height = cast(ubyte)( trect.size.y / cast(float)(lines) );
+            redraw();
             repos();
-            //param.height = cast(ubyte)( trect.size.y / cast(float)(lines) );
         }
         info = trender( grender, param, output );
         if( !stretched )
@@ -142,6 +142,7 @@ public:
             import std.string;
             output = t;
             lines = t.split("\n").length;
+            checkStretched();
             redraw();
         }
 
@@ -150,6 +151,7 @@ public:
         void textHeight( uint hh )
         {
             param.height = hh;
+            checkStretched();
             redraw();
         }
 
@@ -158,6 +160,7 @@ public:
         void isStretched( bool s )
         { 
             stretched = s; 
+            checkStretched();
             redraw();
         }
         bool isStretched(){ return stretched; }

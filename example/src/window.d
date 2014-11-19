@@ -47,7 +47,7 @@ protected:
         text_box.setRect( fRegion2( 0, 0, 200, 100 ) );
         text_box.setColor( col4( 1.0, 0.0, 0.0, 1.0 ), col4( 1.0, 1.0, 0.0, 1.0 ),
                            col4( 1.0, 1.0, 0.0, 1.0 ), col4( 0.0, 1.0, 0.0, 1.0 ) );
-        text_box.isStretched( true );
+        //text_box.isStretched( true );
 
         draw.connect( 
         {
