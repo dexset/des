@@ -43,7 +43,8 @@ private:
         if( stretched )//TODO Stretched text not working
         {
             trect = rrect;
-            param.height = cast(ubyte)( trect.size.y / cast(float)(lines) );
+            repos();
+            //param.height = cast(ubyte)( trect.size.y / cast(float)(lines) );
         }
         info = trender( grender, param, output );
         if( !stretched )
@@ -76,7 +77,7 @@ public:
     this( string fname, uint size=24u )
     {
         super( SS_WIN_TEXT );
-        auto font = appPath( fname );
+        auto font = fname;
 
         grender = FTGlyphRender.get(font);
         trender = new MultilineTextRender;
