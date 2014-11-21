@@ -146,7 +146,7 @@ public:
             redraw();
         }
 
-        wstring text(){ return output; }
+        wstring text() const { return output; }
 
         void textHeight( uint hh )
         {
@@ -155,7 +155,7 @@ public:
             redraw();
         }
 
-        uint textHeight(){ return param.height; }
+        uint textHeight() const { return param.height; }
 
         void isStretched( bool s )
         { 
@@ -163,6 +163,6 @@ public:
             checkStretched();
             redraw();
         }
-        bool isStretched(){ return stretched; }
+        bool isStretched() const { return stretched; }
     }
 }
