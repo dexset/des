@@ -25,6 +25,7 @@ The MIT License (MIT)
 module des.gl.base.shader;
 
 import std.conv;
+import std.file : readText;
 import std.string;
 import std.exception;
 
@@ -101,8 +102,13 @@ pure:
 }
 
 @property ShaderSource staticLoadShaderSource(string name)()
+{ return parseShaderSource( name, import(name) ); }
+
+ShaderSource loadShaderSource( string name )
+{ return parseShaderSource( name, readText( name ) ); }
+
+ShaderSource parseShaderSource( string name, string src )
 {
-    string src = import(name);
     string[3] sep;
 
     string sepLineStart = "//###";
@@ -127,7 +133,7 @@ pure:
                     cur = 2;
                     break;
                 default:
-                    throw new GLShaderException( "static load shader source: unknown section '" ~ section ~ "'" );
+                    throw new GLShaderException( "parse shader source: unknown section '" ~ section ~ "'" );
             }
         }
         else sep[cur] ~= ln ~ '\n';
