@@ -78,8 +78,8 @@ public:
 
     this()
     {
-        depth = registerChildEMM( createDepth() );
-        color = registerChildEMM( createColor() );
+        depth = registerChildsEMM( createDepth() );
+        color = registerChildsEMM( createColor() );
 
         resize( uivec2(1,1) );
 

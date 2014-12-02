@@ -114,7 +114,11 @@ protected:
     GLWindow current;
     bool is_runing;
 
-    void delay() { SDL_Delay(1); }
+    void delay()
+    {
+        import core.thread;
+        Thread.sleep(dur!"usecs"(1));
+    }
 
     bool procEvents()
     {
@@ -186,7 +190,7 @@ public:
 
     GLWindow addWindow( GLWindow delegate() winFunc )
     {
-        auto win = registerChildEMM( winFunc() );
+        auto win = registerChildsEMM( winFunc() );
         if( context == null )
         {
             context = SDL_GL_CreateContext( win.win );
