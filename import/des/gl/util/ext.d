@@ -32,7 +32,7 @@ import derelict.opengl3.gl3;
 import des.math.linear.vector;
 
 public import des.util.emm;
-import des.util.logger;
+import des.util.logsys;
 
 enum GLError
 {
@@ -55,9 +55,9 @@ nothrow void checkGL(string fnc=__FUNCTION__)( bool except=false, string md=__FI
         {
             auto errstr = format( " ## GL ERROR ## [%s:%d]: %s", md, ln, err );
             if( except ) throw new Exception( errstr );
-            else log_error!fnc( errstr );
+            else logger.error!fnc( errstr );
         }
-        else{ log_trace!fnc( "GL OK" ); }
+        else{ logger.trace!fnc( "GL OK" ); }
     } 
     catch( Exception e )
     {

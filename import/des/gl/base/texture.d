@@ -28,7 +28,7 @@ import std.string;
 
 public import derelict.opengl3.gl3;
 
-import des.util.logger;
+import des.util.logsys;
 
 import des.gl.base.type;
 import des.gl.util.ext;
@@ -48,7 +48,7 @@ class GLTextureException : DesGLException
 class GLTexture : ExternalMemoryManager
 {
     mixin DirectEMM;
-    mixin AnywayLogger;
+    mixin ClassLogger;
 private:
     uint _id;
 

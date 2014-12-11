@@ -10,7 +10,7 @@ public import des.util.emm;
 public import des.util.string;
 public import des.app.sdlevproc;
 
-import des.util.logger;
+import des.util.logsys;
 
 class GLAppException : AppException
 {
@@ -101,7 +101,7 @@ protected:
         if( win !is null )
             SDL_DestroyWindow( win );
         win = null;
-        debug log_debug("pass");
+        debug logger.Debug("pass");
     }
 }
 
@@ -221,7 +221,7 @@ protected:
         if( context !is null )
             SDL_GL_DeleteContext( context );
         context = null;
-        debug log_debug("pass");
+        debug logger.Debug("pass");
     }
 
     void shutdown() { if( SDL_Quit !is null ) SDL_Quit(); }

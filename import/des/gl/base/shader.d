@@ -33,7 +33,7 @@ import des.math.linear;
 
 import derelict.opengl3.gl3;
 
-import des.util.logger;
+import des.util.logsys;
 
 import des.gl.util.ext;
 
@@ -150,7 +150,7 @@ class GLShaderException : DesGLException
 class BaseShaderProgram : ExternalMemoryManager
 {
     mixin DirectEMM;
-    mixin AnywayLogger;
+    mixin ClassLogger;
 private:
     static GLint inUse = -1;
 
@@ -186,7 +186,7 @@ protected:
     static GLuint makeShader( ShaderType type, string src )
     {
         GLuint shader = glCreateShader( cast(GLenum)type );
-        debug log_trace( "[%s] with type [%s]", shader, type ); 
+        debug des.util.logsys.logger.trace( "[%s] with type [%s]", shader, type ); 
         auto srcptr = src.toStringz;
         glShaderSource( shader, 1, &(srcptr), null );
         glCompileShader( shader );

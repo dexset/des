@@ -32,7 +32,7 @@ import des.util.emm;
 import des.gl.base.texture;
 import des.gl.util;
 
-import des.util.logger;
+import des.util.logsys;
 
 import des.il.image;
 
@@ -45,7 +45,7 @@ class GLFBOException : DesGLException
 class GLRenderBuffer : ExternalMemoryManager
 {
     mixin DirectEMM;
-    mixin AnywayLogger;
+    mixin ClassLogger;
 
 protected:
     uint _id;
@@ -162,7 +162,7 @@ protected:
 class GLFrameBuffer : ExternalMemoryManager
 {
     mixin DirectEMM;
-    mixin AnywayLogger;
+    mixin ClassLogger;
 
 protected:
     uint _id;

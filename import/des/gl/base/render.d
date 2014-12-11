@@ -25,7 +25,7 @@ The MIT License (MIT)
 module des.gl.base.render;
 
 import des.util.emm;
-import des.util.logger;
+import des.util.logsys;
 import des.math.linear;
 import des.gl.base;
 import des.il;
@@ -63,7 +63,7 @@ private template createNew(bool buffer)
 class GLRender(bool CB, bool DB) : ExternalMemoryManager
 {
     mixin DirectEMM;
-    mixin AnywayLogger;
+    mixin ClassLogger;
 protected:
 
     GLFrameBuffer fbo;
