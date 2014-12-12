@@ -58,8 +58,7 @@ protected:
     void selfDestroy()
     {
         unbind();
-        glDeleteTextures( 1, &_id );
-        debug checkGL;
+        checkGLCall!glDeleteTextures( 1, &_id );
     }
 
     Target _target;
@@ -255,10 +254,10 @@ public:
     this( Target tg )
     in { assert( isBase(tg) ); } body
     {
-        glGenTextures( 1, &_id );
-        debug checkGL;
+        checkGLCall!glGenTextures( 1, &_id );
+        logger = new InstanceLogger( this, format( "%d", _id ) );
         _target = tg;
-        debug logger.Debug( "[%d] with target [%s]", _id, _target );
+        logger.Debug( "with target [%s]", _target );
     }
 
     final pure const @property uint id() { return _id; }
@@ -267,8 +266,8 @@ public:
     in { assert( isMipmapable(_target) ); } body
     {
         bind();
-        glGenerateMipmap(gltype);
-        debug logger.Debug( "[%d] with target [%s]", _id, _target );
+        checkGLCall!glGenerateMipmap(gltype);
+        logger.Debug( "with target [%s]", _target );
     }
 
     void setParameter(T)( Parameter pname, T[] val... )
@@ -293,23 +292,22 @@ public:
             mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
 
         debug checkGL;
-        debug logger.Debug( "[%d] [%s]: %s", _id, pname, val );
+        logger.Debug( "[%s]: %s", pname, val );
     }
 
     final nothrow
     {
         void bind( ubyte n=0 )
         {
-            glActiveTexture( GL_TEXTURE0 + n );
-            glBindTexture( gltype, _id );
-            debug checkGL;
-            debug logger.trace( "[%d]", _id );
+            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + n );
+            ntCheckGLCall!glBindTexture( gltype, _id );
+            debug logger.trace( "pass" );
         }
 
         void unbind()
         {
-            glBindTexture( gltype, 0 );
-            debug logger.trace( "[%d]", _id );
+            ntCheckGLCall!glBindTexture( gltype, 0 );
+            debug logger.trace( "pass" );
         }
         texsize_t size() const { return img_size; }
     }

@@ -2,9 +2,10 @@ module des.gl.simple.shader.text;
 
 import des.gl.base;
 
-enum ShaderSource SS_WIN_TEXT = 
-ShaderSource(
-`#version 120
+enum SS_WIN_TEXT = 
+`
+//### vert
+#version 120
 uniform vec2 winsize;
 
 attribute vec2 pos;
@@ -20,9 +21,8 @@ void main(void)
     ex_uv = uv;
     ex_color = color;
 }
-`,
-
-`#version 120
+//### frag
+#version 120
 uniform sampler2D ttu;
 
 varying vec2 ex_uv;
@@ -31,5 +31,4 @@ varying vec4 ex_color;
 void main(void) 
 { 
     gl_FragColor = texture2D( ttu, ex_uv ) * ex_color;
-}`
-);
+}`;

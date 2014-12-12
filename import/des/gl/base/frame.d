@@ -92,9 +92,9 @@ public:
 
     this()
     {
-        glGenRenderbuffers( 1, &_id );
-        debug checkGL;
-        debug logger.Debug( "[%d]", _id );
+        checkGLCall!glGenRenderbuffers( 1, &_id );
+        logger = new InstanceLogger( this, std.string.format( "%d", _id ) );
+        logger.Debug( "pass" );
     }
 
     final pure const @property
@@ -105,15 +105,13 @@ public:
 
     void bind()
     {
-        glBindRenderbuffer( GL_RENDERBUFFER, _id );
-        debug checkGL;
+        checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, _id );
         debug logger.trace( "[%d]", id );
     }
 
     void unbind()
     {
-        glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-        debug checkGL;
+        checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, 0 );
         debug logger.trace( "call from [%d]", _id );
     }
 
@@ -127,10 +125,9 @@ public:
     {
         bind();
         _format = fmt;
-        glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
-        debug checkGL;
+        checkGLCall!glRenderbufferStorage( GL_RENDERBUFFER, cast(GLenum)fmt, sz[0], sz[1] );
         unbind();
-        debug logger.Debug( "[%d]: size [%d,%d], format [%s]", id, sz[0], sz[1], fmt );
+        debug logger.Debug( "size [%d,%d], format [%s]", sz[0], sz[1], fmt );
     }
 
     void resize( in uivec2 sz ) { storage( sz, _format ); }
@@ -153,9 +150,8 @@ protected:
     void selfDestroy()
     {
         unbind();
-        glDeleteRenderbuffers( 1, &_id );
-        debug checkGL;
-        debug logger.Debug( "[%d]", id );
+        checkGLCall!glDeleteRenderbuffers( 1, &_id );
+        logger.Debug( "pass" );
     }
 }
 
@@ -178,9 +174,9 @@ public:
     {
         if( id_stack.length == 0 ) id_stack ~= 0;
 
-        glGenFramebuffers( 1, &_id );
-        debug checkGL;
-        debug logger.Debug( "[%d]", _id );
+        checkGLCall!glGenFramebuffers( 1, &_id );
+        logger = new InstanceLogger( this, format( "%d", _id ) );
+        logger.Debug( "pass" );
     }
 
     final pure const @property uint id() { return _id; }
@@ -190,19 +186,17 @@ public:
         void bind()
         {
             if( id_stack[$-1] == _id ) return;
-            glBindFramebuffer( GL_FRAMEBUFFER, _id );
+            ntCheckGLCall!glBindFramebuffer( GL_FRAMEBUFFER, _id );
             id_stack ~= _id;
-            debug checkGL;
-            debug logger.trace( "[%d]", _id );
+            debug logger.trace( "pass" );
         }
 
         void unbind()
         {
             if( id_stack.length < 2 && id_stack[$-1] != _id ) return;
             id_stack.length--;
-            glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
-            debug checkGL;
-            debug logger.trace( "[%d] to [%d]", _id, id_stack[$-1] );
+            ntCheckGLCall!glBindFramebuffer( GL_FRAMEBUFFER, id_stack[$-1] );
+            debug logger.trace( "bind [%d]", _id, id_stack[$-1] );
         }
     }
 
@@ -225,49 +219,46 @@ public:
         bind(); scope(exit) unbind();
 
         if( trg == tex.Target.T1D )
-            glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)att,
-                                    cast(GLenum)trg, tex.id, 0 );
+            checkGLCall!glFramebufferTexture1D( GL_FRAMEBUFFER, cast(GLenum)att,
+                                        cast(GLenum)trg, tex.id, 0 );
         else if( tex.target == tex.Target.T3D )
-            glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)att,
+            checkGLCall!glFramebufferTexture3D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0, 0 );
         else
-            glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)att,
+            checkGLCall!glFramebufferTexture2D( GL_FRAMEBUFFER, cast(GLenum)att,
                                     cast(GLenum)trg, tex.id, 0 );
 
-        debug checkGL;
-        debug logger.Debug( "[%d] [%s] as [%s]", id, tex.id, att );
+        logger.Debug( "[%s] as [%s]", tex.id, att );
     }
 
     void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
         bind(); scope(exit) unbind();
 
-        glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
+        checkGLCall!glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
                                    GL_RENDERBUFFER, rbo.id );
 
-        debug checkGL;
-        debug logger.Debug( "[%d] [%d] as [%s]", id, rbo.id, att );
+        logger.Debug( "[%d] as [%s]", rbo.id, att );
     }
 
     void check()
     {
         bind(); scope(exit) unbind();
-        auto status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
+        auto status = checkGLCall!glCheckFramebufferStatus( GL_FRAMEBUFFER );
         import std.string;
         if( status != GL_FRAMEBUFFER_COMPLETE )
             throw new GLFBOException( format( "status isn't GL_FRAMEBUFFER_COMPLETE, it's %#x", status ) );
-        debug checkGL;
     }
 
 protected:
     void selfDestroy()
     {
         unbind();
-        glDeleteFramebuffers( 1, &_id );
-        debug logger.Debug( "[%d]", _id );
+        checkGLCall!glDeleteFramebuffers( 1, &_id );
+        logger.Debug( "pass" );
     }
 
-    @property static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)()
+    static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)() @property
     {
         import std.string;
         string[] ret;

@@ -25,7 +25,6 @@ The MIT License (MIT)
 module des.gl.base.shader;
 
 import std.conv;
-import std.file : readText;
 import std.string;
 import std.exception;
 
@@ -37,264 +36,238 @@ import des.util.logsys;
 
 import des.gl.util.ext;
 
-@property private string castArgsString(S,string data,T...)()
-{
-    string ret = "";
-    foreach( i, type; T )
-        ret ~= format( "cast(%s)%s[%d],", 
-                S.stringof, data, i );
-
-    return ret[0 .. $-1];
-}
-
-@property pure string glPostfix(S)()
-{
-         static if( is( S == float ) ) return "f";
-    else static if( is( S == int ) )   return "i";
-    else static if( is( S == uint ) )  return "ui";
-    else return "";
-}
-
-unittest
-{
-    assert( glPostfix!float  == "f" );
-    assert( glPostfix!int    == "i" );
-    assert( glPostfix!uint   == "ui");
-    assert( glPostfix!double == ""  );
-}
-
-@property pure bool checkUniform(S,T...)()
-{
-    if( glPostfix!S == "" || 
-            T.length == 0 || 
-            T.length >  4 ) return false;
-    foreach( t; T ) 
-        if( !is( t : S ) ) 
-            return false;
-    return true;
-}
-
-unittest
-{
-    string getFloats(string data,T...)( in T vals )
-    { return castArgsString!(float,data,vals)(); }
-
-    assert( getFloats!"v"( 1.0f, 2u, -3 ) == "cast(float)v[0],cast(float)v[1],cast(float)v[2]" );
-}
-
-struct ShaderSource
-{
-    string name;
-    string vert, geom, frag;
-
-pure:
-    this( string v, string f="" ) { this("",v,"",f); }
-
-    this( string v, string g, string f ) { this("",v,g,f); }
-
-    this( string n, string v, string g, string f )
-    {
-        name = n;
-        vert = v;
-        geom = g;
-        frag = f;
-    }
-}
-
-@property ShaderSource staticLoadShaderSource(string name)()
-{ return parseShaderSource( name, import(name) ); }
-
-ShaderSource loadShaderSource( string name )
-{ return parseShaderSource( name, readText( name ) ); }
-
-ShaderSource parseShaderSource( string name, string src )
-{
-    string[3] sep;
-
-    string sepLineStart = "//###";
-    size_t cur = 0;
-
-    foreach( ln; src.splitLines() )
-        if( ln.startsWith(sepLineStart) )
-        {
-            auto section = ln.chompPrefix(sepLineStart).strip().toLower;
-            switch( section )
-            {
-                case "vert":
-                case "vertex":
-                    cur = 0;
-                    break;
-                case "geom":
-                case "geometry":
-                    cur = 1;
-                    break;
-                case "frag":
-                case "fragment":
-                    cur = 2;
-                    break;
-                default:
-                    throw new GLShaderException( "parse shader source: unknown section '" ~ section ~ "'" );
-            }
-        }
-        else sep[cur] ~= ln ~ '\n';
-
-    return ShaderSource(name,sep[0],sep[1],sep[2]);
-}
-
-class GLShaderException : DesGLException 
+class ShaderException : DesGLException
 { 
-    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
 }
 
-class BaseShaderProgram : ExternalMemoryManager
+class Shader : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin DirectEMM!false;
     mixin ClassLogger;
-private:
-    static GLint inUse = -1;
 
 protected:
+    Type _type;
+    string _source;
+    uint _id;
+    bool _compiled;
 
-    GLuint vert_sh = 0,
-           geom_sh = 0,
-           frag_sh = 0;
+public:
 
-    GLuint program = 0;
+    pure @property
+    {
+        nothrow const
+        {
+            uint id() { return _id; }
+            string source() { return _source; }
+            Type type() { return _type; }
+            bool compiled() { return _compiled; }
+        }
 
-    enum ShaderType
+        string source( string s ) { _source = s; return _source; }
+    }
+
+    enum Type
     {
         VERTEX   = GL_VERTEX_SHADER,
         GEOMETRY = GL_GEOMETRY_SHADER,
-        FRAGMENT = GL_FRAGMENT_SHADER
-    };
+        FRAGMENT = GL_FRAGMENT_SHADER,
+    }
 
-    final nothrow @property 
+    this( Type tp, string src )
     {
-        bool thisInUse() const { return inUse == program; }
+        logger = new InstanceLogger(this);
+        _type = tp;
+        _source = src;
+    }
+
+    void make()
+    {
+        _id = checkGLCall!glCreateShader( cast(GLenum)_type );
+
+        if( auto il = cast(InstanceLogger)logger )
+            il.instance = format( "%d", _id );
+
+        logger.Debug( "[%s] with type [%s]", _id, _type ); 
+
+        auto src = _source.toStringz;
+        checkGLCall!glShaderSource( _id, 1, &src, null );
+        checkGLCall!glCompileShader( _id );
+
+        int res;
+        checkGLCall!glGetShaderiv( _id, GL_COMPILE_STATUS, &res );
+
+        if( res == GL_FALSE )
+        {
+            int logLen;
+            checkGLCall!glGetShaderiv( _id, GL_INFO_LOG_LENGTH, &logLen );
+            if( logLen > 0 )
+            {
+                auto chlog = new char[logLen];
+                checkGLCall!glGetShaderInfoLog( _id, logLen, &logLen, chlog.ptr );
+                throw new ShaderException( "shader compile error: \n" ~ chlog.idup );
+            }
+        }
+
+        _compiled = true;
+        logger.trace( "pass" );
+    }
+
+protected:
+
+    override void selfConstruct() { make(); }
+
+    override void selfDestroy()
+    {
+        if( _compiled )
+            checkGLCall!glDeleteShader( _id );
+        logger.Debug( "pass" );
+    }
+}
+
+auto parseShaderSource( string src, string separator = "//###" )
+{
+    Shader[] ret;
+
+    foreach( ln; src.splitLines() )
+    {
+        if( ln.startsWith(separator) )
+        {
+            auto str_type = ln.chompPrefix(separator).strip().toLower;
+            Shader.Type type;
+            switch( str_type )
+            {
+                case "vert":
+                case "vertex":
+                    type = Shader.Type.VERTEX;
+                    break;
+                case "geom":
+                case "geometry":
+                    type = Shader.Type.GEOMETRY;
+                    break;
+                case "frag":
+                case "fragment":
+                    type = Shader.Type.FRAGMENT;
+                    break;
+                default:
+                    throw new ShaderException( "parse shader source: unknown section '" ~ str_type ~ "'" );
+            }
+            ret ~= new Shader( type, "" );
+        }
+        else
+        {
+            if( ret.length == 0 )
+                throw new ShaderException( "parse shader source: no section definition" );
+            ret[$-1].source = ret[$-1].source ~ ln ~ '\n';
+        }
+    }
+
+    return ret;
+}
+
+class ShaderProgram : ExternalMemoryManager
+{
+    mixin DirectEMM!(false,false);
+    mixin ClassLogger;
+
+protected:
+
+    uint _id = 0;
+
+    private static uint inUse = 0;
+    final @property 
+    {
+        bool thisInUse() const { return inUse == _id; }
         void thisInUse( bool u )
         {
             if( ( thisInUse && u ) || ( !thisInUse && !u ) ) return;
-            GLint np = 0;
-            if( !thisInUse && u ) np = program;
-            glUseProgram( np );
+            uint np = 0;
+            if( !thisInUse && u ) np = _id;
+            checkGLCall!glUseProgram( np );
             inUse = np;
-            debug checkGL;
         }
     }
 
-    static GLuint makeShader( ShaderType type, string src )
-    {
-        GLuint shader = glCreateShader( cast(GLenum)type );
-        debug des.util.logsys.logger.trace( "[%s] with type [%s]", shader, type ); 
-        auto srcptr = src.toStringz;
-        glShaderSource( shader, 1, &(srcptr), null );
-        glCompileShader( shader );
+    Shader[] shaders;
 
+public:
+    this( Shader[] shs )
+    {
+        logger = new InstanceLogger(this);
+        foreach( sh; shs )
+            enforce( sh !is null, new ShaderException( "shader is null" ) );
+        shaders = registerChildsEMM( shs );
+        create();
+    }
+
+    uint id() pure nothrow const @property { return _id; }
+
+    final void use() { thisInUse = true; }
+
+protected:
+
+    void create()
+    {
+        foreach( sh; shaders ) if( !sh.compiled ) sh.make();
+
+        _id = checkGLCall!glCreateProgram();
+
+        if( auto il = cast(InstanceLogger)logger )
+            il.instance = format( "%d", _id );
+
+        foreach( sh; shaders ) 
+            checkGLCall!glAttachShader( _id, sh.id );
+
+        checkGLCall!glLinkProgram( _id );
+        check();
+
+        logger.Debug( "pass" );
+    }
+
+    void check()
+    {
         int res;
-        glGetShaderiv( shader, GL_COMPILE_STATUS, &res );
+        checkGLCall!glGetProgramiv( _id, GL_LINK_STATUS, &res );
         if( res == GL_FALSE )
         {
             int logLen;
-            glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &logLen );
+            checkGLCall!glGetProgramiv( _id, GL_INFO_LOG_LENGTH, &logLen );
             if( logLen > 0 )
             {
                 auto chlog = new char[logLen];
-                glGetShaderInfoLog( shader, logLen, &logLen, chlog.ptr );
-                throw new GLShaderException( "shader compile error: \n" ~ chlog.idup );
+                checkGLCall!glGetProgramInfoLog( _id, logLen, &logLen, chlog.ptr );
+                throw new ShaderException( "program link error: \n" ~ chlog.idup );
             }
         }
-
-        debug checkGL;
-        return shader;
     }
 
-    static void checkProgram( GLuint prog )
+    void selfConstruct() { create(); }
+
+    void preChildsDestroy()
     {
-        int res;
-        glGetProgramiv( prog, GL_LINK_STATUS, &res );
-        if( res == GL_FALSE )
-        {
-            int logLen;
-            glGetProgramiv( prog, GL_INFO_LOG_LENGTH, &logLen );
-            if( logLen > 0 )
-            {
-                auto chlog = new char[logLen];
-                glGetProgramInfoLog( prog, logLen, &logLen, chlog.ptr );
-                throw new GLShaderException( "program link error: \n" ~ chlog.idup );
-            }
-        }
-        debug checkGL;
-    }
+        thisInUse = false;
 
-    void construct( in ShaderSource src )
-    {
-        if( src.vert.length == 0 ) 
-            throw new GLShaderException( "vertex shader source is empty" );
-
-        program = glCreateProgram();
-
-        vert_sh = makeShader( ShaderType.VERTEX, src.vert );
-
-        if( src.geom.length )
-            geom_sh = makeShader( ShaderType.GEOMETRY, src.geom );
-        if( src.frag.length )
-            frag_sh = makeShader( ShaderType.FRAGMENT, src.frag );
-
-        glAttachShader( program, vert_sh );
-
-        if( geom_sh )
-            glAttachShader( program, geom_sh );
-        if( frag_sh )
-            glAttachShader( program, frag_sh );
-
-        glLinkProgram( program );
-        checkProgram( program );
-
-        debug checkGL;
+        foreach( sh; shaders )
+            checkGLCall!glDetachShader( _id, sh.id );
     }
 
     void selfDestroy()
     {
-        thisInUse = false;
-
-        if( frag_sh ) glDetachShader( program, frag_sh );
-        if( geom_sh ) glDetachShader( program, geom_sh );
-
-        glDetachShader( program, vert_sh );
-
-        glDeleteProgram( program );
-
-        if( frag_sh ) glDeleteShader( frag_sh );
-        if( geom_sh ) glDeleteShader( geom_sh );
-
-        glDeleteShader( vert_sh );
-
-        debug logger.Debug( "[%d]", program );
-
-        debug checkGL;
+        checkGLCall!glDeleteProgram( _id );
+        debug logger.Debug( "pass" );
     }
-
-public:
-    this( in ShaderSource src )
-    {
-        construct( src );
-        debug logger.Debug( "[%d] from source [%s]", program, src.name );
-    }
-
-    final nothrow void use() { thisInUse = true; }
 }
 
-class CommonShaderProgram : BaseShaderProgram
+class CommonShaderProgram : ShaderProgram
 {
 public:
-    this( in ShaderSource src ) { super( src ); }
+    this( Shader[] shs ) { super(shs); }
 
     int getAttribLocation( string name )
     { 
-        auto ret = glGetAttribLocation( program, name.toStringz ); 
-        debug checkGL;
-        debug if(ret<0) logger.warn( "[%d] bad attribute name: '%s'", program, name );
+        auto ret = checkGLCall!glGetAttribLocation( _id, name.toStringz ); 
+        debug if( ret < 0 ) logger.warn( "bad attribute name: '%s'", name );
         return ret;
     }
 
@@ -307,126 +280,142 @@ public:
     }
 
     int getUniformLocation( string name )
-    {
-        auto ret = glGetUniformLocation( program, name.toStringz ); 
-        debug checkGL;
-        return ret;
-    }
+    { return checkGLCall!glGetUniformLocation( _id, name.toStringz ); }
 
-    void setUniform(S,T...)( int loc, T vals ) 
-        if( checkUniform!(S,T) )
+    void setUniform(T)( int loc, in T[] vals... ) 
+        if( isAllowType!T || isAllowVector!T || isAllowMatrix!T )
     {
         if( loc < 0 )
         {
-            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
+            logger.error( "bad uniform location" );
             return;
         }
-        use();
-        mixin( "glUniform" ~ to!string(T.length) ~ glPostfix!S ~ "( loc, " ~ 
-                castArgsString!(S,"vals",T) ~ " );" );
-        /* workaround: 
-           before glUniform glGetError return 0x0501 errcode, 
-           ignore it force */ 
-        glGetError();
-        debug checkGL;
-    }
 
-    void setUniform(S,T...)( string name, T vals ) 
-        if( checkUniform!(S,T) )
-    {
-        auto loc = getUniformLocation( name );
-        if( loc < 0 )
-        {
-            logger.warn( "[%d] bad uniform name: '%s'", program, name );
-            return;
-        }
-        setUniform!S( loc, vals );
-    }
-
-    void setUniformArr(size_t sz,T)( int loc, in T[] vals )
-        if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
-    {
-        if( loc < 0 )
-        {
-            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
-            return;
-        }
-        auto cnt = vals.length / sz;
-        use();
-        mixin( "glUniform" ~ to!string(sz) ~ glPostfix!T ~ 
-                "v( loc, cast(int)cnt, vals.ptr );" );
-        debug checkGL;
-    }
-
-    void setUniformArr(size_t sz,T)( string name, in T[] vals )
-        if( sz > 0 && sz < 5 && (glPostfix!T).length != 0 )
-    {
-        auto loc = getUniformLocation( name );
-        if( loc < 0 )
-        {
-            logger.warn( "[%d] bad uniform name: '%s'", program, name );
-            return;
-        }
-        setUniformArr!sz( loc, vals );
-    }
-
-    void setUniformVec(size_t N,T,string AS)( int loc, Vector!(N,T,AS)[] vals... )
-        if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
-    {
-        if( loc < 0 )
-        {
-            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
-            return;
-        }
         use();
 
-        T[] data;
-        foreach( v; vals ) data ~= v.data;
+        enum fnc = "checkGLCall!glUniform";
+        //enum fnc = "glUniform";
 
-        mixin( "glUniform" ~ to!string(N) ~ glPostfix!T ~ 
-                "v( loc, cast(int)(data.length / N), cast(" ~ T.stringof ~ "*)data.ptr );" );
-        debug checkGL;
-    }
-
-    void setUniformVec(size_t N,T,string AS)( string name, Vector!(N,T,AS)[] vals... )
-        if( N > 0 && N < 5 && (glPostfix!T).length != 0 )
-    {
-        auto loc = getUniformLocation( name );
-        if( loc < 0 )
+        static if( isAllowMatrix!T )
         {
-            logger.warn( "[%d] bad uniform name: '%s'", program, name );
-            return;
+            enum args_str = "loc, cast(int)vals.length, GL_TRUE, cast(float*)vals.ptr";
+            static if( T.width == T.height )
+                mixin( format( "%sMatrix%dfv( %s );", fnc, T.height, args_str ) );
+            else
+                mixin( format( "%sMatrix%dx%dfv( %s );", fnc, T.height, T.width, args_str ) );
         }
-        setUniformVec( loc, vals );
-    }
-    
-    void setUniformMat(size_t h, size_t w)( int loc, in Matrix!(h,w,float)[] mtr... )
-        if( h <= 4 && w <= 4 )
-    {
-        if( loc < 0 )
-        {
-            logger.warn( "[%d] bad uniform location: '%s'", program, loc );
-            return;
-        }
-        use();
-        static if( w == h )
-            mixin( "glUniformMatrix" ~ to!string(w) ~ 
-                    "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
         else
-            mixin( "glUniformMatrix" ~ to!string(h) ~ "x" ~ to!string(w) ~
-                    "fv( loc, cast(int)mtr.length, GL_TRUE, cast(float*)mtr.ptr ); " );
-        debug checkGL;
+        {
+            static if( isAllowVector!T )
+            {
+                alias X = T.datatype;
+                enum sz = T.length;
+            }
+            else
+            {
+                alias X = T;
+                enum sz = 1;
+            }
+            enum pf = glPostfix!X;
+            enum cs = X.stringof;
+
+            mixin( format( "%s%d%sv( loc, cast(int)vals.length, cast(%s*)vals.ptr );", fnc, sz, pf, cs ) );
+        }
+
+        //glGetError();
     }
 
-    void setUniformMat(size_t h, size_t w)( string name, in Matrix!(h,w,float)[] mtr... )
-        if( h <= 4 && w <= 4 )
+    void setUniform(T)( string name, in T[] vals... ) 
+        if( is( typeof( setUniform!T( 0, vals ) ) ) )
     {
         auto loc = getUniformLocation( name );
         if( loc < 0 )
         {
-            logger.warn( "[%d] bad uniform name: '%s'", program, name );
+            logger.error( "bad uniform name: '%s'", name );
             return;
         }
-        setUniformMat( loc, mtr );
+        setUniform!T( loc, vals );
     }
+}
+
+private pure @property
+{
+    bool isAllowType(T)() { return is( T == int ) || is( T == uint ) || is( T == float ); }
+
+    bool isAllowVector(T)()
+    {
+        static if( !isStaticVector!T ) return false;
+        else return isAllowType!(T.datatype) && T.length <= 4;
+    }
+
+    unittest
+    {
+        static assert( isAllowVector!vec2 );
+        static assert( isAllowVector!ivec4 );
+        static assert( isAllowVector!uivec3 );
+        static assert( !isAllowVector!dvec3 );
+        static assert( !isAllowVector!rvec3 );
+        static assert( !isAllowVector!(Vector!(5,float)) );
+    }
+
+    bool isAllowMatrix(T)()
+    {
+        static if( !isStaticMatrix!T ) return false;
+        else return is( T.datatype == float ) &&
+            T.width >= 2 && T.width <= 4 &&
+            T.height >= 2 && T.height <= 4;
+    }
+
+    unittest
+    {
+        static assert( isAllowMatrix!mat4 );
+        static assert( isAllowMatrix!mat2x3 );
+        static assert( !isAllowMatrix!rmat2x3 );
+        static assert( !isAllowMatrix!dmat2x3 );
+        static assert( !isAllowMatrix!(Matrix!(5,2,float)) );
+    }
+}
+
+private string castArgsString(S,string data,T...)() @property
+{
+    string ret = "";
+    foreach( i, type; T )
+        ret ~= format( "cast(%s)%s[%d],", 
+                S.stringof, data, i );
+
+    return ret[0 .. $-1];
+}
+
+unittest
+{
+    string getFloats(string data,T...)( in T vals )
+    { return castArgsString!(float,data,vals)(); }
+
+    assert( getFloats!"v"( 1.0f, 2u, -3 ) == "cast(float)v[0],cast(float)v[1],cast(float)v[2]" );
+}
+
+string glPostfix(T)() pure @property
+{
+         static if( is( T == float ) ) return "f";
+    else static if( is( T == int ) )   return "i";
+    else static if( is( T == uint ) )  return "ui";
+    else static if( isStaticVector!T ) return glPostfix!(T.datatype);
+    else static if( isStaticMatrix!T ) return glPostfix!(T.datatype);
+    else return "";
+}
+
+unittest
+{
+    assert( glPostfix!float  == "f" );
+    assert( glPostfix!int    == "i" );
+    assert( glPostfix!uint   == "ui");
+    assert( glPostfix!double == ""  );
+}
+
+bool isAllConv(S,Args...)() pure @property
+{
+    foreach( t; Args )
+        if( !is( t : S ) )
+            return false;
+    return true;
 }

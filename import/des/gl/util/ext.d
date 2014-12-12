@@ -34,6 +34,12 @@ import des.math.linear.vector;
 public import des.util.emm;
 import des.util.logsys;
 
+class DesGLException : Exception 
+{ 
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
+    { super( msg, file, line ); } 
+}
+
 enum GLError
 {
     NO                = GL_NO_ERROR,
@@ -46,28 +52,39 @@ enum GLError
     INVALID_FRAMEBUFFER_OPERATION = 0x0506
 }
 
-nothrow void checkGL(string fnc=__FUNCTION__)( bool except=false, string md=__FILE__, size_t ln=__LINE__ )
+void checkGL( string file=__FILE__, size_t line=__LINE__ )()
 {
-    auto err = cast(GLError)glGetError();
-    try 
-    {
-        if( err != GLError.NO )
-        {
-            auto errstr = format( " ## GL ERROR ## [%s:%d]: %s", md, ln, err );
-            if( except ) throw new Exception( errstr );
-            else logger.error!fnc( errstr );
-        }
-        else{ logger.trace!fnc( "GL OK" ); }
-    } 
+    GLError err = cast(GLError)glGetError();
+
+    if( err != GLError.NO )
+        throw new DesGLException( format("%s", err), file, line );
+}
+
+void ntCheckGL( string file=__FILE__, size_t line=__LINE__ )() nothrow
+{
+    try checkGL!(file,line);
+    catch( DesGLException e )
+        logger.error( toMessage( "GL ERROR at [%s:%d] %s", e.file, e.line, e.msg ) );
     catch( Exception e )
+        logger.error( toMessage( "[%s:%d] %s", e.file, e.line, e.msg ) );
+}
+
+template checkGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
+{
+    auto checkGLCall(Args...)( Args args )
     {
-        try stderr.writeln( e );
-        catch( Exception ee ) {}
+        scope(exit) debug checkGL!(file,line);
+        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
+        else return fnc( args );
     }
 }
 
-class DesGLException : Exception 
-{ 
-    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
-    { super( msg, file, line ); } 
+template ntCheckGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
+{
+    auto ntCheckGLCall(Args...)( Args args ) nothrow
+    {
+        scope(exit) debug ntCheckGL!(file,line);
+        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
+        else return fnc( args );
+    }
 }

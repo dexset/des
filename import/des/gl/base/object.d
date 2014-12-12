@@ -48,16 +48,8 @@ protected:
     uint _id;
     Target type;
 
-
     size_t data_size;
     size_t element_count;
-
-    void selfDestroy()
-    {
-        glDeleteBuffers( 1, &_id );
-        debug checkGL;
-        debug logger.Debug( "[%d]", _id );
-    }
 
     nothrow @property GLenum gltype() const { return cast(GLenum)type; }
 
@@ -105,25 +97,24 @@ public:
 
     this( Target tp=Target.ARRAY_BUFFER )
     {
-        glGenBuffers( 1, &_id );
+        checkGLCall!glGenBuffers( 1, &_id );
         type = tp;
 
-        debug checkGL;
-        debug logger.Debug( "[%d] with type [%s]", _id, type );
+        logger = new InstanceLogger( this, format( "%d", _id ) );
+
+        logger.Debug( "with type [%s]", type );
     }
 
-    final nothrow
+    final
     {
         void bind()
         {
-            glBindBuffer( gltype, _id );
-            debug checkGL;
-            debug logger.trace( "[%d] with type [%s]", _id, type );
+            checkGLCall!glBindBuffer( gltype, _id );
+            debug logger.trace( "with type [%s]", type );
         }
         void unbind()
         {
-            glBindBuffer( gltype, 0 );
-            debug checkGL;
+            checkGLCall!glBindBuffer( gltype, 0 );
             debug logger.trace( "type [%s]", type );
         }
         @property uint id() const { return _id; }
@@ -139,7 +130,7 @@ public:
         if( !size ) throw new GLObjException( "set buffer data size is 0" );
 
         bind();
-        glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
+        checkGLCall!glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
         unbind();
 
         element_count = data_arr.length / element_size;
@@ -154,9 +145,8 @@ public:
         if( elementSizeCallback !is null )
             elementSizeCallback( element_size );
 
-        debug checkGL;
         debug logger.trace( "[%d] [%s]: size [%d], element size [%d], usage [%s]",
-                id, type, size, element_size, mem );
+                type, size, element_size, mem );
     }
 
     void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
@@ -168,12 +158,11 @@ public:
             throw new GLObjException( "set sub buffer data: offset+size > data_size" );
 
         bind();
-        glBufferSubData( gltype, offset, size, data_arr.ptr );
+        checkGLCall!glBufferSubData( gltype, offset, size, data_arr.ptr );
         unbind();
 
-        debug checkGL;
-        debug logger.trace( "[%d] [%s]: offset [%d], size [%d], element size [%d]",
-                id, type, offset, size, element_size );
+        debug logger.trace( "[%s]: offset [%d], size [%d], element size [%d]",
+                type, offset, size, element_size );
     }
 
     void[] getUntypedData()
@@ -223,25 +212,30 @@ public:
 
     void* map( Access access=Access.READ_ONLY )
     {
-        debug scope(exit) checkGL;
-        debug logger.trace( "[%d] by access [%s]", id, access );
-        return glMapBuffer( gltype, cast(GLenum)access );
+        debug logger.trace( "by access [%s]", access );
+        return checkGLCall!glMapBuffer( gltype, cast(GLenum)access );
     }
 
     void* mapRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
     { 
-        debug scope(exit) checkGL;
         if( offset + length > data_size )
             throw new GLObjException( "map buffer range: offset + length > data_size" );
-        debug logger.trace( "[%d] by access [%s]: offset [%d], length [%d]",
-                id, access, offset, length );
-        return glMapBufferRange( gltype, offset, length, cast(GLenum)access );
+        debug logger.trace( "by access [%s]: offset [%d], length [%d]", access, offset, length );
+        return checkGLCall!glMapBufferRange( gltype, offset, length, cast(GLenum)access );
     }
 
     void unmap()
     {
-        glUnmapBuffer( gltype );
-        debug logger.trace( "[%d]", id );
+        checkGLCall!glUnmapBuffer( gltype );
+        debug logger.trace( "pass" );
+    }
+
+protected:
+
+    void selfDestroy()
+    {
+        checkGLCall!glDeleteBuffers( 1, &_id );
+        debug logger.Debug( "pass" );
     }
 }
 
@@ -260,36 +254,33 @@ public:
 
     this()
     {
-        glGenVertexArrays( 1, &_id );
-        debug checkGL;
-        debug logger.Debug( "[%d]", _id );
+        checkGLCall!glGenVertexArrays( 1, &_id );
+        logger = new InstanceLogger( this, format( "%d", _id ) );
+        logger.Debug( "pass" );
     }
 
     nothrow 
     {
         void bind() 
         { 
-            glBindVertexArray( _id ); 
-            debug checkGL;
-            debug logger.trace( "[%d]", _id );
+            ntCheckGLCall!glBindVertexArray( _id );
+            debug logger.trace( "pass" );
         }
 
         void enable( int n )
         {
-            debug scope(exit) logger.Debug( "[%d] [%d]", _id, n );
+            debug scope(exit) logger.Debug( "[%d]", n );
             if( n < 0 ) return;
             bind();
-            glEnableVertexAttribArray( n ); 
-            debug checkGL;
+            ntCheckGLCall!glEnableVertexAttribArray( n ); 
         }
 
         void disable( int n )
         {
-            debug scope(exit) logger.Debug( "[%d] [%d]", _id, n );
+            debug scope(exit) logger.Debug( "[%d]", n );
             if( n < 0 ) return;
             bind();
-            glDisableVertexAttribArray( n ); 
-            debug checkGL;
+            ntCheckGLCall!glDisableVertexAttribArray( n ); 
         }
     }
 }
@@ -302,7 +293,7 @@ class GLObject: ExternalMemoryManager
 protected:
     GLVAO vao;
 
-    final nothrow
+    final
     {
         void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, bool norm=false )
@@ -314,18 +305,17 @@ protected:
             vao.enable( index );
 
             buffer.bind();
-            glVertexAttribPointer( index, cast(int)per_element,
+            checkGLCall!glVertexAttribPointer( index, cast(int)per_element,
                     cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
-            debug checkGL;
             buffer.unbind();
 
-            debug logger.Debug( "VAO [%d], buffer [%d], "~
-                             "index [%d], per element [%d][%s]"~
-                             "%s%s",
-                             vao._id, buffer.id,
-                             index, per_element, attype, 
-                             stride != 0 ? toMessage(", stride [%d], offset [%d]", stride, offset ) : "",
-                             norm ? toMessage( ", norm [%s]", norm ) : "" );
+            logger.Debug( "VAO [%d], buffer [%d], "~
+                            "index [%d], per element [%d][%s]"~
+                            "%s%s",
+                            vao._id, buffer.id,
+                            index, per_element, attype, 
+                            stride != 0 ? toMessage(", stride [%d], offset [%d]", stride, offset ) : "",
+                            norm ? toMessage( ", norm [%s]", norm ) : "" );
         }
     }
 

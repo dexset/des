@@ -142,8 +142,10 @@ protected:
 
 public:
 
-    this( in ShaderSource ss )
-    { shader = newEMM!CommonShaderProgram(ss); }
+    this( string src )
+    {
+        shader = newEMM!CommonShaderProgram( parseShaderSource( src ) );
+    }
 
     this( CommonShaderProgram sh )
     in{ assert( sh !is null ); } body

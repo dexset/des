@@ -112,7 +112,7 @@ public:
     void draw( in ivec2 wsz )
     {
         tex.bind();
-        shader.setUniformVec( "winsize", vec2(wsz) );
+        shader.setUniform!vec2( "winsize", vec2(wsz) );
   
         glDisable(GL_DEPTH_TEST);
 
