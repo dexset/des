@@ -37,7 +37,7 @@ import des.math.linear.vector;
 import des.il;
 
 import std.algorithm;
-import des.util.algo;
+import des.util.stdext.algorithm;
 
 class GLTextureException : DesGLException 
 { 

@@ -27,7 +27,7 @@ module des.gl.base.frame;
 import derelict.opengl3.gl3;
 
 import des.math.linear;
-import des.util.emm;
+import des.util.object.emm;
 
 import des.gl.base.texture;
 import des.gl.util;

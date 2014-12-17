@@ -6,8 +6,8 @@ import std.stdio;
 
 public import derelict.opengl3.gl3;
 public import derelict.freetype.ft;
-public import des.util.emm;
-public import des.util.string;
+public import des.util.object;
+public import des.util.stdext.string;
 public import des.app.sdlevproc;
 
 import des.util.logsys;
@@ -18,9 +18,42 @@ class GLAppException : AppException
     { super( msg, file, line ); }
 }
 
-class GLWindow : ExternalMemoryManager
+class SignalReverse( Args... ) : Signal!Args
 {
-    mixin DirectEMM;
+public:
+    override void opCall( Args args )
+    {
+        foreach_reverse( slot; slots )
+            slot( args );
+    }
+}
+
+class SignalBox( Args... ) : Signal!Args
+{
+public:
+    Signal!Args begin;
+    SignalReverse!Args end;
+    override void opCall( Args args )
+    {
+        begin( args );
+        super.opCall( args );
+        end( args );
+    }
+}
+
+class GLWindow : DesObject
+{
+    //mixin DES;
+    override protected 
+    {
+        void __createSignals() 
+        {
+            draw = newEMM!(SignalBox!());
+            idle = newEMM!(Signal!());
+        }
+        void __createSlots() 
+        { mixin( __createSlotsMixin!(typeof(this)) ); }
+    }
 protected:
 
     abstract void prepare();
@@ -32,10 +65,11 @@ protected:
 public:
     EventProcessor[] processors;
     SignalBox!() draw;
-    SignalBox!() idle;
+    Signal!() idle;
 
     this( string title, ivec2 sz, bool fullscreen = false, int display = -1 )
     {
+        super();
         _size = sz;
         import std.string;
         if( display != -1 && display > SDL_GetNumVideoDisplays() - 1 )
@@ -57,12 +91,12 @@ public:
         if( win is null )
             throw new GLAppException( "Couldn't create SDL widnow: " ~ toDString( SDL_GetError() ) );
 
-        draw.addBegin(
+        draw.begin.connect( newSlot(
         {
             glViewport( 0, 0, _size.x, _size.y );
             glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        });
-        draw.addEnd({ SDL_GL_SwapWindow( win ); });
+        }));
+        draw.end.connect( newSlot( { SDL_GL_SwapWindow( win ); } ) );
     }
 
     auto addEventProcessor(T)( T evproc ) if( is( T : EventProcessor ) )
@@ -96,7 +130,7 @@ private:
 
 protected:
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         if( win !is null )
             SDL_DestroyWindow( win );

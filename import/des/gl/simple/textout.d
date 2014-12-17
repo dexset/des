@@ -6,7 +6,7 @@ import des.text.ftglyphrender;
 import des.text.textrender;
 
 import des.util.helpers;
-import des.util.algo;
+import des.util.stdext.algorithm;
 
 import des.gl.simple.shader.text;
 import des.gl.simple.object;

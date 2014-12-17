@@ -44,7 +44,7 @@ class ShaderException : DesGLException
 
 class Shader : ExternalMemoryManager
 {
-    mixin DirectEMM!false;
+    mixin DirectEMM;
     mixin ClassLogger;
 
 protected:

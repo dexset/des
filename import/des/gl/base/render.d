@@ -24,7 +24,7 @@ The MIT License (MIT)
 
 module des.gl.base.render;
 
-import des.util.emm;
+import des.util.object.emm;
 import des.util.logsys;
 import des.math.linear;
 import des.gl.base;

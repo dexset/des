@@ -11,8 +11,9 @@ import std.string;
 import std.range;
 import std.traits;
 
-import des.util.string;
+import des.util.stdext.string;
 import des.util.signal;
+import des.util.object;
 
 class AppEventProcException : Exception
 {
@@ -20,44 +21,19 @@ class AppEventProcException : Exception
     { super( msg, file, line ); }
 }
 
-interface EventProcessor { bool opCall( const ref SDL_Event ); }//Возвращает true, если событие было обработано
-
-class KeyboardEventProcessor : EventProcessor
-{
-    SignalBox!( const(KeyboardEvent) ) key;
-
-    bool opCall( const ref SDL_Event ev )
-    {
-        switch( ev.type )
-        {
-            case SDL_KEYUP:
-            case SDL_KEYDOWN:
-                key( convertEvent( ev ) );
-                return true;
-            default: return false;
-        }
-    }
-
-    KeyboardEvent convertEvent( const ref SDL_Event ev )
-    {
-        auto rep = cast(bool)ev.key.repeat;
-        auto pre = cast(bool)ev.key.state;
-        auto cod = cast(KeyboardEvent.Scan)ev.key.keysym.scancode;
-        auto sym = ev.key.keysym.sym;
-        auto mod = cast(KeyboardEvent.Mod)ev.key.keysym.mod;
-        return KeyboardEvent( pre, rep, cod, sym, mod );
-    }
-}
+class EventProcessor : DesObject //Возвращает true, если событие было обработано
+{ bool opCall( const ref SDL_Event ); }
 
 class MouseEventProcessor : EventProcessor
 {
+    mixin DES;
 private:
     MouseEvent main_event;
 public:
     alias ref const(MouseEvent) in_MouseEvent;
-    SignalBox!( in_MouseEvent ) mouse;
+    Signal!( in_MouseEvent ) mouse;
 
-    bool opCall( const ref SDL_Event ev )
+    override bool opCall( const ref SDL_Event ev )
     {
         switch( ev.type )
         {
@@ -109,109 +85,76 @@ public:
     }
 }
 
+class KeyboardEventProcessor : EventProcessor
+{
+    mixin DES;
+
+    Signal!( const(KeyboardEvent) ) key;
+
+    override bool opCall( const ref SDL_Event ev )
+    {
+        switch( ev.type )
+        {
+            case SDL_KEYUP:
+            case SDL_KEYDOWN:
+                key( convertEvent( ev ) );
+                return true;
+            default: return false;
+        }
+    }
+
+    KeyboardEvent convertEvent( const ref SDL_Event ev )
+    {
+        auto rep = cast(bool)ev.key.repeat;
+        auto pre = cast(bool)ev.key.state;
+        auto cod = cast(KeyboardEvent.Scan)ev.key.keysym.scancode;
+        auto sym = ev.key.keysym.sym;
+        auto mod = cast(KeyboardEvent.Mod)ev.key.keysym.mod;
+        return KeyboardEvent( pre, rep, cod, sym, mod );
+    }
+}
+
 class WindowEventProcessor : EventProcessor
 {
-    private enum sig_list =
-    [
-        "shown",
-        "hidden",
-        "exposed",
-        "moved:ivec2",
-        "resized:ivec2",
-        "minimized",
-        "maximized",
-        "restored",
-        "enter",
-        "leave",
-        "focusGained",
-        "focusLost",
-        "close",
-    ];
+    mixin DES;
+    Signal!() shown;
+    Signal!() hidden;
+    Signal!() exposed;
+    Signal!(ivec2) moved;
+    Signal!(ivec2) resized;
+    Signal!() minimized;
+    Signal!() maximized;
+    Signal!() restored;
+    Signal!() enter;
+    Signal!() leave;
+    Signal!() focusGained;
+    Signal!() focusLost;
+    Signal!() close;
 
-    SignalBox!() defaultAction;
+    Signal!() defaultAction;
 
-    mixin( getSignalsString( sig_list ) );
-
-    bool opCall( const ref SDL_Event ev )
+    override bool opCall( const ref SDL_Event ev )
     {
         if( ev.type != SDL_WINDOWEVENT ) return false;
         auto wID = ev.window.windowID;
         int[2] data = [ ev.window.data1, ev.window.data2 ];
 
-        mixin( getSignalsCallString( "ev.window.event", ["data"],
-                                      sig_list, "defaultAction();" ) );
+        switch(ev.window.event){
+            case SDL_WINDOWEVENT_SHOWN: shown(); break;
+            case SDL_WINDOWEVENT_HIDDEN: hidden(); break;
+            case SDL_WINDOWEVENT_EXPOSED: exposed(); break;
+            case SDL_WINDOWEVENT_MOVED: moved(ivec2(data)); break;
+            case SDL_WINDOWEVENT_RESIZED: resized(ivec2(data)); break;
+            case SDL_WINDOWEVENT_MINIMIZED: minimized(); break;
+            case SDL_WINDOWEVENT_MAXIMIZED: maximized(); break;
+            case SDL_WINDOWEVENT_RESTORED: restored(); break;
+            case SDL_WINDOWEVENT_ENTER: enter(); break;
+            case SDL_WINDOWEVENT_LEAVE: leave(); break;
+            case SDL_WINDOWEVENT_FOCUS_GAINED: focusGained(); break;
+            case SDL_WINDOWEVENT_FOCUS_LOST: focusLost(); break;
+            case SDL_WINDOWEVENT_CLOSE: close(); break;
+            default: defaultAction();
+        }
         return true;
     }
-
-private:
-static:
-
-    string getSignalsString( in string[] list )
-    {
-        string[] ret;
-        foreach( elem; list )
-            ret ~= format( "SignalBox!(%s) %s;",
-                    getArgs(elem), getName(elem) );
-        return ret.join("\n");
-    }
-
-    string getSignalsCallString( string vname, in string[] param_ctor_data,
-                                 in string[] list, string default_action )
-    {
-        string[] ret;
-
-        ret ~= format( `switch(%s){`, vname );
-
-        foreach( elem; list )
-        {
-            auto name = getName( elem );
-            auto params = getParams( elem, param_ctor_data );
-            auto event_name = getEventName( name );
-            ret ~= format( `case %s: %s(%s); break;`,
-                            event_name, name, params );
-        }
-
-        ret ~= format( `default: %s`, default_action );
-
-        ret ~= `}`;
-
-        return ret.join("\n");
-    }
-
-    string getName( string list_elem ) { return list_elem.split(":")[0]; }
-
-    string getArgs( string list_elem )
-    {
-        auto sp = list_elem.split(":");
-        if( sp.length < 2 ) return "";
-        return sp[1];
-    }
-
-    string getParams( string list_elem, in string[] param_ctor_data )
-    {
-        auto args = getArgs( list_elem ).split(",");
-        if( args.length > param_ctor_data.length )
-            assert( 0, format( "dab params length %s:%d", __FILE__, __LINE__-2 ) );
-
-        string[] ret;
-        foreach( arg, pcd; zip( args, param_ctor_data ) )
-            ret ~= format( "%s(%s)", arg, pcd );
-        return ret.join(",");
-    }
-
-    /+
-        чтобы в compile time работала функция toUpper
-        нужно поправить в std.uni функцию toCase,
-        там к массиву result прибавляется элемент,
-        который имеет тип dchar, хотя сам массив 
-        result имеет тип входящей строки, следовательно,
-        зачастую, это string, и элементы char.
-        нужно принудительно конвертировать переменную 'c',
-        добавляемую к массиву result к типу элементов этого массива.
-
-        пример:
-            result ~= cast(typeof(result).init[0])c;
-    +/
-    string getEventName( string signame )
-    { return "SDL_WINDOWEVENT_" ~ signame.toSnakeCase.toUpper; }
 }
