@@ -8,6 +8,8 @@ public import derelict.opengl3.gl3;
 public import derelict.freetype.ft;
 public import des.util.arch;
 public import des.util.stdext.string;
+public import des.app.event;
+public import derelict.sdl2.sdl;
 
 import des.util.logsys;
 
