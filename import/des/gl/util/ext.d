@@ -31,7 +31,7 @@ import derelict.opengl3.gl3;
 
 import des.math.linear.vector;
 
-public import des.util.object.emm;
+public import des.util.arch.emm;
 import des.util.logsys;
 
 class DesGLException : Exception 

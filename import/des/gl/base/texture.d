@@ -47,7 +47,7 @@ class GLTextureException : DesGLException
 
 class GLTexture : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 private:
     uint _id;

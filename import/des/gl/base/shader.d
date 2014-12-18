@@ -44,7 +44,7 @@ class ShaderException : DesGLException
 
 class Shader : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:
@@ -168,7 +168,7 @@ auto parseShaderSource( string src, string separator = "//###" )
 
 class ShaderProgram : ExternalMemoryManager
 {
-    mixin DirectEMM!(false,false);
+    mixin EMM;
     mixin ClassLogger;
 
 protected:

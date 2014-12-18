@@ -27,7 +27,7 @@ module des.gl.base.frame;
 import derelict.opengl3.gl3;
 
 import des.math.linear;
-import des.util.object.emm;
+import des.util.arch.emm;
 
 import des.gl.base.texture;
 import des.gl.util;
@@ -44,7 +44,7 @@ class GLFBOException : DesGLException
 
 class GLRenderBuffer : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:
@@ -157,7 +157,7 @@ protected:
 
 class GLFrameBuffer : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:

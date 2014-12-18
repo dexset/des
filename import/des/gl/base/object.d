@@ -41,7 +41,7 @@ class GLObjException : DesGLException
 
 class GLBuffer : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:
@@ -241,7 +241,7 @@ protected:
 
 final class GLVAO : ExternalMemoryManager
 {
-    mixin DirectEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:
@@ -287,7 +287,7 @@ public:
 
 class GLObject: ExternalMemoryManager
 {
-    mixin ParentEMM;
+    mixin EMM;
     mixin ClassLogger;
 
 protected:

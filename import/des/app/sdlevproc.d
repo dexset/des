@@ -5,15 +5,13 @@ public import derelict.sdl2.sdl;
 public import des.app.event;
 
 public import des.math.linear.vector;
-public import des.util.signal;
 
 import std.string;
 import std.range;
 import std.traits;
 
 import des.util.stdext.string;
-import des.util.signal;
-import des.util.object;
+import des.util.arch;
 
 class AppEventProcException : Exception
 {
@@ -21,6 +19,7 @@ class AppEventProcException : Exception
     { super( msg, file, line ); }
 }
 
+/+
 class EventProcessor : DesObject //Возвращает true, если событие было обработано
 { bool opCall( const ref SDL_Event ); }
 
@@ -158,3 +157,4 @@ class WindowEventProcessor : EventProcessor
         return true;
     }
 }
++/
