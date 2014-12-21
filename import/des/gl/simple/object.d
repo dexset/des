@@ -5,8 +5,6 @@ import std.stdio;
 import std.string;
 
 public import des.gl.base;
-import des.gl.util;
-import des.util.logsys;
 
 abstract class GLSimpleObject : GLObject
 {
@@ -30,7 +28,7 @@ protected:
     auto createArrayBuffer()
     {
         auto buf = newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER );
-        buf.elementCountCallback = &setDrawCount;
+        connect( buf.elementCountCB, &setDrawCount );
         return buf;
     }
 
@@ -95,10 +93,10 @@ protected:
     auto createIndexBuffer()
     {
         auto buf = newEMM!GLBuffer( GLBuffer.Target.ELEMENT_ARRAY_BUFFER );
-        buf.elementCountCallback = &setIndexCount;
-        buf.elementSizeCallback = (sz){
+        connect( buf.elementCountCB, &setIndexCount );
+        connect( buf.elementSizeCB, (size_t sz){
             enforce( sz == uint.sizeof, "set to index buffer not uint data" );
-        };
+        });
         elem_buffer = buf;
         return buf;
     }

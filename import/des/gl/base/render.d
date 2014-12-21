@@ -24,8 +24,6 @@ The MIT License (MIT)
 
 module des.gl.base.render;
 
-import des.util.arch.emm;
-import des.util.logsys;
 import des.math.linear;
 import des.gl.base;
 import des.il;
@@ -60,9 +58,9 @@ private template createNew(bool buffer)
     alias createNew=fnc;
 }
 
-class GLRender(bool CB, bool DB) : ExternalMemoryManager
+class GLRender(bool CB, bool DB) : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 protected:
 
@@ -142,7 +140,7 @@ protected:
         color.resize( sz );
     }
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         fbo.unbind();
         static if(!DB) depth.unbind();
@@ -154,4 +152,3 @@ alias GLRender!(false,false) GLRenderToTex;
 alias GLRender!(true,true) GLRenderToRB;
 alias GLRender!(false,true) GLRenderColorToTexDepthToRB;
 alias GLRender!(true,false) GLRenderColorToRBDepthToTex;
-

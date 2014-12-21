@@ -24,7 +24,20 @@ The MIT License (MIT)
 
 module des.gl.base.type;
 
+import std.stdio;
+import std.string;
+
 import derelict.opengl3.gl3;
+
+public import des.math.linear.vector;
+public import des.util.arch;
+public import des.util.logsys;
+
+class DesGLException : Exception 
+{ 
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
+    { super( msg, file, line ); } 
+}
 
 enum GLType
 {
@@ -90,4 +103,53 @@ unittest
     assert( toGLType!uint == GLType.UNSIGNED_INT );
     assert( toGLType!int == GLType.INT );
     assert( toGLType!float == GLType.FLOAT );
+}
+
+enum GLError
+{
+    NO                = GL_NO_ERROR,
+    INVALID_ENUM      = GL_INVALID_ENUM,
+    INVALID_VALUE     = GL_INVALID_VALUE,
+    INVALID_OPERATION = GL_INVALID_OPERATION,
+    STACK_OVERFLOW    = 0x0503,
+    STACK_UNDERFLOW   = 0x0504,
+    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,
+    INVALID_FRAMEBUFFER_OPERATION = 0x0506
+}
+
+void checkGL( string file=__FILE__, size_t line=__LINE__ )()
+{
+    GLError err = cast(GLError)glGetError();
+
+    if( err != GLError.NO )
+        throw new DesGLException( format("%s", err), file, line );
+}
+
+void ntCheckGL( string file=__FILE__, size_t line=__LINE__ )() nothrow
+{
+    try checkGL!(file,line);
+    catch( DesGLException e )
+        logger.error( toMessage( "GL ERROR at [%s:%d] %s", e.file, e.line, e.msg ) );
+    catch( Exception e )
+        logger.error( toMessage( "[%s:%d] %s", e.file, e.line, e.msg ) );
+}
+
+template checkGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
+{
+    auto checkGLCall(Args...)( Args args )
+    {
+        scope(exit) debug checkGL!(file,line);
+        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
+        else return fnc( args );
+    }
+}
+
+template ntCheckGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
+{
+    auto ntCheckGLCall(Args...)( Args args ) nothrow
+    {
+        scope(exit) debug ntCheckGL!(file,line);
+        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
+        else return fnc( args );
+    }
 }

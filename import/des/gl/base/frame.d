@@ -27,12 +27,9 @@ module des.gl.base.frame;
 import derelict.opengl3.gl3;
 
 import des.math.linear;
-import des.util.arch.emm;
 
 import des.gl.base.texture;
-import des.gl.util;
-
-import des.util.logsys;
+import des.gl.base.type;
 
 import des.il.image;
 
@@ -42,9 +39,9 @@ class GLFBOException : DesGLException
     { super( msg, file, line ); }
 }
 
-class GLRenderBuffer : ExternalMemoryManager
+class GLRenderBuffer : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
@@ -147,7 +144,7 @@ public:
 
 protected:
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         unbind();
         checkGLCall!glDeleteRenderbuffers( 1, &_id );
@@ -155,9 +152,9 @@ protected:
     }
 }
 
-class GLFrameBuffer : ExternalMemoryManager
+class GLFrameBuffer : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
@@ -251,7 +248,7 @@ public:
     }
 
 protected:
-    void selfDestroy()
+    override void selfDestroy()
     {
         unbind();
         checkGLCall!glDeleteFramebuffers( 1, &_id );

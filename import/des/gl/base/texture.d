@@ -28,12 +28,8 @@ import std.string;
 
 public import derelict.opengl3.gl3;
 
-import des.util.logsys;
-
 import des.gl.base.type;
-import des.gl.util.ext;
 
-import des.math.linear.vector;
 import des.il;
 
 import std.algorithm;
@@ -45,9 +41,9 @@ class GLTextureException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class GLTexture : ExternalMemoryManager
+class GLTexture : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 private:
     uint _id;
@@ -55,7 +51,7 @@ private:
 protected:
     texsize_t img_size;
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         unbind();
         checkGLCall!glDeleteTextures( 1, &_id );

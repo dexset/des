@@ -28,10 +28,7 @@ import std.c.string;
 
 import derelict.opengl3.gl3;
 
-import des.gl.util.ext;
 import des.gl.base.type;
-
-import des.util;
 
 class GLObjException : DesGLException 
 { 
@@ -39,9 +36,9 @@ class GLObjException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class GLBuffer : ExternalMemoryManager
+class GLBuffer : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
@@ -120,9 +117,9 @@ public:
         @property uint id() const { return _id; }
     }
 
-    void delegate(size_t) elementCountCallback;
-    void delegate(size_t) dataSizeCallback;
-    void delegate(size_t) elementSizeCallback;
+    Signal!size_t elementCountCB;
+    Signal!size_t elementSizeCB;
+    Signal!size_t dataSizeCB;
 
     void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
@@ -136,14 +133,9 @@ public:
         element_count = data_arr.length / element_size;
         data_size = size;
 
-        if( elementCountCallback !is null )
-            elementCountCallback( element_count );
-
-        if( dataSizeCallback !is null )
-            dataSizeCallback( data_size );
-
-        if( elementSizeCallback !is null )
-            elementSizeCallback( element_size );
+        elementCountCB( element_count );
+        dataSizeCB( data_size );
+        elementSizeCB( element_size );
 
         debug logger.trace( "[%d] [%s]: size [%d], element size [%d], usage [%s]",
                 type, size, element_size, mem );
@@ -232,22 +224,20 @@ public:
 
 protected:
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         checkGLCall!glDeleteBuffers( 1, &_id );
         debug logger.Debug( "pass" );
     }
 }
 
-final class GLVAO : ExternalMemoryManager
+final class GLVAO : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
     uint _id;
-
-    void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
 
 public:
     static nothrow void unbind(){ glBindVertexArray(0); }
@@ -283,11 +273,16 @@ public:
             ntCheckGLCall!glDisableVertexAttribArray( n ); 
         }
     }
+
+protected:
+
+    override void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
+
 }
 
-class GLObject: ExternalMemoryManager
+class GLObject : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:

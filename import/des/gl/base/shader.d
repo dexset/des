@@ -32,9 +32,7 @@ import des.math.linear;
 
 import derelict.opengl3.gl3;
 
-import des.util.logsys;
-
-import des.gl.util.ext;
+import des.gl.base.type;
 
 class ShaderException : DesGLException
 { 
@@ -42,9 +40,9 @@ class ShaderException : DesGLException
     { super( msg, file, line ); } 
 }
 
-class Shader : ExternalMemoryManager
+class Shader : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
@@ -166,9 +164,9 @@ auto parseShaderSource( string src, string separator = "//###" )
     return ret;
 }
 
-class ShaderProgram : ExternalMemoryManager
+class ShaderProgram : DesObject
 {
-    mixin EMM;
+    mixin DES;
     mixin ClassLogger;
 
 protected:
@@ -242,9 +240,9 @@ protected:
         }
     }
 
-    void selfConstruct() { create(); }
+    override void selfConstruct() { create(); }
 
-    void preChildsDestroy()
+    override void preChildsDestroy()
     {
         thisInUse = false;
 
@@ -252,7 +250,7 @@ protected:
             checkGLCall!glDetachShader( _id, sh.id );
     }
 
-    void selfDestroy()
+    override void selfDestroy()
     {
         checkGLCall!glDeleteProgram( _id );
         debug logger.Debug( "pass" );
@@ -294,7 +292,6 @@ public:
         use();
 
         enum fnc = "checkGLCall!glUniform";
-        //enum fnc = "glUniform";
 
         static if( isAllowMatrix!T )
         {
@@ -321,8 +318,6 @@ public:
 
             mixin( format( "%s%d%sv( loc, cast(int)vals.length, cast(%s*)vals.ptr );", fnc, sz, pf, cs ) );
         }
-
-        //glGetError();
     }
 
     void setUniform(T)( string name, in T[] vals... ) 
