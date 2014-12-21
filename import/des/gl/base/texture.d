@@ -354,10 +354,10 @@ public:
 
         auto dsize = w * h * elemSize;
 
-        if( img.size != img.imsize_t(w,h) || img.type.bpp != elemSize )
+        if( img.size != img.imsize_t(w,h) || img.info.bpe != elemSize )
         {
             img.size = ivec2( w, h );
-            img.type = imagePixelType( lformat, type );
+            img.info = imageElemInfo( lformat, type );
         }
 
         glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)lformat, cast(GLenum)type, img.data.ptr );
@@ -380,8 +380,8 @@ public:
     }
     body
     {
-        Type type = typeFromImageComponentType( img.type.comp );
-        auto fmt = formatFromImageChanelsCount( img.type.channels );
+        Type type = typeFromImageDataType( img.info.comp );
+        auto fmt = formatFromImageChanelsCount( img.info.channels );
         image( img.size, fmt[0], fmt[1], type, img.data.ptr );
     }
 
@@ -548,28 +548,28 @@ public:
             }
         }
 
-        auto imagePixelType( Format fmt, Type type )
+        auto imageElemInfo( Format fmt, Type type )
         {
             auto cnt = formatElemCount(fmt);
-            auto ict = imageComponentType(type);
-            if( ict == ComponentType.RAWBYTE )
-                return PixelType( sizeofType(type) * cnt );
+            auto ict = imageDataType(type);
+            if( ict == DataType.RAWBYTE )
+                return ElemInfo( sizeofType(type) * cnt );
             else
-                return PixelType( ict, cnt );
+                return ElemInfo( ict, cnt );
         }
 
-        ComponentType imageComponentType( Type type )
+        DataType imageDataType( Type type )
         {
             switch( type )
             {
-                case Type.BYTE:           return ComponentType.BYTE;
-                case Type.UNSIGNED_BYTE:  return ComponentType.UBYTE;
-                case Type.SHORT:          return ComponentType.SHORT;
-                case Type.UNSIGNED_SHORT: return ComponentType.USHORT;
-                case Type.INT:            return ComponentType.INT;
-                case Type.UNSIGNED_INT:   return ComponentType.UINT;
-                case Type.FLOAT:          return ComponentType.FLOAT;
-                default:                  return ComponentType.RAWBYTE;
+                case Type.BYTE:           return DataType.BYTE;
+                case Type.UNSIGNED_BYTE:  return DataType.UBYTE;
+                case Type.SHORT:          return DataType.SHORT;
+                case Type.UNSIGNED_SHORT: return DataType.USHORT;
+                case Type.INT:            return DataType.INT;
+                case Type.UNSIGNED_INT:   return DataType.UINT;
+                case Type.FLOAT:          return DataType.FLOAT;
+                default:                  return DataType.RAWBYTE;
             }
         }
 
@@ -583,19 +583,20 @@ public:
                    is(T==Wrap);
         }
 
-        Type typeFromImageComponentType( ComponentType ctype )
+        Type typeFromImageDataType( DataType ctype )
         {
             switch( ctype )
             {
-                case ComponentType.BYTE:     return Type.BYTE;
-                case ComponentType.UBYTE:
-                case ComponentType.RAWBYTE:  return Type.UNSIGNED_BYTE;
-                case ComponentType.SHORT:    return Type.SHORT;
-                case ComponentType.USHORT:   return Type.UNSIGNED_SHORT;
-                case ComponentType.INT:      return Type.INT;
-                case ComponentType.UINT:     return Type.UNSIGNED_INT;
-                case ComponentType.FLOAT:
-                case ComponentType.NORM_FLOAT: return Type.FLOAT;
+                case DataType.BYTE:     return Type.BYTE;
+                case DataType.UBYTE:
+                case DataType.RAWBYTE:  return Type.UNSIGNED_BYTE;
+                case DataType.SHORT:    return Type.SHORT;
+                case DataType.USHORT:   return Type.UNSIGNED_SHORT;
+                case DataType.INT:      return Type.INT;
+                case DataType.UINT:     return Type.UNSIGNED_INT;
+                case DataType.NORM_FIXED: return Type.INT;
+                case DataType.UNORM_FIXED: return Type.UNSIGNED_INT;
+                case DataType.FLOAT:    return Type.FLOAT;
                 default:
                     throw new GLTextureException( "uncompatible image component type" );
             }

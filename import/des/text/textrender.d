@@ -39,7 +39,7 @@ struct GlyphParam
 interface GlyphRender
 {
     void setParams( in GlyphParam p );
-    @property PixelType imtype() const;
+    @property ElemInfo imtype() const;
     GlyphInfo render( wchar ch );
 }
 

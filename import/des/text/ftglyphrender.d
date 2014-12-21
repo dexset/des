@@ -70,7 +70,7 @@ public:
         color = p.color;
     }
 
-    @property PixelType imtype() const { return PixelType( ComponentType.UBYTE, 4 ); }
+    @property ElemInfo imtype() const { return ElemInfo( DataType.UBYTE, 4 ); }
 
     GlyphInfo render( wchar ch )
     {
