@@ -3,6 +3,7 @@ module des.app.glapp;
 import des.app.base;
 
 import std.stdio;
+import std.string;
 
 public import derelict.opengl3.gl3;
 public import derelict.freetype.ft;
@@ -13,12 +14,15 @@ public import derelict.sdl2.sdl;
 
 import des.util.logsys;
 
+///
 class GLAppException : AppException
 {
-    @safe pure nothrow this( string msg, string file = __FILE__, size_t line = __LINE__ )
+    ///
+    this( string msg, string file = __FILE__, size_t line = __LINE__ ) @safe pure nothrow
     { super( msg, file, line ); }
 }
 
+/// SDL window with open gl
 class GLWindow : DesObject
 {
     mixin DES;
@@ -108,20 +112,21 @@ protected:
         auto wID = ev.window.windowID;
         int[2] data = [ ev.window.data1, ev.window.data2 ];
 
-        switch(ev.window.event){
-            case SDL_WINDOWEVENT_SHOWN: shown(); break;
-            case SDL_WINDOWEVENT_HIDDEN: hidden(); break;
-            case SDL_WINDOWEVENT_EXPOSED: exposed(); break;
-            case SDL_WINDOWEVENT_MOVED: moved(ivec2(data)); break;
-            case SDL_WINDOWEVENT_RESIZED: resized(ivec2(data)); break;
-            case SDL_WINDOWEVENT_MINIMIZED: minimized(); break;
-            case SDL_WINDOWEVENT_MAXIMIZED: maximized(); break;
-            case SDL_WINDOWEVENT_RESTORED: restored(); break;
-            case SDL_WINDOWEVENT_ENTER: enter(); break;
-            case SDL_WINDOWEVENT_LEAVE: leave(); break;
-            case SDL_WINDOWEVENT_FOCUS_GAINED: focusGained(); break;
-            case SDL_WINDOWEVENT_FOCUS_LOST: focusLost(); break;
-            case SDL_WINDOWEVENT_CLOSE: close(); break;
+        switch(ev.window.event)
+        {
+            case SDL_WINDOWEVENT_SHOWN:        shown();                break;
+            case SDL_WINDOWEVENT_HIDDEN:       hidden();               break;
+            case SDL_WINDOWEVENT_EXPOSED:      exposed();              break;
+            case SDL_WINDOWEVENT_MOVED:        moved( ivec2(data) );   break;
+            case SDL_WINDOWEVENT_RESIZED:      resized( ivec2(data) ); break;
+            case SDL_WINDOWEVENT_MINIMIZED:    minimized();            break;
+            case SDL_WINDOWEVENT_MAXIMIZED:    maximized();            break;
+            case SDL_WINDOWEVENT_RESTORED:     restored();             break;
+            case SDL_WINDOWEVENT_ENTER:        enter();                break;
+            case SDL_WINDOWEVENT_LEAVE:        leave();                break;
+            case SDL_WINDOWEVENT_FOCUS_GAINED: focusGained();          break;
+            case SDL_WINDOWEVENT_FOCUS_LOST:   focusLost();            break;
+            case SDL_WINDOWEVENT_CLOSE:        close();                break;
             default: return false;
         }
         return true;
@@ -155,12 +160,10 @@ public:
 
     this( string title, ivec2 sz, bool fullscreen = false, int display = -1 )
     {
-        super();
         processors ~= &mouseProc;
         processors ~= &keyProc;
         processors ~= &winProc;
         _size = sz;
-        import std.string;
         if( display != -1 && display > SDL_GetNumVideoDisplays() - 1 )
             throw new GLAppException( format( "No such display: display%d", display ) );
         SDL_WindowFlags flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
@@ -188,7 +191,8 @@ public:
         draw.end.connect( newSlot( { SDL_GL_SwapWindow( win ); } ) );
     }
 
-    void procEvents( ref const(SDL_Event) ev )//Предполагается, что входящее событие предназначено именно этому окну
+    //Предполагается, что входящее событие предназначено именно этому окну
+    void procEvents( in SDL_Event ev )
     {
         foreach( p; processors ) if( p(ev) ) break;
 
@@ -197,8 +201,13 @@ public:
             _size = ivec2( ev.window.data1, ev.window.data2 );
     }
 
-    uint id() @property { return SDL_GetWindowID( win ); }
-    ivec2 size() const @property { return _size; }
+    @property
+    {
+        ///
+        uint id() { return SDL_GetWindowID( win ); }
+        ///
+        ivec2 size() const { return _size; }
+    }
 
 private:
     void setApp( GLApp owner ) { app = owner; }
@@ -249,7 +258,7 @@ protected:
 
     void setCurrent( uint winID )
     {
-        current = windows.get(winID,null);
+        current = windows.get( winID, null );
     }
 
     void selfDestroy()
@@ -279,7 +288,7 @@ public:
     {
         if( context is null )
         {
-            std.stdio.stderr.writeln( "warning: no windows." );
+            logger.warn( "no windows" );
             return false;
         }
 
@@ -322,7 +331,7 @@ public:
         return win;
     }
 
-    void quit(){ is_runing = false; }
+    void quit() { is_runing = false; }
 
 protected:
 

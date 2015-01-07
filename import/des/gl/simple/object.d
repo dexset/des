@@ -6,6 +6,7 @@ import std.string;
 
 public import des.gl.base;
 
+///
 abstract class GLSimpleObject : GLObject
 {
 private:
@@ -16,15 +17,19 @@ private:
 
 protected:
 
-    void setDrawCount( size_t cnt )
-    { draw_count = cnt; }
+    ///
+    void setDrawCount( size_t cnt ) { draw_count = cnt; }
 
-    void setIndexCount( size_t cnt )
-    { index_count = cnt; }
+    ///
+    void setIndexCount( size_t cnt ) { index_count = cnt; }
 
+    ///
     CommonShaderProgram shader;
+
+    ///
     bool warn_if_empty = true;
 
+    ///
     auto createArrayBuffer()
     {
         auto buf = newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER );
@@ -90,6 +95,7 @@ protected:
         return ret;
     }
 
+    ///
     auto createIndexBuffer()
     {
         auto buf = newEMM!GLBuffer( GLBuffer.Target.ELEMENT_ARRAY_BUFFER );
@@ -101,8 +107,10 @@ protected:
         return buf;
     }
 
+    ///
     bool draw_flag = true;
 
+    ///
     void preDraw()
     {
         vao.bind();
@@ -112,6 +120,7 @@ protected:
         debug checkGL;
     }
 
+    ///
     void drawArrays( DrawMode mode )
     {
         if( !draw_flag ) return;
@@ -125,6 +134,7 @@ protected:
         debug logger.trace( "mode [%s], count [%d]", mode, draw_count );
     }
 
+    ///
     void drawElements( DrawMode mode )
     {
         if( !draw_flag ) return;
@@ -140,27 +150,30 @@ protected:
 
 public:
 
-    this( string src )
+    ///
+    this( string shader_source )
     {
-        shader = newEMM!CommonShaderProgram( parseShaderSource( src ) );
+        shader = newEMM!CommonShaderProgram( parseShaderSource( shader_source ) );
     }
 
+    ///
     this( CommonShaderProgram sh )
     in{ assert( sh !is null ); } body
     { shader = sh; }
 
+    ///
     enum DrawMode
     {
-        POINTS = GL_POINTS,
-        LINE_STRIP = GL_LINE_STRIP,
-        LINE_LOOP = GL_LINE_LOOP,
-        LINES = GL_LINES,
-        LINE_STRIP_ADJACENCY = GL_LINE_STRIP_ADJACENCY,
-        LINES_ADJACENCY = GL_LINES_ADJACENCY,
-        TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
-        TRIANGLE_FAN = GL_TRIANGLE_FAN,
-        TRIANGLES = GL_TRIANGLES,
-        TRIANGLE_STRIP_ADJACENCY = GL_TRIANGLE_STRIP_ADJACENCY,
-        TRIANGLES_ADJACENCY = GL_TRIANGLES_ADJACENCY,
+        POINTS                   = GL_POINTS,                  /// GL_POINTS,
+        LINES                    = GL_LINES,                   /// GL_LINES,
+        LINE_STRIP               = GL_LINE_STRIP,              /// GL_LINE_STRIP,
+        LINE_LOOP                = GL_LINE_LOOP,               /// GL_LINE_LOOP,
+        TRIANGLES                = GL_TRIANGLES,               /// GL_TRIANGLES,
+        TRIANGLE_STRIP           = GL_TRIANGLE_STRIP,          /// GL_TRIANGLE_STRIP,
+        TRIANGLE_FAN             = GL_TRIANGLE_FAN,            /// GL_TRIANGLE_FAN,
+        LINES_ADJACENCY          = GL_LINES_ADJACENCY,         /// GL_LINES_ADJACENCY,
+        LINE_STRIP_ADJACENCY     = GL_LINE_STRIP_ADJACENCY,    /// GL_LINE_STRIP_ADJACENCY,
+        TRIANGLES_ADJACENCY      = GL_TRIANGLES_ADJACENCY,     /// GL_TRIANGLES_ADJACENCY,
+        TRIANGLE_STRIP_ADJACENCY = GL_TRIANGLE_STRIP_ADJACENCY /// GL_TRIANGLE_STRIP_ADJACENCY,
     }
 }
