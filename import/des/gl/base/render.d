@@ -58,6 +58,7 @@ private template createNew(bool buffer)
     alias createNew=fnc;
 }
 
+/// Render to FBO
 class GLRender(bool CB, bool DB) : DesObject
 {
     mixin DES;
@@ -68,12 +69,17 @@ protected:
 
 public:
 
+    ///
     alias staticChoise!(CB,GLRenderBuffer,GLTexture) ColorObject;
+    ///
     alias staticChoise!(DB,GLRenderBuffer,GLTexture) DepthObject;
 
+    ///
     DepthObject depth;
+    ///
     ColorObject color;
 
+    ///
     this()
     {
         depth = registerChildsEMM( createDepth() );
@@ -90,6 +96,7 @@ public:
                 fbo.id, CB?"RB":"Tex", color.id, DB?"RB":"Tex", depth.id );
     }
 
+    /// render
     void opCall( uivec2 sz, void delegate() draw_func )
     in
     {
@@ -148,7 +155,11 @@ protected:
     }
 }
 
+///
 alias GLRender!(false,false) GLRenderToTex;
+///
 alias GLRender!(true,true) GLRenderToRB;
+///
 alias GLRender!(false,true) GLRenderColorToTexDepthToRB;
+///
 alias GLRender!(true,false) GLRenderColorToRBDepthToTex;

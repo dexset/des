@@ -34,12 +34,15 @@ import derelict.opengl3.gl3;
 
 import des.gl.base.type;
 
+///
 class ShaderException : DesGLException
-{ 
+{
+    ///
     this( string msg, string file=__FILE__, size_t line=__LINE__ )
     { super( msg, file, line ); } 
 }
 
+///
 class Shader : DesObject
 {
     mixin DES;
@@ -57,22 +60,29 @@ public:
     {
         nothrow const
         {
+            ///
             uint id() { return _id; }
+            /// get source
             string source() { return _source; }
+            ///
             Type type() { return _type; }
+            ///
             bool compiled() { return _compiled; }
         }
 
+        /// set source
         string source( string s ) { _source = s; return _source; }
     }
 
+    ///
     enum Type
     {
-        VERTEX   = GL_VERTEX_SHADER,
-        GEOMETRY = GL_GEOMETRY_SHADER,
-        FRAGMENT = GL_FRAGMENT_SHADER,
+        VERTEX   = GL_VERTEX_SHADER,   /// `GL_VERTEX_SHADER`
+        GEOMETRY = GL_GEOMETRY_SHADER, /// `GL_GEOMETRY_SHADER`
+        FRAGMENT = GL_FRAGMENT_SHADER, /// `GL_FRAGMENT_SHADER`
     }
 
+    ///
     this( Type tp, string src )
     {
         logger = new InstanceLogger(this);
@@ -80,6 +90,7 @@ public:
         _source = src;
     }
 
+    /// glCreateShader, glShaderSource, glCompileShader
     void make()
     {
         _id = checkGLCall!glCreateShader( cast(GLenum)_type );
@@ -124,6 +135,24 @@ protected:
     }
 }
 
+/++ parse solid input string to different shaders
+
+ Use [vert|vertex] for vertex shader,
+ [geom|geometry] for geometry shader,
+ [frag|fragment] for fragment shader
+
+ Example:
+    //###vert
+    ... code of vertex shader ...
+    //###frag
+    ... cod of fragment shader ...
+
+ Returns:
+    Shader[]
+
+ See_Also: [Shader](des/gl/base/shader/Shader.html)
+
+ +/
 auto parseShaderSource( string src, string separator = "//###" )
 {
     Shader[] ret;
@@ -164,6 +193,7 @@ auto parseShaderSource( string src, string separator = "//###" )
     return ret;
 }
 
+///
 class ShaderProgram : DesObject
 {
     mixin DES;
@@ -176,7 +206,10 @@ protected:
     private static uint inUse = 0;
     final @property 
     {
+        /// check this is current shader program
         bool thisInUse() const { return inUse == _id; }
+
+        /// glUseProgram, set this is current shader program or set zero (if u==false)
         void thisInUse( bool u )
         {
             if( ( thisInUse && u ) || ( !thisInUse && !u ) ) return;
@@ -187,9 +220,12 @@ protected:
         }
     }
 
+    ///
     Shader[] shaders;
 
 public:
+
+    /// `create()`
     this( Shader[] shs )
     {
         logger = new InstanceLogger(this);
@@ -199,12 +235,15 @@ public:
         create();
     }
 
+    ///
     uint id() pure nothrow const @property { return _id; }
 
+    ///
     final void use() { thisInUse = true; }
 
 protected:
 
+    /// glCreateProgram, glAttachShader, glLinkProgram
     void create()
     {
         foreach( sh; shaders ) if( !sh.compiled ) sh.make();
@@ -223,6 +262,7 @@ protected:
         logger.Debug( "pass" );
     }
 
+    /// check link status, throw exception if false
     void check()
     {
         int res;
@@ -257,11 +297,14 @@ protected:
     }
 }
 
+///
 class CommonShaderProgram : ShaderProgram
 {
 public:
+    ///
     this( Shader[] shs ) { super(shs); }
 
+    ///
     int getAttribLocation( string name )
     { 
         auto ret = checkGLCall!glGetAttribLocation( _id, name.toStringz ); 
@@ -269,6 +312,7 @@ public:
         return ret;
     }
 
+    ///
     int[] getAttribLocations( string[] names... )
     { 
         int[] ret;
@@ -277,9 +321,11 @@ public:
         return ret;
     }
 
+    ///
     int getUniformLocation( string name )
     { return checkGLCall!glGetUniformLocation( _id, name.toStringz ); }
 
+    ///
     void setUniform(T)( int loc, in T[] vals... ) 
         if( isAllowType!T || isAllowVector!T || isAllowMatrix!T )
     {
@@ -320,6 +366,7 @@ public:
         }
     }
 
+    ///
     void setUniform(T)( string name, in T[] vals... ) 
         if( is( typeof( setUniform!T( 0, vals ) ) ) )
     {
@@ -389,6 +436,7 @@ unittest
     assert( getFloats!"v"( 1.0f, 2u, -3 ) == "cast(float)v[0],cast(float)v[1],cast(float)v[2]" );
 }
 
+/// allows `float`, `int`, 'uint`
 string glPostfix(T)() pure @property
 {
          static if( is( T == float ) ) return "f";
@@ -399,6 +447,7 @@ string glPostfix(T)() pure @property
     else return "";
 }
 
+///
 unittest
 {
     assert( glPostfix!float  == "f" );

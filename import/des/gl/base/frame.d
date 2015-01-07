@@ -33,12 +33,15 @@ import des.gl.base.type;
 
 import des.il.image;
 
+///
 class GLFBOException : DesGLException 
 { 
-    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    ///
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) @safe pure nothrow
     { super( msg, file, line ); }
 }
 
+///
 class GLRenderBuffer : DesObject
 {
     mixin DES;
@@ -50,43 +53,45 @@ protected:
 
 public:
 
+    ///
     enum Format
     {
-        R8                 = GL_R8,
-        R8UI               = GL_R8UI,
-        R8I                = GL_R8I,
-        R16UI              = GL_R16UI,
-        R16I               = GL_R16I,
-        R32UI              = GL_R32UI,
-        R32I               = GL_R32I,
-        RG8                = GL_RG8,
-        RG8UI              = GL_RG8UI,
-        RG8I               = GL_RG8I,
-        RG16UI             = GL_RG16UI,
-        RG16I              = GL_RG16I,
-        RG32UI             = GL_RG32UI,
-        RG32I              = GL_RG32I,
-        RGB8               = GL_RGB8,
-        RGBA8              = GL_RGBA8,
-        SRGB8_ALPHA8       = GL_SRGB8_ALPHA8,
-        RGB5_A1            = GL_RGB5_A1,
-        RGBA4              = GL_RGBA4,
-        RGB10_A2           = GL_RGB10_A2,
-        RGBA8UI            = GL_RGBA8UI,
-        RGBA8I             = GL_RGBA8I,
-        RGB10_A2UI         = GL_RGB10_A2UI,
-        RGBA16UI           = GL_RGBA16UI,
-        RGBA16I            = GL_RGBA16I,
-        RGBA32I            = GL_RGBA32I,
-        RGBA32UI           = GL_RGBA32UI,
-        DEPTH_COMPONENT16  = GL_DEPTH_COMPONENT16,
-        DEPTH_COMPONENT24  = GL_DEPTH_COMPONENT24,
-        DEPTH_COMPONENT32F = GL_DEPTH_COMPONENT32F,
-        DEPTH24_STENCIL8   = GL_DEPTH24_STENCIL8,
-        DEPTH32F_STENCIL8  = GL_DEPTH32F_STENCIL8,
-        STENCIL_INDEX8     = GL_STENCIL_INDEX8
+        R8                 = GL_R8,                 /// `GL_R8`
+        R8UI               = GL_R8UI,               /// `GL_R8UI`
+        R8I                = GL_R8I,                /// `GL_R8I`
+        R16UI              = GL_R16UI,              /// `GL_R16UI`
+        R16I               = GL_R16I,               /// `GL_R16I`
+        R32UI              = GL_R32UI,              /// `GL_R32UI`
+        R32I               = GL_R32I,               /// `GL_R32I`
+        RG8                = GL_RG8,                /// `GL_RG8`
+        RG8UI              = GL_RG8UI,              /// `GL_RG8UI`
+        RG8I               = GL_RG8I,               /// `GL_RG8I`
+        RG16UI             = GL_RG16UI,             /// `GL_RG16UI`
+        RG16I              = GL_RG16I,              /// `GL_RG16I`
+        RG32UI             = GL_RG32UI,             /// `GL_RG32UI`
+        RG32I              = GL_RG32I,              /// `GL_RG32I`
+        RGB8               = GL_RGB8,               /// `GL_RGB8`
+        RGBA8              = GL_RGBA8,              /// `GL_RGBA8`
+        SRGB8_ALPHA8       = GL_SRGB8_ALPHA8,       /// `GL_SRGB8_ALPHA8`
+        RGB5_A1            = GL_RGB5_A1,            /// `GL_RGB5_A1`
+        RGBA4              = GL_RGBA4,              /// `GL_RGBA4`
+        RGB10_A2           = GL_RGB10_A2,           /// `GL_RGB10_A2`
+        RGBA8UI            = GL_RGBA8UI,            /// `GL_RGBA8UI`
+        RGBA8I             = GL_RGBA8I,             /// `GL_RGBA8I`
+        RGB10_A2UI         = GL_RGB10_A2UI,         /// `GL_RGB10_A2UI`
+        RGBA16UI           = GL_RGBA16UI,           /// `GL_RGBA16UI`
+        RGBA16I            = GL_RGBA16I,            /// `GL_RGBA16I`
+        RGBA32I            = GL_RGBA32I,            /// `GL_RGBA32I`
+        RGBA32UI           = GL_RGBA32UI,           /// `GL_RGBA32UI`
+        DEPTH_COMPONENT16  = GL_DEPTH_COMPONENT16,  /// `GL_DEPTH_COMPONENT16`
+        DEPTH_COMPONENT24  = GL_DEPTH_COMPONENT24,  /// `GL_DEPTH_COMPONENT24`
+        DEPTH_COMPONENT32F = GL_DEPTH_COMPONENT32F, /// `GL_DEPTH_COMPONENT32F`
+        DEPTH24_STENCIL8   = GL_DEPTH24_STENCIL8,   /// `GL_DEPTH24_STENCIL8`
+        DEPTH32F_STENCIL8  = GL_DEPTH32F_STENCIL8,  /// `GL_DEPTH32F_STENCIL8`
+        STENCIL_INDEX8     = GL_STENCIL_INDEX8      /// `GL_STENCIL_INDEX8`
     }
 
+    /// glGenRenderbuffers
     this()
     {
         checkGLCall!glGenRenderbuffers( 1, &_id );
@@ -96,22 +101,28 @@ public:
 
     final pure const @property
     {
+        ///
         uint id() { return _id; }
+
+        ///
         Format format() { return _format; }
     }
 
+    /// `glBindRenderbuffer( GL_RENDERBUFFER, id )`
     void bind()
     {
         checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, _id );
         debug logger.trace( "[%d]", id );
     }
 
+    /// `glBindRenderbuffer( GL_RENDERBUFFER, 0 )`
     void unbind()
     {
         checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, 0 );
         debug logger.trace( "call from [%d]", _id );
     }
 
+    /// glRenderbufferStorage
     void storage( in uivec2 sz, Format fmt )
     in
     {
@@ -127,8 +138,7 @@ public:
         debug logger.Debug( "size [%d,%d], format [%s]", sz[0], sz[1], fmt );
     }
 
-    void resize( in uivec2 sz ) { storage( sz, _format ); }
-
+    /// ditto
     void storage(T)( in T sz, Format fmt )
     if( isCompatibleVector!(2,uint,T) )
     in
@@ -138,6 +148,10 @@ public:
     }
     body { storage( uivec2(sz), fmt ); }
 
+    /// set storage with new size and old format
+    void resize( in uivec2 sz ) { storage( sz, _format ); }
+
+    /// ditto
     void resize(T)( in T sz )
     if( isCompatibleVector!(2,uint,T) )
     { resize( uivec2(sz) ); }
@@ -152,6 +166,7 @@ protected:
     }
 }
 
+///
 class GLFrameBuffer : DesObject
 {
     mixin DES;
@@ -167,6 +182,7 @@ public:
     //mixin( getAttachmentEnumString!GL_MAX_COLOR_ATTACHMENTS );
     mixin( getAttachmentEnumString!1 );
 
+    /// glGenFramebuffers
     this()
     {
         if( id_stack.length == 0 ) id_stack ~= 0;
@@ -176,10 +192,15 @@ public:
         logger.Debug( "pass" );
     }
 
-    final pure const @property uint id() { return _id; }
+    final pure const @property
+    {
+        ///
+        uint id() { return _id; }
+    }
 
     final nothrow
     {
+        /// glBindFramebuffer add id to stack 
         void bind()
         {
             if( id_stack[$-1] == _id ) return;
@@ -188,6 +209,7 @@ public:
             debug logger.trace( "pass" );
         }
 
+        /// pop from stack old frame buffer id and glBindFramebuffer with it
         void unbind()
         {
             if( id_stack.length < 2 && id_stack[$-1] != _id ) return;
@@ -197,6 +219,7 @@ public:
         }
     }
 
+    ///
     void setAttachment(T)( T obj, Attachment att )
         if( is( T : GLTexture ) || is( T : GLRenderBuffer ) )
     {
@@ -206,10 +229,12 @@ public:
             renderBuffer( obj, att );
     }
 
+    /// set texture attachment
     void texture( GLTexture tex, Attachment att )
     in { assert( isValidTextureTarget(tex.target) ); }
     body { texture( tex, att, tex.target ); }
 
+    /// ditto
     void texture( GLTexture tex, Attachment att, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
     {
@@ -228,6 +253,7 @@ public:
         logger.Debug( "[%s] as [%s]", tex.id, att );
     }
 
+    /// set render buffer attachment
     void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
         bind(); scope(exit) unbind();
@@ -238,6 +264,7 @@ public:
         logger.Debug( "[%d] as [%s]", rbo.id, att );
     }
 
+    /// glCheckFramebufferStatus
     void check()
     {
         bind(); scope(exit) unbind();

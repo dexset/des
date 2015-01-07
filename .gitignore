@@ -10,4 +10,5 @@
 *.lst
 *.sh
 bin
+doc
 dub.selections.json

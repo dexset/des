@@ -1,4 +1,6 @@
+
 module des.gl.simple.textout;
+/+
 
 import des.il.region;
 
@@ -166,3 +168,4 @@ public:
         bool isStretched() const { return stretched; }
     }
 }
++/

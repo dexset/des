@@ -33,23 +33,27 @@ public import des.math.linear.vector;
 public import des.util.arch;
 public import des.util.logsys;
 
+///
 class DesGLException : Exception 
-{ 
+{
+    ///
     this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
     { super( msg, file, line ); } 
 }
 
+///
 enum GLType
 {
-    UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,
-    BYTE           = GL_BYTE,
-    UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
-    SHORT          = GL_SHORT,
-    UNSIGNED_INT   = GL_UNSIGNED_INT,
-    INT            = GL_INT,
-    FLOAT          = GL_FLOAT,
+    UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,  /// `GL_UNSIGNED_BYTE`
+    BYTE           = GL_BYTE,           /// `GL_BYTE`
+    UNSIGNED_SHORT = GL_UNSIGNED_SHORT, /// `GL_UNSIGNED_SHORT`
+    SHORT          = GL_SHORT,          /// `GL_SHORT`
+    UNSIGNED_INT   = GL_UNSIGNED_INT,   /// `GL_UNSIGNED_INT`
+    INT            = GL_INT,            /// `GL_INT`
+    FLOAT          = GL_FLOAT,          /// `GL_FLOAT`
 }
 
+///
 size_t sizeofGLType( GLType type )
 {
     final switch(type)
@@ -71,7 +75,8 @@ size_t sizeofGLType( GLType type )
     }
 }
 
-@property GLType toGLType(T)()
+///
+GLType toGLType(T)() @property
 {
     static if( is( T == ubyte ) )
         return GLType.UNSIGNED_BYTE;
@@ -94,6 +99,7 @@ size_t sizeofGLType( GLType type )
     }
 }
 
+///
 unittest
 {
     assert( toGLType!ubyte == GLType.UNSIGNED_BYTE );
@@ -105,18 +111,20 @@ unittest
     assert( toGLType!float == GLType.FLOAT );
 }
 
+///
 enum GLError
 {
-    NO                = GL_NO_ERROR,
-    INVALID_ENUM      = GL_INVALID_ENUM,
-    INVALID_VALUE     = GL_INVALID_VALUE,
-    INVALID_OPERATION = GL_INVALID_OPERATION,
-    STACK_OVERFLOW    = 0x0503,
-    STACK_UNDERFLOW   = 0x0504,
-    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,
-    INVALID_FRAMEBUFFER_OPERATION = 0x0506
+    NO                = GL_NO_ERROR,          /// `GL_NO_ERROR`
+    INVALID_ENUM      = GL_INVALID_ENUM,      /// `GL_INVALID_ENUM`
+    INVALID_VALUE     = GL_INVALID_VALUE,     /// `GL_INVALID_VALUE`
+    INVALID_OPERATION = GL_INVALID_OPERATION, /// `GL_INVALID_OPERATION`
+    STACK_OVERFLOW    = 0x0503,               /// `0x0503`
+    STACK_UNDERFLOW   = 0x0504,               /// `0x0504`
+    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,     /// `GL_OUT_OF_MEMORY`
+    INVALID_FRAMEBUFFER_OPERATION = 0x0506    /// `0x0506`
 }
 
+/// glGetError, if has error throw exception
 void checkGL( string file=__FILE__, size_t line=__LINE__ )()
 {
     GLError err = cast(GLError)glGetError();
@@ -125,15 +133,17 @@ void checkGL( string file=__FILE__, size_t line=__LINE__ )()
         throw new DesGLException( format("%s", err), file, line );
 }
 
+/// glGetError, no throw exception, output to logger error
 void ntCheckGL( string file=__FILE__, size_t line=__LINE__ )() nothrow
 {
     try checkGL!(file,line);
     catch( DesGLException e )
-        logger.error( toMessage( "GL ERROR at [%s:%d] %s", e.file, e.line, e.msg ) );
+        logger.error( ntFormat( "GL ERROR at [%s:%d] %s", e.file, e.line, e.msg ) );
     catch( Exception e )
-        logger.error( toMessage( "[%s:%d] %s", e.file, e.line, e.msg ) );
+        logger.error( ntFormat( "[%s:%d] %s", e.file, e.line, e.msg ) );
 }
 
+/// call `checkGL` after function call
 template checkGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
 {
     auto checkGLCall(Args...)( Args args )
@@ -144,6 +154,7 @@ template checkGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args
     }
 }
 
+/// call `ntCheckGL` after function call
 template ntCheckGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
 {
     auto ntCheckGLCall(Args...)( Args args ) nothrow

@@ -30,12 +30,15 @@ import derelict.opengl3.gl3;
 
 import des.gl.base.type;
 
+///
 class GLObjException : DesGLException 
 { 
-    @safe pure nothrow this( string msg, string file=__FILE__, size_t line=__LINE__ )
+    ///
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) @safe pure nothrow
     { super( msg, file, line ); } 
 }
 
+///
 class GLBuffer : DesObject
 {
     mixin DES;
@@ -45,53 +48,61 @@ protected:
     uint _id;
     Target type;
 
+    ///
     size_t data_size;
+    ///
     size_t element_count;
 
-    nothrow @property GLenum gltype() const { return cast(GLenum)type; }
+    ///
+    GLenum gltype() const nothrow @property { return cast(GLenum)type; }
 
 public:
 
+    ///
     enum Usage
     {
-        STREAM_DRAW = GL_STREAM_DRAW,
-        STREAM_READ = GL_STREAM_READ,
-        STREAM_COPY = GL_STREAM_COPY,
-        STATIC_DRAW = GL_STATIC_DRAW,
-        STATIC_READ = GL_STATIC_READ,
-        STATIC_COPY = GL_STATIC_COPY,
-        DYNAMIC_DRAW = GL_DYNAMIC_DRAW,
-        DYNAMIC_READ = GL_DYNAMIC_READ,
-        DYNAMIC_COPY = GL_DYNAMIC_COPY
+        STREAM_DRAW  = GL_STREAM_DRAW,  /// `GL_STREAM_DRAW`
+        STREAM_READ  = GL_STREAM_READ,  /// `GL_STREAM_READ`
+        STREAM_COPY  = GL_STREAM_COPY,  /// `GL_STREAM_COPY`
+        STATIC_DRAW  = GL_STATIC_DRAW,  /// `GL_STATIC_DRAW`
+        STATIC_READ  = GL_STATIC_READ,  /// `GL_STATIC_READ`
+        STATIC_COPY  = GL_STATIC_COPY,  /// `GL_STATIC_COPY`
+        DYNAMIC_DRAW = GL_DYNAMIC_DRAW, /// `GL_DYNAMIC_DRAW`
+        DYNAMIC_READ = GL_DYNAMIC_READ, /// `GL_DYNAMIC_READ`
+        DYNAMIC_COPY = GL_DYNAMIC_COPY  /// `GL_DYNAMIC_COPY`
     }
 
+    ///
     enum Access
     {
-        READ_ONLY  = GL_READ_ONLY,
-        WRITE_ONLY = GL_WRITE_ONLY,
-        READ_WRITE = GL_READ_WRITE
+        READ_ONLY  = GL_READ_ONLY,  /// `GL_READ_ONLY`
+        WRITE_ONLY = GL_WRITE_ONLY, /// `GL_WRITE_ONLY`
+        READ_WRITE = GL_READ_WRITE  /// `GL_READ_WRITE`
     }
 
+    ///
     enum Target
     {
-        ARRAY_BUFFER              = GL_ARRAY_BUFFER,
-        ATOMIC_COUNTER_BUFFER     = GL_ATOMIC_COUNTER_BUFFER,
-        COPY_READ_BUFFER          = GL_COPY_READ_BUFFER,
-        COPY_WRITE_BUFFER         = GL_COPY_WRITE_BUFFER,
-        DRAW_INDIRECT_BUFFER      = GL_DRAW_INDIRECT_BUFFER,
-        DISPATCH_INDIRECT_BUFFER  = GL_DISPATCH_INDIRECT_BUFFER,
-        ELEMENT_ARRAY_BUFFER      = GL_ELEMENT_ARRAY_BUFFER,
-        PIXEL_PACK_BUFFER         = GL_PIXEL_PACK_BUFFER,
-        PIXEL_UNPACK_BUFFER       = GL_PIXEL_UNPACK_BUFFER,
-        SHADER_STORAGE_BUFFER     = GL_SHADER_STORAGE_BUFFER,
-        TEXTURE_BUFFER            = GL_TEXTURE_BUFFER,
-        TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER,
-        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER
+        ARRAY_BUFFER              = GL_ARRAY_BUFFER,              /// `GL_ARRAY_BUFFER`
+        ATOMIC_COUNTER_BUFFER     = GL_ATOMIC_COUNTER_BUFFER,     /// `GL_ATOMIC_COUNTER_BUFFER`
+        COPY_READ_BUFFER          = GL_COPY_READ_BUFFER,          /// `GL_COPY_READ_BUFFER`
+        COPY_WRITE_BUFFER         = GL_COPY_WRITE_BUFFER,         /// `GL_COPY_WRITE_BUFFER`
+        DRAW_INDIRECT_BUFFER      = GL_DRAW_INDIRECT_BUFFER,      /// `GL_DRAW_INDIRECT_BUFFER`
+        DISPATCH_INDIRECT_BUFFER  = GL_DISPATCH_INDIRECT_BUFFER,  /// `GL_DISPATCH_INDIRECT_BUFFER`
+        ELEMENT_ARRAY_BUFFER      = GL_ELEMENT_ARRAY_BUFFER,      /// `GL_ELEMENT_ARRAY_BUFFER`
+        PIXEL_PACK_BUFFER         = GL_PIXEL_PACK_BUFFER,         /// `GL_PIXEL_PACK_BUFFER`
+        PIXEL_UNPACK_BUFFER       = GL_PIXEL_UNPACK_BUFFER,       /// `GL_PIXEL_UNPACK_BUFFER`
+        SHADER_STORAGE_BUFFER     = GL_SHADER_STORAGE_BUFFER,     /// `GL_SHADER_STORAGE_BUFFER`
+        TEXTURE_BUFFER            = GL_TEXTURE_BUFFER,            /// `GL_TEXTURE_BUFFER`
+        TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER, /// `GL_TRANSFORM_FEEDBACK_BUFFER`
+        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`  
     }
 
+    /// glBindBuffer( trg, 0 )
     static nothrow void unbind( Target trg )
     { glBindBuffer( cast(GLenum)trg, 0 ); }
 
+    ///
     this( Target tp=Target.ARRAY_BUFFER )
     {
         checkGLCall!glGenBuffers( 1, &_id );
@@ -104,11 +115,14 @@ public:
 
     final
     {
+        /// glBindBuffer
         void bind()
         {
             checkGLCall!glBindBuffer( gltype, _id );
             debug logger.trace( "with type [%s]", type );
         }
+
+        /// glBindBuffer with self target to 0
         void unbind()
         {
             checkGLCall!glBindBuffer( gltype, 0 );
@@ -117,10 +131,31 @@ public:
         @property uint id() const { return _id; }
     }
 
+    /++ calls when element count changed (in setUntypedData)
+     +
+     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     +/
     Signal!size_t elementCountCB;
+
+    /++ calls when element size changed (in setUntypedData)
+     +
+     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     +/
     Signal!size_t elementSizeCB;
+
+    /++ calls when data size changed (in setUntypedData)
+     +
+     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     +/
     Signal!size_t dataSizeCB;
 
+    /++ glBufferData, call signals 
+     +
+     + See_Also: 
+     + * [Signal!size_t elementCountCB](des/gl/base/object/GLBuffer.elementCountCB.html)
+     + * [Signal!size_t elementSizeCB](des/gl/base/object/GLBuffer.elementSizeCB.html)
+     + * [Signal!size_t dataSizeCB](des/gl/base/object/GLBuffer.dataSizeCB.html)
+     +/
     void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
         auto size = data_arr.length;
@@ -141,6 +176,11 @@ public:
                 type, size, element_size, mem );
     }
 
+    /// `setUntypedData( data_arr, E.sizeof, mem )`
+    void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
+    { setUntypedData( data_arr, E.sizeof, mem ); }
+
+    /// glBufferSubData
     void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
     {
         auto size = data_arr.length;
@@ -157,6 +197,11 @@ public:
                 type, offset, size, element_size );
     }
 
+    /// `setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof )`
+    void setSubData(E)( size_t offset, in E[] data_arr )
+    { setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof ); }
+
+    /// return ubtyped copy of buffer data
     void[] getUntypedData()
     {
         bind();
@@ -168,6 +213,10 @@ public:
         return buf;
     }
 
+    /// cast untyped copy of buffer data to `E[]`
+    E[] getData(E)() { return cast(E[])getUntypedData(); }
+
+    /// return untyped copy of buffer sub data
     void[] getSubUntypedData( size_t offset, size_t length )
     {
         bind();
@@ -179,14 +228,7 @@ public:
         return buf;
     }
 
-    void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
-    { setUntypedData( data_arr, E.sizeof, mem ); }
-
-    void setSubData(E)( size_t offset, in E[] data_arr )
-    { setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof ); }
-
-    E[] getData(E)() { return cast(E[])getUntypedData(); }
-
+    /// cast untyped copy of buffer sub data to `E[]`
     E[] getSubData(E)( size_t offset, size_t count )
     { return cast(E[])getSubUntypedData( E.sizeof * offset, E.sizeof * count ); }
 
@@ -194,20 +236,25 @@ public:
     {
         const final
         {
+            ///
             size_t elementCount() { return element_count; }
+            ///
             size_t dataSize() { return data_size; }
 
+            /// calculated
             size_t elementSize()
             { return element_count ? data_size / element_count : 0; }
         }
     }
 
+    /// glMapBuffer
     void* map( Access access=Access.READ_ONLY )
     {
         debug logger.trace( "by access [%s]", access );
         return checkGLCall!glMapBuffer( gltype, cast(GLenum)access );
     }
 
+    /// glMapBufferRange
     void* mapRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
     { 
         if( offset + length > data_size )
@@ -216,6 +263,7 @@ public:
         return checkGLCall!glMapBufferRange( gltype, offset, length, cast(GLenum)access );
     }
 
+    /// glUnmapBuffer
     void unmap()
     {
         checkGLCall!glUnmapBuffer( gltype );
@@ -231,6 +279,7 @@ protected:
     }
 }
 
+/// Vertex Array Object
 final class GLVAO : DesObject
 {
     mixin DES;
@@ -240,8 +289,10 @@ protected:
     uint _id;
 
 public:
+    ///
     static nothrow void unbind(){ glBindVertexArray(0); }
 
+    /// glGenVertexArrays
     this()
     {
         checkGLCall!glGenVertexArrays( 1, &_id );
@@ -251,12 +302,14 @@ public:
 
     nothrow 
     {
+        /// glBindVertexArray
         void bind() 
         { 
             ntCheckGLCall!glBindVertexArray( _id );
             debug logger.trace( "pass" );
         }
 
+        /// glEnableVertexAttribArray
         void enable( int n )
         {
             debug scope(exit) logger.Debug( "[%d]", n );
@@ -265,6 +318,7 @@ public:
             ntCheckGLCall!glEnableVertexAttribArray( n ); 
         }
 
+        /// glDisableVertexAttribArray
         void disable( int n )
         {
             debug scope(exit) logger.Debug( "[%d]", n );
@@ -276,24 +330,25 @@ public:
 
 protected:
 
+    /// glDeleteVertexArrays
     override void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
 
 }
 
+/// 
 class GLObject : DesObject
 {
     mixin DES;
     mixin ClassLogger;
 
 protected:
+    ///
     GLVAO vao;
 
     final
     {
-        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
-                GLType attype, bool norm=false )
-        { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
+        /// glVertexAttribPointer
         void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, size_t stride, size_t offset, bool norm=false )
         {
@@ -309,13 +364,19 @@ protected:
                             "%s%s",
                             vao._id, buffer.id,
                             index, per_element, attype, 
-                            stride != 0 ? toMessage(", stride [%d], offset [%d]", stride, offset ) : "",
-                            norm ? toMessage( ", norm [%s]", norm ) : "" );
+                            stride != 0 ? ntFormat(", stride [%d], offset [%d]", stride, offset ) : "",
+                            norm ? ntFormat( ", norm [%s]", norm ) : "" );
         }
+
+        /// ditto
+        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
+                GLType attype, bool norm=false )
+        { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
     }
 
 public:
 
+    ///
     this()
     {
         vao = newEMM!GLVAO;
