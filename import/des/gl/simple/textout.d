@@ -1,11 +1,9 @@
-
 module des.gl.simple.textout;
-/+
 
 import des.il.region;
 
-import des.text.ftglyphrender;
-import des.text.textrender;
+import des.fonts.ftglyphrender;
+import des.fonts.textrender;
 
 import des.util.helpers;
 import des.util.stdext.algorithm;
@@ -168,4 +166,3 @@ public:
         bool isStretched() const { return stretched; }
     }
 }
-+/

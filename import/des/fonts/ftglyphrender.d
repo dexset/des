@@ -1,6 +1,6 @@
-module des.text.ftglyphrender;
+module des.fonts.ftglyphrender;
 
-public import des.text.textrender;
+public import des.fonts.textrender;
 import des.math.linear;
 
 import derelict.freetype.ft;
