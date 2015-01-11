@@ -1,11 +1,11 @@
-module des.text.textrender;
+module des.fonts.textrender;
 
 public import des.math.linear;
 public import des.il;
 
 import std.string;
 
-alias Image!(2).imsize_t imsize_t;
+alias SizeVector!2 imsize_t;
 
 class TextRenderException: Exception
 { 
@@ -85,7 +85,8 @@ protected:
         foreach( g; buf )
         {
             auto pp = g.pos - max.pos;
-            res.img.paste( pp, g.img );
+
+            imPaste( res.img, pp, g.img );
             res.next += g.next;
         }
         res.pos = max.pos;
@@ -134,7 +135,7 @@ public:
         uint pos = 0;
         foreach( g; glyphs )
         {
-            res.img.paste( ivec2( 0, pos ), g.img );
+            imPaste( res.img, ivec2( 0, pos ), g.img );
             pos += g.img.size.h + off;
         }
 

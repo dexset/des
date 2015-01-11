@@ -3,8 +3,7 @@ module des.gl.simple.shader.text;
 import des.gl.base;
 
 enum SS_WIN_TEXT = 
-`
-//### vert
+`//### vert
 #version 120
 uniform vec2 winsize;
 
