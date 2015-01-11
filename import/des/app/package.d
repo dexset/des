@@ -1,8 +1,6 @@
 module des.app;
 
-public
-{
-    import des.app.base;
+public:
+    import des.app.app;
     import des.app.event;
-    import des.app.glapp;
-}
+    import des.app.evproc;

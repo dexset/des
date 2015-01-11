@@ -317,6 +317,9 @@ struct KeyboardEvent
     Mod mod;
 }
 
+///
+alias in_KeyboardEvent = ref const(KeyboardEvent);
+
 /// input text event
 struct TextEvent { dchar ch; }
 
@@ -421,36 +424,5 @@ struct MouseEvent
     }
 }
 
-/// joystick
-struct JoyEvent
-{
-    /// joy id
-    uint id;
-
-    ///
-    enum Type
-    {
-        AXIS,   ///
-        BUTTON, ///
-        BALL,   ///
-        HAT     ///
-    };
-
-    ///
-    Type type;
-
-    /// change element number (in array of states)
-    size_t no;
-
-    /// all axis state
-    float[] axis;
-
-    /// all buttons state ( true - pressed )
-    bool[] buttons;
-
-    /// all trackballs state
-    ivec2[] balls;
-
-    /// all hats state
-    byte[] hats;
-}
+///
+alias in_MouseEvent = ref const(MouseEvent);
