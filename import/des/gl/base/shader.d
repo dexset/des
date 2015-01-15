@@ -231,7 +231,7 @@ public:
         logger = new InstanceLogger(this);
         foreach( sh; shs )
             enforce( sh !is null, new ShaderException( "shader is null" ) );
-        shaders = registerChildsEMM( shs );
+        shaders = registerChildEMM( shs );
         create();
     }
 

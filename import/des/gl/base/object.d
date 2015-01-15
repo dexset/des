@@ -180,7 +180,7 @@ public:
     void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
     { setUntypedData( data_arr, E.sizeof, mem ); }
 
-    /// glBufferSubData
+    /// `glBufferSubData`
     void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
     {
         auto size = data_arr.length;

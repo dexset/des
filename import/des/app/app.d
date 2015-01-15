@@ -101,7 +101,7 @@ public:
         if( is( T : SDLEventProcessor ) )
     {
         foreach( ex; processors ) if( ex == ep ) return ep;
-        processors ~= registerChildsEMM( ep );
+        processors ~= registerChildEMM( ep );
         return ep;
     }
 
@@ -304,7 +304,7 @@ public:
      +/
     DesWindow addWindow( DesWindow delegate() winFunc )
     {
-        auto win = registerChildsEMM( winFunc() );
+        auto win = registerChildEMM( winFunc() );
         if( context is null )
         {
             context = SDL_GL_CreateContext( win.win );
