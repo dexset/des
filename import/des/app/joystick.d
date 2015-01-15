@@ -5,6 +5,7 @@ import std.conv : to;
 import derelict.sdl2.sdl;
 
 import des.util.arch;
+import des.util.logsys;
 import des.app.evproc;
 
 import des.app.app;
@@ -12,6 +13,7 @@ import des.app.app;
 ///
 class Joystick : DesObject
 {
+    mixin DES;
 private:
     bool is_open;
 
@@ -126,21 +128,30 @@ protected:
         if( !dev )
             throw new DesAppException( "Error open joystick: " ~ toDString( SDL_GetError() ) );
 
-        joy_name = toDString( SDL_JoystickName( dev ) );
+        logger.Debug( "joy opened: ", dev );
+
+        // FIXME: SDL_JoystickName not return value
+        //joy_name = SDL_JoystickName( dev ).toDString;
+        joy_name = "Joystick";
 
         createVals();
         setVals();
 
         is_open = true;
+        logger.Debug( "pass" );
     }
 
     ///
     void createVals()
     {
         axis_vals = new short[]( SDL_JoystickNumAxes( dev ) );
+        logger.trace( "axis vals created: ", axis_vals.length );
         ball_vals = new ivec2[]( SDL_JoystickNumBalls( dev ) );
+        logger.trace( "ball vals created: ", ball_vals.length );
         button_vals = new bool[]( SDL_JoystickNumButtons( dev ) );
+        logger.trace( "ball vals setted: ", button_vals.length );
         hat_vals = to!(HatState[])( new byte[]( SDL_JoystickNumHats( dev ) ) );
+        logger.trace( "hat vals setted: ", hat_vals.length );
     }
 
     /// without calling change signals
@@ -193,12 +204,22 @@ class JoyEventProcessor : BaseSDLEventProcessor
 {
     mixin DES;
     ///
-    Signal!( Joystick ) added;
+    Signal!( uint ) added;
     ///
-    Signal!( int ) removed;
+    Signal!( uint ) removed;
 
     ///
-    Joystick[int] joy;
+    Signal!( uint, uint, short ) axisChange;
+    ///
+    Signal!( uint, uint, ivec2 ) ballChange;
+    ///
+    Signal!( uint, uint, bool ) buttonChange;
+    ///
+    Signal!( uint, uint, Joystick.HatState ) hatChange;
+
+
+    ///
+    Joystick[uint] devlist;
 
     this()
     {
@@ -210,6 +231,8 @@ class JoyEventProcessor : BaseSDLEventProcessor
         int num_joys = SDL_NumJoysticks();
         foreach( index; 0 .. num_joys )
             addJoystick( index );
+
+        logger.Debug( "pass" );
     }
 
     bool procSDLEvent( in SDL_Event ev )
@@ -253,42 +276,58 @@ protected:
 
     void updateAxis( uint ind, uint axis, short value )
     {
-        if( auto j = joy.get( ind, null ) )
+        if( auto j = devlist.get( ind, null ) )
             j.updateAxis( axis, value );
+        else
+            logger.warn( "no joystick device in list: ", ind );
+        axisChange( ind, axis, value );
     }
 
     void updateBall( uint ind, uint ball, ivec2 rel )
     {
-        if( auto j = joy.get( ind, null ) )
+        if( auto j = devlist.get( ind, null ) )
             j.updateBall( ball, rel );
+        else
+            logger.warn( "no joystick device in list: ", ind );
+        ballChange( ind, ball, rel );
     }
 
     void updateHat( uint ind, uint hat, uint value )
     {
-        if( auto j = joy.get( ind, null ) )
+        if( auto j = devlist.get( ind, null ) )
             j.updateHat( hat, value );
+        else
+            logger.warn( "no joystick device in list: ", ind );
+        hatChange( ind, hat, cast(Joystick.HatState)value );
     }
 
     void updateButton( uint ind, uint btn, bool value )
     {
-        if( auto j = joy.get( ind, null ) )
+        if( auto j = devlist.get( ind, null ) )
             j.updateButton( btn, value );
+        else
+            logger.warn( "no joystick device in list: ", ind );
+        buttonChange( ind, btn, value );
     }
 
     void addJoystick( uint ind )
     {
         auto j = newEMM!Joystick(ind);
-        joy[ind] = j;
-        added( j );
+        auto i = SDL_JoystickInstanceID( j.dev );
+        devlist[i] = j;
+        added( i );
+        logger.Debug( "[%d]", i );
     }
 
     void removeJoystick( uint ind )
     {
-        if( ind in joy )
+        if( ind in devlist )
         {
-            joy[ind].destroy();
-            joy.remove(ind);
+            auto j = devlist[ind];
+            devlist.remove(ind);
+            j.destroy();
             removed( ind );
+            logger.Debug( "[%d]", ind );
         }
     }
 }
