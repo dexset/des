@@ -1,5 +1,9 @@
-# D Extended Set #
+## D Extended Set library
 
-## des.gl - OpenGL wrappers ##
+Documentation orient to [harbored-mod](https://github.com/kiith-sa/harbored-mod)
 
-## des.app - SDL-based application ##
+to build doc:
+```sh
+cd path/to/descore
+path/to/harbored-mod/bin/hmod
+```
