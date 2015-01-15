@@ -18,11 +18,16 @@ interface SDLEventProcessor : DesBase
 }
 
 ///
-abstract class BaseSDLEventProcessor : SDLEventProcessor { mixin DES; }
+abstract class BaseSDLEventProcessor : SDLEventProcessor
+{
+    mixin DES;
+    this() { prepareDES(); }
+}
 
 ///
 class MouseEventProcessor : BaseSDLEventProcessor
 {
+    mixin DES;
 protected:
     MouseEvent main_event;
 
@@ -91,6 +96,7 @@ public:
 ///
 class WindowEventProcessor : BaseSDLEventProcessor
 {
+    mixin DES;
     ///
     Signal!() shown;
     ///
@@ -148,6 +154,7 @@ class WindowEventProcessor : BaseSDLEventProcessor
 ///
 class KeyboardEventProcessor : BaseSDLEventProcessor
 {
+    mixin DES;
     ///
     Signal!( in_KeyboardEvent ) signal;
 
@@ -178,6 +185,7 @@ class KeyboardEventProcessor : BaseSDLEventProcessor
 ///
 class TextEventProcessor : BaseSDLEventProcessor
 {
+    mixin DES;
     ///
     Signal!( dstring ) input;
     ///

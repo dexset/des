@@ -172,7 +172,7 @@ public:
         dataSizeCB( data_size );
         elementSizeCB( element_size );
 
-        debug logger.trace( "[%d] [%s]: size [%d], element size [%d], usage [%s]",
+        debug logger.trace( "[%s]: size [%d], element size [%d], usage [%s]",
                 type, size, element_size, mem );
     }
 

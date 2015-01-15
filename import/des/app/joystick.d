@@ -191,6 +191,7 @@ protected:
 ///
 class JoyEventProcessor : BaseSDLEventProcessor
 {
+    mixin DES;
     ///
     Signal!( Joystick ) added;
     ///
