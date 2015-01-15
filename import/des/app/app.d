@@ -42,6 +42,25 @@ protected:
 
 public:
 
+    enum Flag : uint
+    {
+        FULLSCREEN         = SDL_WINDOW_FULLSCREEN,         /// `SDL_WINDOW_FULLSCREEN`
+        FULLSCREEN_DESKTOP = SDL_WINDOW_FULLSCREEN_DESKTOP, /// `SDL_WINDOW_FULLSCREEN_DESKTOP`
+        OPENGL             = SDL_WINDOW_OPENGL,             /// `SDL_WINDOW_OPENGL`
+        SHOWN              = SDL_WINDOW_SHOWN,              /// `SDL_WINDOW_SHOWN`
+        HIDDEN             = SDL_WINDOW_HIDDEN,             /// `SDL_WINDOW_HIDDEN`
+        BORDERLESS         = SDL_WINDOW_BORDERLESS,         /// `SDL_WINDOW_BORDERLESS`
+        RESIZABLE          = SDL_WINDOW_RESIZABLE,          /// `SDL_WINDOW_RESIZABLE`
+        MINIMIZED          = SDL_WINDOW_MINIMIZED,          /// `SDL_WINDOW_MINIMIZED`
+        MAXIMIZED          = SDL_WINDOW_MAXIMIZED,          /// `SDL_WINDOW_MAXIMIZED`
+        INPUT_GRABBED      = SDL_WINDOW_INPUT_GRABBED,      /// `SDL_WINDOW_INPUT_GRABBED`
+        INPUT_FOCUS        = SDL_WINDOW_INPUT_FOCUS,        /// `SDL_WINDOW_INPUT_FOCUS`
+        MOUSE_FOCUS        = SDL_WINDOW_MOUSE_FOCUS,        /// `SDL_WINDOW_MOUSE_FOCUS`
+        FOREIGN            = SDL_WINDOW_FOREIGN,            /// `SDL_WINDOW_FOREIGN`
+        ALLOW_HIGHDPI      = SDL_WINDOW_ALLOW_HIGHDPI,      /// `SDL_WINDOW_ALLOW_HIGHDPI`
+        //MOUSE_CAPTURE      = SDL_WINDOW_MOUSE_CAPTURE       /// `SDL_WINDOW_MOUSE_CAPTURE`
+    }
+
     ///
     SignalBox!() draw;
     ///
@@ -59,10 +78,12 @@ public:
         prepareBaseEventProcessors();
         prepareSDLWindow( title, sz, fullscreen, display );
         prepareDrawSignal();
+        logger.Debug( "pass" );
     }
 
+    ///
     //Предполагается, что входящее событие предназначено именно этому окну
-    void procEvents( in SDL_Event ev )
+    void procEvent( in SDL_Event ev )
     {
         foreach( p; processors ) if( p.procSDLEvent(ev) ) break;
 
@@ -72,8 +93,12 @@ public:
     }
 
     /// register additional event processor
-    void registerEvProc( SDLEventProcessor ep )
-    { processors ~= registerChildsEMM( ep ); }
+    auto registerEvProc(T)( T ep )
+        if( is( T : SDLEventProcessor ) )
+    {
+        processors ~= registerChildsEMM( ep );
+        return ep;
+    }
 
     @property
     {
@@ -81,6 +106,60 @@ public:
         uint id() { return SDL_GetWindowID( win ); }
         ///
         ivec2 size() const { return _size; }
+
+        ///
+        float brightness() const
+        { return SDL_GetWindowBrightness( cast(SDL_Window*)win ); }
+
+        ///
+        float brightness( float v )
+        {
+            SDL_SetWindowBrightness( win, v );
+            return v;
+        }
+
+        ///
+        int displayIndex() const
+        { return SDL_GetWindowDisplayIndex( cast(SDL_Window*)win ); }
+    }
+
+    void show() { SDL_ShowWindow( win ); }
+    void hide() { SDL_HideWindow( win ); }
+
+    bool checkFlag( Flag flag ) const { return cast(bool)( SDLFlags & flag ); }
+
+    const @property
+    {
+        ///
+        bool isFullscreen()        { return checkFlag( Flag.FULLSCREEN ); }
+        ///
+        bool isFullscreenDesktop() { return checkFlag( Flag.FULLSCREEN_DESKTOP ); }
+        ///
+        bool isOpenGL()            { return checkFlag( Flag.OPENGL ); }
+        ///
+        bool isShown()             { return checkFlag( Flag.SHOWN ); }
+        ///
+        bool isHidden()            { return checkFlag( Flag.HIDDEN ); }
+        ///
+        bool isBorderless()        { return checkFlag( Flag.BORDERLESS ); }
+        ///
+        bool isResizable()         { return checkFlag( Flag.RESIZABLE ); }
+        ///
+        bool isMinimized()         { return checkFlag( Flag.MINIMIZED ); }
+        ///
+        bool isMaximized()         { return checkFlag( Flag.MAXIMIZED ); }
+        ///
+        bool isInputGrabbed()      { return checkFlag( Flag.INPUT_GRABBED ); }
+        ///
+        bool isInputFocus()        { return checkFlag( Flag.INPUT_FOCUS ); }
+        ///
+        bool isMouseFocus()        { return checkFlag( Flag.MOUSE_FOCUS ); }
+        ///
+        bool isForeign()           { return checkFlag( Flag.FOREIGN ); }
+        ///
+        bool isAllowHighdpi()      { return checkFlag( Flag.ALLOW_HIGHDPI ); }
+        //
+        //bool isMouseCapture()      { checkFlag( Flag.MOUSE_CAPTURE ); }
     }
 
 package:
@@ -89,15 +168,16 @@ package:
 
 protected:
 
+    ///
+    uint SDLFlags() const @property { return SDL_GetWindowFlags( cast(SDL_Window*)win ); }
+
     void prepareBaseEventProcessors()
     {
-        mouse = newEMM!MouseEventProcessor;
-        event = newEMM!WindowEventProcessor;
-        key = newEMM!KeyboardEventProcessor;
+        mouse = registerEvProc( new MouseEventProcessor );
+        event = registerEvProc( new WindowEventProcessor );
+        key = registerEvProc( new KeyboardEventProcessor );
 
-        processors ~= mouse;
-        processors ~= event;
-        processors ~= key;
+        logger.Debug( "mouse: %s, event: %s, key: %s", mouse !is null, event !is null, key !is null );
     }
 
     void prepareSDLWindow( string title, ivec2 sz, bool fullscreen, int display )
@@ -106,21 +186,14 @@ protected:
         if( display != -1 && display > SDL_GetNumVideoDisplays() - 1 )
             throw new DesAppException( format( "No such display: display%d", display ) );
 
-        SDL_WindowFlags flags = SDL_WINDOW_OPENGL |
-                                SDL_WINDOW_SHOWN |
-                                ( fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE );
+        auto flags = Flag.OPENGL | Flag.SHOWN | ( fullscreen ? Flag.FULLSCREEN : Flag.RESIZABLE );
 
-        int pos_x = SDL_WINDOWPOS_CENTERED;
-        int pos_y = SDL_WINDOWPOS_CENTERED;
+        auto pos = ivec2( SDL_WINDOWPOS_CENTERED );
 
         if( display != -1 )
-        {
-            pos_x = SDL_WINDOWPOS_CENTERED_DISPLAY( display );
-            pos_y = SDL_WINDOWPOS_CENTERED_DISPLAY( display );
-        }
+            pos = ivec2( SDL_WINDOWPOS_CENTERED_DISPLAY( display ) );
 
-        win = SDL_CreateWindow( title.toStringz, pos_x, pos_y,
-                                _size.x, _size.y, flags );
+        win = SDL_CreateWindow( title.toStringz, pos.x, pos.y, _size.x, _size.y, flags );
         if( win is null )
             throw new DesAppException( "Couldn't create SDL widnow: " ~ toDString( SDL_GetError() ) );
     }
@@ -248,7 +321,7 @@ protected:
             }
 
             if( current !is null )
-                current.procEvents( ev );
+                current.procEvent( ev );
         }
         return true;
     }
