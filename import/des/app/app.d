@@ -93,7 +93,10 @@ public:
             _size = ivec2( ev.window.data1, ev.window.data2 );
     }
 
-    /// register additional event processor
+    /++ register additional event processor
+     + Retruns:
+     + registered `T` object
+     +/
     auto registerEvProc(T)( T ep )
         if( is( T : SDLEventProcessor ) )
     {
@@ -101,6 +104,16 @@ public:
         processors ~= registerChildsEMM( ep );
         return ep;
     }
+
+    /++ create and register additional event processor
+     + Params:
+     + args = pass to `T` ctor
+     + Returns:
+     + created `T` object
+     +/
+    auto newEvProc(T,Args...)( Args args )
+        if( is( T : SDLEventProcessor ) )
+    { return registerEvProc( new T(args) ); }
 
     @property
     {
