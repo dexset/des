@@ -1,4 +1,4 @@
-module des.app.app;
+module des.app.base;
 
 import std.stdio;
 import std.string;

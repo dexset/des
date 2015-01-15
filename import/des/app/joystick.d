@@ -6,9 +6,10 @@ import derelict.sdl2.sdl;
 
 import des.util.arch;
 import des.util.logsys;
+import des.util.stdext.string;
 import des.app.evproc;
 
-import des.app.app;
+import des.app.base : DesAppException;
 
 ///
 class Joystick : DesObject
