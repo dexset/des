@@ -320,9 +320,6 @@ struct KeyboardEvent
 ///
 alias in_KeyboardEvent = ref const(KeyboardEvent);
 
-/// input text event
-struct TextEvent { dchar ch; }
-
 /// add binary flag
 T binAdd(T)( in T a, in T b ) if( isIntegral!T ) { return a | b; }
 

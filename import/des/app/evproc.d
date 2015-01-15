@@ -1,8 +1,13 @@
 /// Event processor definitions
 module des.app.evproc;
 
+import std.conv : to;
+
 import des.util.arch;
 import derelict.sdl2.sdl;
+
+import des.util.logsys;
+import des.util.stdext.string;
 
 public import des.app.event;
 
@@ -193,16 +198,15 @@ class TextEventProcessor : BaseSDLEventProcessor
 
     bool procSDLEvent( in SDL_Event ev )
     {
-        import std.utf : toUTF32;
         switch( ev.type )
         {
             case SDL_TEXTINPUT:
                 with( ev.text )
-                    input( toUTF32( text.dup ) );
+                    input( to!dstring( text.toDStringFix ) );
                 return true;
             case SDL_TEXTEDITING:
                 with( ev.edit )
-                    edit( toUTF32( text.dup ), start, length );
+                    edit( to!dstring( text.toDStringFix ), start, length );
                 return true;
             default: return false;
         }

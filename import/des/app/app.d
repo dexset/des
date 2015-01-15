@@ -32,7 +32,9 @@ class DesWindow : DesObject
 
 protected:
 
+    ///
     abstract void prepare();
+
     SDL_Window* win = null;
     ivec2 _size;
 
@@ -58,7 +60,6 @@ public:
         MOUSE_FOCUS        = SDL_WINDOW_MOUSE_FOCUS,        /// `SDL_WINDOW_MOUSE_FOCUS`
         FOREIGN            = SDL_WINDOW_FOREIGN,            /// `SDL_WINDOW_FOREIGN`
         ALLOW_HIGHDPI      = SDL_WINDOW_ALLOW_HIGHDPI,      /// `SDL_WINDOW_ALLOW_HIGHDPI`
-        //MOUSE_CAPTURE      = SDL_WINDOW_MOUSE_CAPTURE       /// `SDL_WINDOW_MOUSE_CAPTURE`
     }
 
     ///
@@ -96,6 +97,7 @@ public:
     auto registerEvProc(T)( T ep )
         if( is( T : SDLEventProcessor ) )
     {
+        foreach( ex; processors ) if( ex == ep ) return ep;
         processors ~= registerChildsEMM( ep );
         return ep;
     }
@@ -123,9 +125,12 @@ public:
         { return SDL_GetWindowDisplayIndex( cast(SDL_Window*)win ); }
     }
 
+    ///
     void show() { SDL_ShowWindow( win ); }
+    ///
     void hide() { SDL_HideWindow( win ); }
 
+    ///
     bool checkFlag( Flag flag ) const { return cast(bool)( SDLFlags & flag ); }
 
     const @property
@@ -158,9 +163,10 @@ public:
         bool isForeign()           { return checkFlag( Flag.FOREIGN ); }
         ///
         bool isAllowHighdpi()      { return checkFlag( Flag.ALLOW_HIGHDPI ); }
-        //
-        //bool isMouseCapture()      { checkFlag( Flag.MOUSE_CAPTURE ); }
     }
+
+    void startTextInput() { app.startTextInput(); }
+    void stopTextInput() { app.stopTextInput(); }
 
 package:
     void setApp( DesApp owner ) { app = owner; }
@@ -217,6 +223,9 @@ protected:
     }
 }
 
+/++ windows handler
+ 
+ +/
 class DesApp : ExternalMemoryManager
 {
     mixin EMM;
@@ -230,11 +239,15 @@ protected:
 
 public:
 
+    /++ create app
+
+      load `DerelictSDL2`, `DerelictGL3`,
+      init SDL with video mode, set GL attributes,
+     +/
     this()
     {
         DerelictSDL2.load();
         DerelictGL3.load();
-        DerelictFT.load();
 
         if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
             throw new DesAppException( "Error initializing SDL: " ~ toDString( SDL_GetError() ) );
@@ -246,6 +259,7 @@ public:
         is_runing = true;
     }
 
+    /// single processing step
     bool step()
     {
         if( context is null )
@@ -267,12 +281,18 @@ public:
         return true;
     }
 
-    @property bool isRuning(){ return is_runing; }
+    ///
+    bool isRuning() @property { return is_runing; }
 
+    /++ create and return window from create function `winFunc`
+
+        created window registered as child EMM, create GL contex if it null,
+        calls `prepare` for new window, add window to windows list
+     +/
     DesWindow addWindow( DesWindow delegate() winFunc )
     {
         auto win = registerChildsEMM( winFunc() );
-        if( context == null )
+        if( context is null )
         {
             context = SDL_GL_CreateContext( win.win );
 
@@ -289,7 +309,11 @@ public:
         return win;
     }
 
+    ///
     void quit() { is_runing = false; }
+
+    void startTextInput() { SDL_StartTextInput(); }
+    void stopTextInput() { SDL_StopTextInput(); }
 
 protected:
 
@@ -299,6 +323,11 @@ protected:
         Thread.sleep(dur!"usecs"(1));
     }
 
+    /++ process all events with SDL_PollEvent
+
+        set current window by windowID in event structure,
+        call process event by current window
+     +/
     bool procEvents()
     {
         SDL_Event ev;
@@ -326,6 +355,7 @@ protected:
         return true;
     }
 
+    ///
     void setCurrent( uint winID ) { current = windows.get( winID, null ); }
 
     void selfDestroy()
