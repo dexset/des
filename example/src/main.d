@@ -7,10 +7,9 @@ import window;
 
 void main()
 {
-    GLApp app;
-
-    app = new GLApp;
+    auto app = new DesApp;
     app.addWindow({ return new MainWindow; });
 
-    app.run();
+    while( app.isRuning )
+        app.step();
 }
