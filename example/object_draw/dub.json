@@ -5,9 +5,10 @@
     "license": "MIT",
     "targetPath": "bin",
     "targetType": "executable",
-    "importPaths": [ "../import" ],
-    "sourcePaths": [ "src", "../import" ],
-    "dependencies": {
+    "importPaths": [ "../../import" ],
+    "sourcePaths": [ "src", "../../import" ],
+    "dependencies":
+    {
         "descore": ">=1.1.1",
         "derelict-gl3": ">=1.0.10",
         "derelict-sdl2": ">=1.2.8",
