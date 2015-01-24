@@ -49,8 +49,8 @@ public:
         resU = u;
         resV = v;
         import std.file;
-        super( newEMM!CommonShaderProgram(
-                parseShaderSource(
+        super( newEMM!CommonGLShaderProgram(
+                parseGLShaderSource(
                     readText(
                         appPath( "..", "data", "shaders", "object.glsl" )
                     ))));

@@ -6,5 +6,6 @@ void main()
 {
     auto app = new DesApp;
     app.addWindow({ return new MainWindow; });
-    while( app.isRuning ) app.step();
+    while( app.isRunning ) app.step();
+    app.destroy();
 }

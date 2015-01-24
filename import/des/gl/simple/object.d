@@ -24,7 +24,7 @@ protected:
     void setIndexCount( size_t cnt ) { index_count = cnt; }
 
     ///
-    CommonShaderProgram shader;
+    CommonGLShaderProgram shader;
 
     ///
     bool warn_if_empty = true;
@@ -153,11 +153,11 @@ public:
     ///
     this( string shader_source )
     {
-        shader = newEMM!CommonShaderProgram( parseShaderSource( shader_source ) );
+        shader = newEMM!CommonGLShaderProgram( parseGLShaderSource( shader_source ) );
     }
 
     ///
-    this( CommonShaderProgram sh )
+    this( CommonGLShaderProgram sh )
     in{ assert( sh !is null ); } body
     { shader = sh; }
 
