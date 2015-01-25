@@ -20,6 +20,7 @@ private:
     GLTexture tex;
 
     wstring output;
+    vec2 output_size;
 
     vec2 pos;
 
@@ -30,16 +31,19 @@ private:
         vec2[] vert_data;
         vec2[] uv_data;
 
+        output_size = vec2(0);
+
         float offsetx = 0;
-        float offsety = 0;
         foreach( c; output )
-            if( font.size[c].y > offsety )
-                offsety = font.size[c].y;
+            if( font.size[c].h > output_size.h )
+                output_size.h = font.size[c].h;
         
         foreach( c; output )
         {
+            output_size.w += font.size[c].w;
+
             {
-                auto v1 = pos + vec2( offsetx, offsety + font.bearing[c].y );
+                auto v1 = pos + vec2( font.bearing[c].x + offsetx, output_size.h + font.bearing[c].y );
                 auto v2 = v1 + font.size[c];
 
                 vert_data ~= vec2( v1.x, v2.y );
@@ -79,24 +83,26 @@ public:
     {
         super( SS_WIN_TEXT );
 
-        GlyphParam gparam;
-        gparam.height = size;
-        auto grender = FTGlyphRender.get( font_name );
-        scope( exit ) grender.destroy();
-        grender.setParams( gparam );
-
         vert = createArrayBuffer();
         setAttribPointer( vert, shader.getAttribLocation( "vert" ), 2, GLType.FLOAT );
 
         uv = createArrayBuffer();
         setAttribPointer( uv, shader.getAttribLocation( "uv" ), 2, GLType.FLOAT );
 
-        tex = new GLTexture( GLTexture.Target.T2D );
+        tex = newEMM!GLTexture( GLTexture.Target.T2D );
 
         tex.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
         tex.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
 
+        GlyphParam gparam;
+        gparam.height = size;
+
+        auto grender = FTGlyphRender.get( font_name );
+
+        grender.setParams( gparam );
+
         font = grender.generateBitmapFont();
+
         tex.image( font.texture );
 
         text = "Default text";
@@ -129,5 +135,7 @@ public:
         }
 
         void color( col3 col ){ shader.setUniform!col3( "color", col ); }
+
+        vec2 size(){ return output_size; }
     }
 }
