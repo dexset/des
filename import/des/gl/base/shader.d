@@ -35,7 +35,7 @@ import derelict.opengl3.gl3;
 import des.gl.base.type;
 
 ///
-class ShaderException : DesGLException
+class GLShaderException : DesGLException
 {
     ///
     this( string msg, string file=__FILE__, size_t line=__LINE__ )
@@ -43,7 +43,7 @@ class ShaderException : DesGLException
 }
 
 ///
-class Shader : DesObject
+class GLShader : DesObject
 {
     mixin DES;
     mixin ClassLogger;
@@ -115,7 +115,7 @@ public:
             {
                 auto chlog = new char[logLen];
                 checkGLCall!glGetShaderInfoLog( _id, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "shader compile error: \n" ~ chlog.idup );
+                throw new GLShaderException( "shader compile error: \n" ~ chlog.idup );
             }
         }
 
@@ -147,45 +147,40 @@ protected:
     //###frag
     ... cod of fragment shader ...
 
- Returns:
-    Shader[]
-
- See_Also: [Shader](des/gl/base/shader/Shader.html)
-
  +/
-auto parseShaderSource( string src, string separator = "//###" )
+GLShader[] parseGLShaderSource( string src, string separator = "//###" )
 {
-    Shader[] ret;
+    GLShader[] ret;
 
     foreach( ln; src.splitLines() )
     {
         if( ln.startsWith(separator) )
         {
             auto str_type = ln.chompPrefix(separator).strip().toLower;
-            Shader.Type type;
+            GLShader.Type type;
             switch( str_type )
             {
                 case "vert":
                 case "vertex":
-                    type = Shader.Type.VERTEX;
+                    type = GLShader.Type.VERTEX;
                     break;
                 case "geom":
                 case "geometry":
-                    type = Shader.Type.GEOMETRY;
+                    type = GLShader.Type.GEOMETRY;
                     break;
                 case "frag":
                 case "fragment":
-                    type = Shader.Type.FRAGMENT;
+                    type = GLShader.Type.FRAGMENT;
                     break;
                 default:
-                    throw new ShaderException( "parse shader source: unknown section '" ~ str_type ~ "'" );
+                    throw new GLShaderException( "parse shader source: unknown section '" ~ str_type ~ "'" );
             }
-            ret ~= new Shader( type, "" );
+            ret ~= new GLShader( type, "" );
         }
         else
         {
             if( ret.length == 0 )
-                throw new ShaderException( "parse shader source: no section definition" );
+                throw new GLShaderException( "parse shader source: no section definition" );
             ret[$-1].source = ret[$-1].source ~ ln ~ '\n';
         }
     }
@@ -194,7 +189,7 @@ auto parseShaderSource( string src, string separator = "//###" )
 }
 
 ///
-class ShaderProgram : DesObject
+class GLShaderProgram : DesObject
 {
     mixin DES;
     mixin ClassLogger;
@@ -221,16 +216,16 @@ protected:
     }
 
     ///
-    Shader[] shaders;
+    GLShader[] shaders;
 
 public:
 
     /// `create()`
-    this( Shader[] shs )
+    this( GLShader[] shs )
     {
         logger = new InstanceLogger(this);
         foreach( sh; shs )
-            enforce( sh !is null, new ShaderException( "shader is null" ) );
+            enforce( sh !is null, new GLShaderException( "shader is null" ) );
         shaders = registerChildEMM( shs );
         create();
     }
@@ -275,7 +270,7 @@ protected:
             {
                 auto chlog = new char[logLen];
                 checkGLCall!glGetProgramInfoLog( _id, logLen, &logLen, chlog.ptr );
-                throw new ShaderException( "program link error: \n" ~ chlog.idup );
+                throw new GLShaderException( "program link error: \n" ~ chlog.idup );
             }
         }
     }
@@ -298,11 +293,11 @@ protected:
 }
 
 ///
-class CommonShaderProgram : ShaderProgram
+class CommonGLShaderProgram : GLShaderProgram
 {
 public:
     ///
-    this( Shader[] shs ) { super(shs); }
+    this( GLShader[] shs ) { super(shs); }
 
     ///
     int getAttribLocation( string name )

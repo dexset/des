@@ -6,9 +6,10 @@ import derelict.sdl2.sdl;
 
 import des.util.arch;
 import des.util.logsys;
+import des.util.stdext.string;
 import des.app.evproc;
 
-import des.app.app;
+import des.app.base : DesAppException;
 
 ///
 class Joystick : DesObject
@@ -48,15 +49,15 @@ public:
     ///
     enum HatState
     {
-        CENTERED  = SDL_HAT_CENTERED,  /// SDL_HAT_CENTERED
-        UP        = SDL_HAT_UP,        /// SDL_HAT_UP
-        RIGHT     = SDL_HAT_RIGHT,     /// SDL_HAT_RIGHT
-        DOWN      = SDL_HAT_DOWN,      /// SDL_HAT_DOWN
-        LEFT      = SDL_HAT_LEFT,      /// SDL_HAT_LEFT
-        RIGHTUP   = SDL_HAT_RIGHTUP,   /// SDL_HAT_RIGHTUP
-        RIGHTDOWN = SDL_HAT_RIGHTDOWN, /// SDL_HAT_RIGHTDOWN
-        LEFTUP    = SDL_HAT_LEFTUP,    /// SDL_HAT_LEFTUP
-        LEFTDOWN  = SDL_HAT_LEFTDOWN,  /// SDL_HAT_LEFTDOWN
+        CENTERED  = SDL_HAT_CENTERED,  /// `SDL_HAT_CENTERED`
+        UP        = SDL_HAT_UP,        /// `SDL_HAT_UP`
+        RIGHT     = SDL_HAT_RIGHT,     /// `SDL_HAT_RIGHT`
+        DOWN      = SDL_HAT_DOWN,      /// `SDL_HAT_DOWN`
+        LEFT      = SDL_HAT_LEFT,      /// `SDL_HAT_LEFT`
+        RIGHTUP   = SDL_HAT_RIGHTUP,   /// `SDL_HAT_RIGHTUP`
+        RIGHTDOWN = SDL_HAT_RIGHTDOWN, /// `SDL_HAT_RIGHTDOWN`
+        LEFTUP    = SDL_HAT_LEFTUP,    /// `SDL_HAT_LEFTUP`
+        LEFTDOWN  = SDL_HAT_LEFTDOWN,  /// `SDL_HAT_LEFTDOWN`
     };
 
     ///
@@ -130,9 +131,7 @@ protected:
 
         logger.Debug( "joy opened: ", dev );
 
-        // FIXME: SDL_JoystickName not return value
-        //joy_name = SDL_JoystickName( dev ).toDString;
-        joy_name = "Joystick";
+        joy_name = SDL_JoystickName( dev ).toDString;
 
         createVals();
         setVals();
@@ -203,22 +202,23 @@ protected:
 class JoyEventProcessor : BaseSDLEventProcessor
 {
     mixin DES;
-    ///
+
+    /// number of joystick in `devlist`
     Signal!( uint ) added;
-    ///
+    /// number of joystick in `devlist`
     Signal!( uint ) removed;
 
-    ///
+    /// number of joystick in `devlist`, number of axis, value
     Signal!( uint, uint, short ) axisChange;
-    ///
+    /// number of joystick in `devlist`, number of ball, relative move
     Signal!( uint, uint, ivec2 ) ballChange;
-    ///
+    /// number of joystick in `devlist`, number of button, pressed
     Signal!( uint, uint, bool ) buttonChange;
-    ///
+    /// number of joystick in `devlist`, number of hat, state
     Signal!( uint, uint, Joystick.HatState ) hatChange;
 
 
-    ///
+    /// list of registred devices
     Joystick[uint] devlist;
 
     this()

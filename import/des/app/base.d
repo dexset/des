@@ -1,4 +1,4 @@
-module des.app.app;
+module des.app.base;
 
 import std.stdio;
 import std.string;
@@ -248,7 +248,7 @@ protected:
     SDL_GLContext context = null;
     DesWindow[uint] windows;
     DesWindow current;
-    bool is_runing;
+    bool is_running;
 
 public:
 
@@ -269,7 +269,7 @@ public:
         SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
         SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-        is_runing = true;
+        is_running = true;
     }
 
     /// single processing step
@@ -295,7 +295,7 @@ public:
     }
 
     ///
-    bool isRuning() @property { return is_runing; }
+    bool isRunning() @property { return is_running; }
 
     /++ create and return window from create function `winFunc`
 
@@ -323,7 +323,7 @@ public:
     }
 
     ///
-    void quit() { is_runing = false; }
+    void quit() { is_running = false; }
 
     void startTextInput() { SDL_StartTextInput(); }
     void stopTextInput() { SDL_StopTextInput(); }
