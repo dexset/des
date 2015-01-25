@@ -1,10 +1,23 @@
 module des.fonts.ftglyphrender;
 
-public import des.fonts.textrender;
 import des.math.linear;
+import des.il;
+import des.util.arch.emm;
+import des.util.stdext;
 
 import derelict.freetype.ft;
 import derelict.freetype.types;
+
+alias SizeVector!2 imsize_t;
+
+struct BitmapFont
+{
+    ivec2[wchar] offset;
+    ivec2[wchar] size;
+    ivec2[wchar] bearing;
+
+    Image!2 texture;
+}
 
 class FTGlyphRenderException: Exception
 {
@@ -12,8 +25,45 @@ class FTGlyphRenderException: Exception
     { super( msg, file, line ); }
 }
 
-class FTGlyphRender : GlyphRender
+struct GlyphInfo
 {
+    ivec2 pos, next;
+    @property ivec2 size() const { return ivec2( img.size ); }
+    Image!2 img;
+}
+
+struct GlyphParam
+{
+    enum Flag
+    {
+        NONE        = cast(ubyte)0,
+        BOLD        = 0b0001,
+        ITALIC      = 0b0010,
+        UNDERLINE   = 0b0100,
+        STRIKED     = 0b1000
+    }
+
+    ubyte flag = Flag.NONE;
+    uint height=12;
+}
+
+interface GlyphRender
+{
+    void setParams( in GlyphParam p );
+    @property ElemInfo imtype() const;
+    GlyphInfo render( wchar ch );
+    BitmapFont generateBitmapFont();
+}
+
+class FTGlyphRender : GlyphRender, ExternalMemoryManager
+{
+    mixin EMM;
+protected:
+    void selfDestroy()
+    { 
+        if( FT_Done_Face !is null )
+            FT_Done_Face( face ); 
+    }
 private:
     static lib_inited = false;
     static FT_Library ft;
@@ -54,7 +104,6 @@ private:
             throw new FTGlyphRenderException( "Couldn't select unicode encoding" );
     }
 
-    auto color = col4( 1,1,1,1 );
 public:
 
     static GlyphRender get( string fontname )
@@ -67,10 +116,9 @@ public:
     void setParams( in GlyphParam p )
     {
         FT_Set_Pixel_Sizes( face, 0, p.height );
-        color = p.color;
     }
 
-    @property ElemInfo imtype() const { return ElemInfo( DataType.UBYTE, 4 ); }
+    @property ElemInfo imtype() const { return ElemInfo( DataType.FLOAT, 1 ); }
 
     GlyphInfo render( wchar ch )
     {
@@ -78,24 +126,58 @@ public:
             throw new FTGlyphRenderException( "Couldn't load char" );
 
         auto g = face.glyph;
-        ivec2 sz = ivec2( g.bitmap.width, g.bitmap.rows );
 
-        auto ret = GlyphInfo( ivec2( g.bitmap_left, -g.bitmap_top ), 
+        ivec2 sz;
+        float[] img_data;
+
+        if( ch == ' ' )
+        {
+            auto width = g.metrics.horiAdvance / 128.0;//TODO not proper way i think
+            sz = ivec2( width, g.bitmap.rows );
+            img_data.length = sz.x * sz.y;
+            img_data[] = 0;
+        }
+        else
+        {
+            sz = ivec2( g.bitmap.width, g.bitmap.rows );
+            img_data = amap!(a => a / 255.0f)(g.bitmap.buffer[0 .. sz.x * sz.y]);
+        }
+
+        return GlyphInfo( ivec2( g.bitmap_left, -g.bitmap_top ), 
                                 ivec2( cast(int)( g.advance.x >> 6 ), 
                                        cast(int)( g.advance.y >> 6 ) ),
-                                Image!2( imsize_t(sz), imtype ) );
-
-        foreach( y; 0 .. sz.y )
-            foreach( x; 0 .. sz.x )
-                ret.img.pixel!ubcol4(x,y) = ubcol4( col4( color.rgb, color.a * g.bitmap.buffer[y*sz.x+x] / 255.0 ) * 255 );
-
-        return ret;
+                                Image!2( imsize_t(sz), imtype, img_data ) );
     }
 
-    void destroy()
-    { 
-        if( FT_Done_Face !is null )
-            FT_Done_Face( face ); 
+    BitmapFont generateBitmapFont()//rendering only russian/english letters and basic symbols
+    {//TODO check if one line texture is proper
+        BitmapFont res;
+        GlyphInfo[wchar] glyphs;
+        foreach( wchar i; 32 .. 128 )// !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+            glyphs[i] = render( i );
+        foreach( wchar i; 1040 .. 1104 )//АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя
+            glyphs[i] = render( i );
+        uint maxh = 0;
+        uint width = 0;
+        foreach( ref g; glyphs )
+        {
+            if( g.img.size.h > maxh )
+                maxh = cast( uint )g.img.size.h;
+            width += g.img.size.w;
+        }
+        res.texture = Image!2( imsize_t( width, maxh ), imtype );
+
+        uint offset = 0;
+
+        foreach( key, ref g; glyphs )
+        {
+            res.offset[ key ] = ivec2( offset, 0 ); 
+            res.size[ key ] = ivec2( g.img.size );
+            res.bearing[ key ] = ivec2( g.pos );
+            imPaste( res.texture, ivec2( offset, 0 ), g.img );
+            offset += g.img.size.w;
+        }
+        return res;
     }
 
     static ~this() 
@@ -104,4 +186,3 @@ public:
             FT_Done_FreeType( ft ); 
     }
 }
-
