@@ -101,7 +101,11 @@ public:
 
         grender.setParams( gparam );
 
-        font = grender.generateBitmapFont();
+        auto symbols = "!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~^? "w;
+        auto english = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"w;
+        auto russian = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"w;
+
+        font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
         tex.image( font.texture );
 

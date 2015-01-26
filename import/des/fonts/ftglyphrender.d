@@ -8,6 +8,8 @@ import des.util.stdext;
 import derelict.freetype.ft;
 import derelict.freetype.types;
 
+import std.traits;
+
 alias SizeVector!2 imsize_t;
 
 struct BitmapFont
@@ -52,7 +54,7 @@ interface GlyphRender
     void setParams( in GlyphParam p );
     @property ElemInfo imtype() const;
     GlyphInfo render( wchar ch );
-    BitmapFont generateBitmapFont();
+    BitmapFont generateBitmapFont( wstring );
 }
 
 class FTGlyphRender : GlyphRender, ExternalMemoryManager
@@ -132,7 +134,7 @@ public:
 
         if( ch == ' ' )
         {
-            auto width = g.metrics.horiAdvance / 128.0;//TODO not proper way i think
+            auto width = g.metrics.horiAdvance / 128.0;//TODO not proper way I think
             sz = ivec2( width, g.bitmap.rows );
             img_data.length = sz.x * sz.y;
             img_data[] = 0;
@@ -149,14 +151,12 @@ public:
                                 Image!2( imsize_t(sz), imtype, img_data ) );
     }
 
-    BitmapFont generateBitmapFont()//rendering only russian/english letters and basic symbols
-    {//TODO check if one line texture is proper
+    BitmapFont generateBitmapFont( wstring chars )
+    {
         BitmapFont res;
         GlyphInfo[wchar] glyphs;
-        foreach( wchar i; 32 .. 128 )// !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-            glyphs[i] = render( i );
-        foreach( wchar i; 1040 .. 1104 )//АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя
-            glyphs[i] = render( i );
+        foreach( c; chars )
+            glyphs[c] = render( c );
         uint maxh = 0;
         uint width = 0;
         foreach( ref g; glyphs )
