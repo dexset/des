@@ -1,168 +1,145 @@
 module des.gl.simple.textout;
 
-import des.il.region;
-
 import des.fonts.ftglyphrender;
-import des.fonts.textrender;
 
-import des.util.helpers;
-import des.util.stdext.algorithm;
-
+import des.gl.simple;
 import des.gl.simple.shader.text;
-import des.gl.simple.object;
+
+import std.traits;
 
 wstring wformat(S,Args...)( S fmt, Args args )
     if( is( S == string ) || is( S == wstring ) )
 { return to!wstring( format( to!string(fmt), args ) ); }
 
-class TextBox : GLSimpleObject
+class BaseLineTextBox : GLSimpleObject
 {
 private:
 
-    GLBuffer pos, color, uv;
+    GLBuffer vert, uv;
 
     GLTexture tex;
 
-    MultilineTextRender trender;
-    GlyphRender grender;
-
-    GlyphParam param;
-    GlyphInfo info;
-
     wstring output;
+    vec2 output_size;
 
-    void redraw()
-    {
-        grender.setParams( param );
-        tex.image( info.img );
-    }
+    vec2 pos;
 
-    void checkStretched()
-    {
-        if( stretched )
-        {
-            trect = rrect;
-            param.height = cast(ubyte)( trect.size.y / cast(float)(lines) );
-            redraw();
-            repos();
-        }
-        info = trender( grender, param, output );
-        if( !stretched )
-        {
-            trect = fRegion2( trect.x, trect.y, info.img.size.w, info.img.size.h );
-            repos();
-        }
-    }
+    BitmapFont font;
 
     void repos()
     {
-        pos.setData( [ vec2(trect.x, trect.y),         vec2(trect.x+trect.w, trect.y),
-                       vec2(trect.x, trect.y+trect.h), vec2(trect.x+trect.w, trect.y+trect.h) ] );
+        vec2[] vert_data;
+        vec2[] uv_data;
+
+        output_size = vec2(0);
+
+        float offsetx = 0;
+        foreach( c; output )
+            if( font.size[c].h > output_size.h )
+                output_size.h = font.size[c].h;
+        
+        foreach( c; output )
+        {
+            output_size.w += font.size[c].w;
+
+            {
+                auto v1 = pos + vec2( font.bearing[c].x + offsetx, output_size.h + font.bearing[c].y );
+                auto v2 = v1 + font.size[c];
+
+                vert_data ~= vec2( v1.x, v2.y );
+                vert_data ~= v1;
+                vert_data ~= vec2( v2.x, v1.y );
+
+                vert_data ~= v2;
+                vert_data ~= vec2( v1.x, v2.y );
+                vert_data ~= vec2( v2.x, v1.y );
+
+                offsetx += font.size[c].x;
+            }
+
+            {
+                auto uvoffset = vec2( font.offset[c] ) / vec2( font.texture.size );
+                auto uvsize = vec2( font.size[c] ) / vec2( font.texture.size );
+
+                auto uv1 = uvoffset;
+                auto uv2 = uv1 + uvsize;
+
+                uv_data ~= vec2( uv1.x, uv2.y );
+                uv_data ~= uv1;
+                uv_data ~= vec2( uv2.x, uv1.y );
+
+                uv_data ~= uv2;
+                uv_data ~= vec2( uv1.x, uv2.y );
+                uv_data ~= vec2( uv2.x, uv1.y );
+            }
+        }
+
+        vert.setData( vert_data );
+        uv.setData( uv_data );
     }
 
-    ulong lines;
-
-    fRegion2 trect;
-    fRegion2 rrect;
-
-    bool stretched = false;
-
-    //TODO move to simple
-    void setAttrib( GLBuffer buffer, string name, uint per_element, GLType attype )
-    { setAttribPointer( buffer, shader.getAttribLocation(name), per_element, attype ); }
-
-
-    uint someSampler;
 public:
-    this( string fname, uint size=24u )
+    this( string font_name, uint size=24u )
     {
         super( SS_WIN_TEXT );
-        auto font = fname;
 
-        grender = FTGlyphRender.get(font);
-        trender = new MultilineTextRender;
-        trender.offset = 3;
+        vert = createArrayBuffer();
+        setAttribPointer( vert, shader.getAttribLocation( "vert" ), 2, GLType.FLOAT );
 
-        pos = newEMM!GLBuffer;
-        color = newEMM!GLBuffer;
-        uv = newEMM!GLBuffer;
+        uv = createArrayBuffer();
+        setAttribPointer( uv, shader.getAttribLocation( "uv" ), 2, GLType.FLOAT );
 
-        setAttrib( pos, "pos", 2, GLType.FLOAT );
-        setAttrib( color, "color", 4, GLType.FLOAT );
-        setAttrib( uv, "uv", 2, GLType.FLOAT );
-
-        setColor( vec4( 1.0, 1.0, 1.0, 1.0 ) );
-
-        uv.setData([ vec2( 0.0, 0.0 ), vec2( 1.0, 0.0 ),
-                     vec2( 0.0, 1.0 ), vec2( 1.0, 1.0 ) ]);
-
-
-        setDrawCount( 4 );
-
-        tex = new GLTexture( GLTexture.Target.T2D );
+        tex = newEMM!GLTexture( GLTexture.Target.T2D );
 
         tex.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
         tex.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
 
-        text = "";
-        tex.image( info.img );
-        textHeight = size;
+        GlyphParam gparam;
+        gparam.height = size;
+
+        auto grender = FTGlyphRender.get( font_name );
+
+        grender.setParams( gparam );
+
+        auto symbols = "!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~^? "w;
+        auto english = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"w;
+        auto russian = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"w;
+
+        font = grender.generateBitmapFont( symbols ~ english ~ russian );
+
+        tex.image( font.texture );
+
+        text = "Default text";
     }
 
-    void draw( in ivec2 wsz )
+    void draw( ivec2 win_size )
     {
+        shader.setUniform!ivec2( "win_size", win_size );
         tex.bind();
-        shader.setUniform!vec2( "winsize", vec2(wsz) );
-  
-        glDisable(GL_DEPTH_TEST);
-
-        drawArrays( DrawMode.TRIANGLE_STRIP );
-
+            glDisable(GL_DEPTH_TEST);
+            drawArrays( DrawMode.TRIANGLES );
         tex.unbind();
     }
 
-    void setRect( fRegion2 r )
-    {
-        trect = r;
-        rrect = r;
-        checkStretched();
-        repos();
-    }
-
-    void setColor( vec4 color )
-    { setColor( amap!( a => color )( new vec4[](4) ) ); }
-
-    void setColor( vec4[] color ... )
-    { this.color.setData( color ); }
-
     @property
     {
-        void text( wstring t )
+        void text(T)( T t )
+            if( isSomeString!T )//TODO is convertable to wstring
         {
-            import std.string;
-            output = t;
-            lines = t.split("\n").length;
-            checkStretched();
-            redraw();
+            import std.conv;
+            output = to!wstring( t );
+            repos();
         }
+        wstring text(){ return output; }
 
-        wstring text() const { return output; }
-
-        void textHeight( uint hh )
-        {
-            param.height = hh;
-            checkStretched();
-            redraw();
-        }
-
-        uint textHeight() const { return param.height; }
-
-        void isStretched( bool s )
+        void position( vec2 pos )
         { 
-            stretched = s; 
-            checkStretched();
-            redraw();
+            this.pos = pos; 
+            repos(); 
         }
-        bool isStretched() const { return stretched; }
+
+        void color( vec3 col ){ shader.setUniform!vec3( "color", col ); }
+
+        vec2 size(){ return output_size; }
     }
 }
