@@ -91,7 +91,7 @@ public:
         setAttrib( color, "color", 4, GLType.FLOAT );
         setAttrib( uv, "uv", 2, GLType.FLOAT );
 
-        setColor( col4( 1.0, 1.0, 1.0, 1.0 ) );
+        setColor( vec4( 1.0, 1.0, 1.0, 1.0 ) );
 
         uv.setData([ vec2( 0.0, 0.0 ), vec2( 1.0, 0.0 ),
                      vec2( 0.0, 1.0 ), vec2( 1.0, 1.0 ) ]);
@@ -129,10 +129,10 @@ public:
         repos();
     }
 
-    void setColor( col4 color )
-    { setColor( amap!( a => color )( new col4[](4) ) ); }
+    void setColor( vec4 color )
+    { setColor( amap!( a => color )( new vec4[](4) ) ); }
 
-    void setColor( col4[] color ... )
+    void setColor( vec4[] color ... )
     { this.color.setData( color ); }
 
     @property

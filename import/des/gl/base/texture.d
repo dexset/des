@@ -76,7 +76,7 @@ protected:
 
 public:
 
-    alias SizeVector!3 texsize_t; 
+    alias CrdVector!3 texsize_t; 
 
     ///
     @property Target target() const { return _target; }
@@ -339,14 +339,14 @@ public:
     }
 
     ///
-    void resize(T)( in T sz )
-        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
+    void resize(size_t N,T)( in Vector!(N,T) sz )
+        if( (N==1 || N==2 || N==3) && isIntegral!T )
     { image( sz, liformat, lformat, ltype ); }
 
     /// set image
-    void image(T)( in T sz, InternalFormat internal_format, 
+    void image(size_t N,T)( in Vector!(N,T) sz, InternalFormat internal_format, 
             Format data_format, Type data_type, in void* data=null )
-        if( isCompatibleVector!(1,size_t,T) || isCompatibleVector!(2,size_t,T) || isCompatibleVector!(3,size_t,T) )
+    if( (N==1 || N==2 || N==3) && isIntegral!T )
     {
         enum N = sz.length;
         img_size = texsize_t( sz, [1,1][0 .. 3-N] );
@@ -408,7 +408,7 @@ public:
 
         auto dsize = w * h * elemSize;
 
-        if( img.size != SizeVector!2(w,h) || img.info.bpe != elemSize )
+        if( img.size != CrdVector!2(w,h) || img.info.bpe != elemSize )
         {
             img.size = ivec2( w, h );
             img.info = imageElemInfo( lformat, type );

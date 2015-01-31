@@ -54,7 +54,7 @@ private:
             throw new FTGlyphRenderException( "Couldn't select unicode encoding" );
     }
 
-    auto color = col4( 1,1,1,1 );
+    auto color = vec4( 1,1,1,1 );
 public:
 
     static GlyphRender get( string fontname )
@@ -87,7 +87,7 @@ public:
 
         foreach( y; 0 .. sz.y )
             foreach( x; 0 .. sz.x )
-                ret.img.pixel!ubcol4(x,y) = ubcol4( col4( color.rgb, color.a * g.bitmap.buffer[y*sz.x+x] / 255.0 ) * 255 );
+                ret.img.pixel!ubvec4(x,y) = ubvec4( vec4( color.rgb, color.a * g.bitmap.buffer[y*sz.x+x] / 255.0 ) * 255 );
 
         return ret;
     }

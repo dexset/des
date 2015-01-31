@@ -139,8 +139,8 @@ public:
     }
 
     /// ditto
-    void storage(T)( in T sz, Format fmt )
-    if( isCompatibleVector!(2,uint,T) )
+    void storage(T)( in Vector!(2,T) sz, Format fmt )
+    if( isIntegral!T )
     in
     {
         assert( sz[0] >= 0 );
@@ -152,8 +152,8 @@ public:
     void resize( in uivec2 sz ) { storage( sz, _format ); }
 
     /// ditto
-    void resize(T)( in T sz )
-    if( isCompatibleVector!(2,uint,T) )
+    void resize(T)( in Vector!(2,T) sz )
+    if( isIntegral!T )
     { resize( uivec2(sz) ); }
 
 protected:

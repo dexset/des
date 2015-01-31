@@ -5,7 +5,7 @@ public import des.il;
 
 import std.string;
 
-alias SizeVector!2 imsize_t;
+alias CrdVector!2 imsize_t;
 
 class TextRenderException: Exception
 { 
@@ -33,7 +33,7 @@ struct GlyphParam
 
     ubyte flag = Flag.NONE;
     uint height=12;
-    col4 color=col4(1,1,1,1);
+    vec4 color=vec4(1,1,1,1);
 }
 
 interface GlyphRender
