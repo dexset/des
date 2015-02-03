@@ -30,6 +30,8 @@ import derelict.opengl3.gl3;
 
 import des.gl.base.type;
 
+import des.util.data.type;
+
 ///
 class GLObjException : DesGLException 
 { 
@@ -98,7 +100,7 @@ public:
         UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`  
     }
 
-    /// glBindBuffer( trg, 0 )
+    /// `glBindBuffer( trg, 0 )`
     static nothrow void unbind( Target trg )
     { glBindBuffer( cast(GLenum)trg, 0 ); }
 
@@ -115,46 +117,47 @@ public:
 
     final
     {
-        /// glBindBuffer
+        /// `glBindBuffer`
         void bind()
         {
             checkGLCall!glBindBuffer( gltype, _id );
             debug logger.trace( "with type [%s]", type );
         }
 
-        /// glBindBuffer with self target to 0
+        /// `glBindBuffer` with self target to 0
         void unbind()
         {
             checkGLCall!glBindBuffer( gltype, 0 );
             debug logger.trace( "type [%s]", type );
         }
-        @property uint id() const { return _id; }
+
+        ///
+        uint id() @property const { return _id; }
     }
 
     /++ calls when element count changed (in setUntypedData)
      +
-     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     + See_Also: `setUntypedData`
      +/
     Signal!size_t elementCountCB;
 
     /++ calls when element size changed (in setUntypedData)
      +
-     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     + See_Also: `setUntypedData`
      +/
     Signal!size_t elementSizeCB;
 
     /++ calls when data size changed (in setUntypedData)
      +
-     + See_Also: [setUntypedData](des/gl/base/object/GLBuffer.setUntypedData.html)
+     + See_Also: `setUntypedData`
      +/
     Signal!size_t dataSizeCB;
 
-    /++ glBufferData, call signals 
-     +
-     + See_Also: 
-     + * [Signal!size_t elementCountCB](des/gl/base/object/GLBuffer.elementCountCB.html)
-     + * [Signal!size_t elementSizeCB](des/gl/base/object/GLBuffer.elementSizeCB.html)
-     + * [Signal!size_t dataSizeCB](des/gl/base/object/GLBuffer.dataSizeCB.html)
+    /++ `bind`, `glBufferData`, `unbind`
+     +  call signals:
+     +  `elementCountCB`
+     +  `elementSizeCB`
+     +  `dataSizeCB`
      +/
     void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
@@ -180,7 +183,7 @@ public:
     void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
     { setUntypedData( data_arr, E.sizeof, mem ); }
 
-    /// `glBufferSubData`
+    /// `bind`, `glBufferSubData`, `unbind`
     void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
     {
         auto size = data_arr.length;
@@ -204,12 +207,10 @@ public:
     /// return ubtyped copy of buffer data
     void[] getUntypedData()
     {
-        bind();
-        auto mp = map( Access.READ_ONLY );
+        auto mp = mapUntypedData( Access.READ_ONLY );
         auto buf = new void[]( data_size );
-        memcpy( buf.ptr, mp, data_size );
+        memcpy( buf.ptr, mp.ptr, data_size );
         unmap();
-        unbind();
         return buf;
     }
 
@@ -219,12 +220,10 @@ public:
     /// return untyped copy of buffer sub data
     void[] getSubUntypedData( size_t offset, size_t length )
     {
-        bind();
-        auto mp = mapRange( offset, length, Access.READ_ONLY );
+        auto mp = mapUntypedDataRange( offset, length, Access.READ_ONLY );
         auto buf = new void[]( length );
-        memcpy( buf.ptr, mp, length );
+        memcpy( buf.ptr, mp.ptr, length );
         unmap();
-        unbind();
         return buf;
     }
 
@@ -247,26 +246,40 @@ public:
         }
     }
 
-    /// glMapBuffer
-    void* map( Access access=Access.READ_ONLY )
+    /// `bind`, `glMapBuffer`, `unbind`
+    ArrayData mapUntypedData( Access access=Access.READ_ONLY )
     {
         debug logger.trace( "by access [%s]", access );
-        return checkGLCall!glMapBuffer( gltype, cast(GLenum)access );
+        bind();
+        scope(exit) unbind();
+        return ArrayData( data_size, checkGLCall!glMapBuffer( gltype, cast(GLenum)access ) );
     }
 
-    /// glMapBufferRange
-    void* mapRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
+    /// `bind`, `glMapBufferRange`, `unbind`
+    ArrayData mapUntypedDataRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
     { 
         if( offset + length > data_size )
             throw new GLObjException( "map buffer range: offset + length > data_size" );
         debug logger.trace( "by access [%s]: offset [%d], length [%d]", access, offset, length );
-        return checkGLCall!glMapBufferRange( gltype, offset, length, cast(GLenum)access );
+        bind();
+        scope(exit) unbind();
+        return ArrayData( length, checkGLCall!glMapBufferRange( gltype, offset, length, cast(GLenum)access ) );
     }
 
-    /// glUnmapBuffer
+    ///
+    AlienArray!E mapData(E)( Access access )
+    { return getTypedArray!E( mapUntypedData( access ) ); }
+
+    ///
+    AlienArray!E mapDataRange(E)( size_t offset, size_t length, Access access ) 
+    { return getTypedArray!E( mapUntypedDataRange( offset * E.sizeof, length * E.sizeof, access ) ); }
+
+    /// `bind`, `glUnmapBuffer`, `unbind`
     void unmap()
     {
+        bind();
         checkGLCall!glUnmapBuffer( gltype );
+        unbind();
         debug logger.trace( "pass" );
     }
 
@@ -292,7 +305,7 @@ public:
     ///
     static nothrow void unbind(){ glBindVertexArray(0); }
 
-    /// glGenVertexArrays
+    /// `glGenVertexArrays`
     this()
     {
         checkGLCall!glGenVertexArrays( 1, &_id );
@@ -302,14 +315,14 @@ public:
 
     nothrow 
     {
-        /// glBindVertexArray
+        /// `glBindVertexArray`
         void bind() 
         { 
             ntCheckGLCall!glBindVertexArray( _id );
             debug logger.trace( "pass" );
         }
 
-        /// glEnableVertexAttribArray
+        /// `glEnableVertexAttribArray`
         void enable( int n )
         {
             debug scope(exit) logger.Debug( "[%d]", n );
@@ -318,7 +331,7 @@ public:
             ntCheckGLCall!glEnableVertexAttribArray( n ); 
         }
 
-        /// glDisableVertexAttribArray
+        /// `glDisableVertexAttribArray`
         void disable( int n )
         {
             debug scope(exit) logger.Debug( "[%d]", n );
@@ -330,7 +343,7 @@ public:
 
 protected:
 
-    /// glDeleteVertexArrays
+    /// `glDeleteVertexArrays`
     override void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
 
 }
@@ -348,7 +361,7 @@ protected:
     final
     {
 
-        /// glVertexAttribPointer
+        /// `glVertexAttribPointer`
         void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, size_t stride, size_t offset, bool norm=false )
         {
