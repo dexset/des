@@ -7,9 +7,11 @@
 	"importPaths": [ "import" ],
 	"sourcePaths": [ "import" ],
 	"dependencies": {
-        "descore": ">=1.1.1",
+        "descore": ">=1.3.3",
         "derelict-gl3": ">=1.0.10",
+        "derelict-assimp3": ">=1.0.0",
         "derelict-sdl2": ">=1.2.8",
-        "derelict-ft": ">=1.0.0"
+        "derelict-ft": ">=1.0.0",
+        "derelict-il": ">=1.0.0"
 	}
 }
