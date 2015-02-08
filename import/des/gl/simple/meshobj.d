@@ -13,7 +13,9 @@ class MeshData
     ///
     vec3[] vertices;
     ///
-    vec3[] normals;
+    vec3[] normals, tangents, bitangents;
+    ///
+    vec4[][] colors;
     ///
     vec3[][] texcrds;
     ///
@@ -33,7 +35,9 @@ protected:
     ///
     GLBuffer vertices;
     ///
-    GLBuffer normals;
+    GLBuffer normals, tangents, bitangents;
+    ///
+    GLBuffer[] colors;
     ///
     GLBuffer[] texcrds;
     ///
@@ -85,8 +89,29 @@ protected:
         {
             normals = newEMM!GLBuffer();
             normals.setData( mesh_data.normals );
-
             logger.trace( "with normals" );
+        }
+
+        if( mesh_data.tangents.length )
+        {
+            tangents = newEMM!GLBuffer();
+            tangents.setData( mesh_data.tangents );
+            logger.trace( "with tangents" );
+        }
+
+        if( mesh_data.bitangents.length )
+        {
+            bitangents = newEMM!GLBuffer();
+            bitangents.setData( mesh_data.bitangents );
+            logger.trace( "with bitangents" );
+        }
+
+        foreach( i; 0 .. mesh_data.colors.length )
+        {
+            auto cbuf = newEMM!GLBuffer();
+            cbuf.setData( mesh_data.colors[i] );
+            colors ~= cbuf;
+            logger.trace( "with colors %d", i );
         }
 
         foreach( i; 0 .. mesh_data.texcrds.length )

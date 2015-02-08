@@ -53,6 +53,21 @@ protected:
             ret.normals = getTypedArray!vec3( cnt,
                     cast(void*)(m.mNormals) ).arr.dup;
 
+        if( m.mTangents !is null )
+            ret.tangents = getTypedArray!vec3( cnt,
+                    cast(void*)(m.mTangents) ).arr.dup;
+
+        if( m.mBitangents !is null )
+            ret.bitangents = getTypedArray!vec3( cnt,
+                    cast(void*)(m.mBitangents) ).arr.dup;
+
+        foreach( i; 0 .. AI_MAX_NUMBER_OF_COLOR_SETS )
+            if( m.mColors[i] !is null )
+            {
+                ret.colors ~= getTypedArray!vec4( cnt,
+                        cast(void*)(m.mColors[i]) ).arr.dup;
+            }
+
         foreach( i; 0 .. AI_MAX_NUMBER_OF_TEXTURECOORDS )
             if( m.mTextureCoords[i] !is null )
             {
