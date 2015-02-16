@@ -53,7 +53,7 @@ protected:
     ///
     size_t data_size;
     ///
-    size_t element_count;
+    uint element_count;
 
     ///
     GLenum gltype() const nothrow @property { return cast(GLenum)type; }
@@ -112,7 +112,7 @@ public:
 
         logger = new InstanceLogger( this, format( "%d", _id ) );
 
-        logger.Debug( "with type [%s]", type );
+        logger.Debug( "type [%s]", type );
     }
 
     final
@@ -121,7 +121,7 @@ public:
         void bind()
         {
             checkGLCall!glBindBuffer( gltype, _id );
-            debug logger.trace( "with type [%s]", type );
+            debug logger.trace( "type [%s]", type );
         }
 
         /// `glBindBuffer` with self target to 0
@@ -139,13 +139,13 @@ public:
      +
      + See_Also: `setUntypedData`
      +/
-    Signal!size_t elementCountCB;
+    Signal!uint elementCountCB;
 
     /++ calls when element size changed (in setUntypedData)
      +
      + See_Also: `setUntypedData`
      +/
-    Signal!size_t elementSizeCB;
+    Signal!uint elementSizeCB;
 
     /++ calls when data size changed (in setUntypedData)
      +
@@ -166,17 +166,18 @@ public:
 
         bind();
         checkGLCall!glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
-        unbind();
 
-        element_count = data_arr.length / element_size;
+        element_count = cast(uint)( data_arr.length / element_size );
         data_size = size;
 
-        elementCountCB( element_count );
+        elementCountCB( cast(uint)element_count );
         dataSizeCB( data_size );
-        elementSizeCB( element_size );
+        elementSizeCB( cast(uint)element_size );
 
         debug logger.trace( "[%s]: size [%d], element size [%d], usage [%s]",
                 type, size, element_size, mem );
+
+        unbind();
     }
 
     /// `setUntypedData( data_arr, E.sizeof, mem )`
@@ -194,10 +195,11 @@ public:
 
         bind();
         checkGLCall!glBufferSubData( gltype, offset, size, data_arr.ptr );
-        unbind();
 
         debug logger.trace( "[%s]: offset [%d], size [%d], element size [%d]",
                 type, offset, size, element_size );
+        
+        unbind();
     }
 
     /// `setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof )`
@@ -236,13 +238,13 @@ public:
         const final
         {
             ///
-            size_t elementCount() { return element_count; }
+            uint elementCount() { return element_count; }
             ///
             size_t dataSize() { return data_size; }
 
             /// calculated
-            size_t elementSize()
-            { return element_count ? data_size / element_count : 0; }
+            uint elementSize()
+            { return cast(uint)( element_count ? data_size / element_count : 0 ); }
         }
     }
 
@@ -279,8 +281,8 @@ public:
     {
         bind();
         checkGLCall!glUnmapBuffer( gltype );
-        unbind();
         debug logger.trace( "pass" );
+        unbind();
     }
 
 protected:
@@ -360,7 +362,6 @@ protected:
 
     final
     {
-
         /// `glVertexAttribPointer`
         void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, size_t stride, size_t offset, bool norm=false )
@@ -370,7 +371,6 @@ protected:
             buffer.bind();
             checkGLCall!glVertexAttribPointer( index, cast(int)per_element,
                     cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
-            buffer.unbind();
 
             logger.Debug( "VAO [%d], buffer [%d], "~
                             "index [%d], per element [%d][%s]"~
@@ -379,12 +379,35 @@ protected:
                             index, per_element, attype, 
                             stride != 0 ? ntFormat(", stride [%d], offset [%d]", stride, offset ) : "",
                             norm ? ntFormat( ", norm [%s]", norm ) : "" );
+
+            buffer.unbind();
         }
 
         /// ditto
         void setAttribPointer( GLBuffer buffer, int index, uint per_element,
                 GLType attype, bool norm=false )
         { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
+    }
+
+    /// override this for any action before draw
+    void preDraw() {}
+
+    ///
+    void drawArrays( DrawMode mode, uint count, uint start=0 )
+    {
+        vao.bind();
+        preDraw();
+        checkGLCall!glDrawArrays( mode, start, count );
+        debug logger.trace( "mode [%s], count [%d]", mode, count );
+    }
+
+    ///
+    void drawElements( DrawMode mode, uint count )
+    {
+        vao.bind();
+        preDraw();
+        checkGLCall!glDrawElements( mode, count, GL_UNSIGNED_INT, null );
+        debug logger.trace( "mode [%s], count [%d]", mode, count );
     }
 
 public:
@@ -394,5 +417,21 @@ public:
     {
         vao = newEMM!GLVAO;
         debug checkGL;
+    }
+
+    ///
+    enum DrawMode
+    {
+        POINTS                   = GL_POINTS,                  /// `GL_POINTS`
+        LINES                    = GL_LINES,                   /// `GL_LINES`
+        LINE_STRIP               = GL_LINE_STRIP,              /// `GL_LINE_STRIP`
+        LINE_LOOP                = GL_LINE_LOOP,               /// `GL_LINE_LOOP`
+        TRIANGLES                = GL_TRIANGLES,               /// `GL_TRIANGLES`
+        TRIANGLE_STRIP           = GL_TRIANGLE_STRIP,          /// `GL_TRIANGLE_STRIP`
+        TRIANGLE_FAN             = GL_TRIANGLE_FAN,            /// `GL_TRIANGLE_FAN`
+        LINES_ADJACENCY          = GL_LINES_ADJACENCY,         /// `GL_LINES_ADJACENCY`
+        LINE_STRIP_ADJACENCY     = GL_LINE_STRIP_ADJACENCY,    /// `GL_LINE_STRIP_ADJACENCY`
+        TRIANGLES_ADJACENCY      = GL_TRIANGLES_ADJACENCY,     /// `GL_TRIANGLES_ADJACENCY`
+        TRIANGLE_STRIP_ADJACENCY = GL_TRIANGLE_STRIP_ADJACENCY /// `GL_TRIANGLE_STRIP_ADJACENCY`
     }
 }
