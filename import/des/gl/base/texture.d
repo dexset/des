@@ -61,7 +61,6 @@ protected:
         checkGLCall!glDeleteTextures( 1, &_id );
     }
 
-    ///
     Target _target;
 
     ///
@@ -74,12 +73,20 @@ protected:
     ///
     Type ltype;
 
+    /// texture unit
+    uint _unit;
+
 public:
 
     alias CrdVector!3 texsize_t; 
 
-    ///
-    @property Target target() const { return _target; }
+    @property
+    {
+        ///
+        Target target() const { return _target; }
+        ///
+        void target( Target trg ) { _target = trg; }
+    }
 
     ///
     enum Target
@@ -270,17 +277,32 @@ public:
     }
 
     ///
-    this( Target tg )
-    in { assert( isBase(tg) ); } body
+    this( Target tg, uint tu = 0 )
+    in
     {
+        assert( isBase(tg) );
+        int max_tu;
+        checkGLCall!glGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_tu );
+        assert( tu < max_tu );
+    }
+    body
+    {
+        _unit = tu;
         checkGLCall!glGenTextures( 1, &_id );
         logger = new InstanceLogger( this, format( "%d", _id ) );
         _target = tg;
         logger.Debug( "with target [%s]", _target );
     }
 
-    ///
-    final pure const @property uint id() { return _id; }
+    final pure @property
+    {
+        ///
+        uint id() const { return _id; }
+        ///
+        uint unit() const { return _unit; }
+        ///
+        void unit( uint tu ) { _unit = tu; }
+    }
 
     /// bind, glGenerateMipmap
     void genMipmap()
@@ -320,9 +342,9 @@ public:
     final nothrow
     {
         /// glActiveTexture, glBindTexture
-        void bind( ubyte n=0 )
+        void bind()
         {
-            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + n );
+            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
             ntCheckGLCall!glBindTexture( gltype, _id );
             debug logger.trace( "pass" );
         }
@@ -330,6 +352,7 @@ public:
         ///
         void unbind()
         {
+            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
             ntCheckGLCall!glBindTexture( gltype, 0 );
             debug logger.trace( "pass" );
         }
