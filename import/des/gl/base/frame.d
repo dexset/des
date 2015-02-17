@@ -1,28 +1,7 @@
-/+
-The MIT License (MIT)
-
-    Copyright (c) <2013> <Oleg Butko (deviator), Anton Akzhigitov (Akzwar)>
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
-+/
-
 module des.gl.base.frame;
+
+import std.exception;
+import std.conv;
 
 import derelict.opengl3.gl3;
 
@@ -91,7 +70,7 @@ public:
         STENCIL_INDEX8     = GL_STENCIL_INDEX8      /// `GL_STENCIL_INDEX8`
     }
 
-    /// glGenRenderbuffers
+    /// `glGenRenderbuffers`
     this()
     {
         checkGLCall!glGenRenderbuffers( 1, &_id );
@@ -122,7 +101,7 @@ public:
         debug logger.trace( "call from [%d]", _id );
     }
 
-    /// glRenderbufferStorage
+    /// `glRenderbufferStorage`
     void storage( in uivec2 sz, Format fmt )
     in
     {
@@ -178,11 +157,34 @@ protected:
 
 public:
 
-    // TODO: not work with gl constant
-    //mixin( getAttachmentEnumString!GL_MAX_COLOR_ATTACHMENTS );
-    mixin( getAttachmentEnumString!1 );
+    ///
+    enum Attachment
+    {
+        NONE    = GL_NONE, /// 'GL_NONE'
 
-    /// glGenFramebuffers
+        COLOR0  = GL_COLOR_ATTACHMENT0,  /// `GL_COLOR_ATTACHMENT0`
+        COLOR1  = GL_COLOR_ATTACHMENT1,  /// `GL_COLOR_ATTACHMENT1`
+        COLOR2  = GL_COLOR_ATTACHMENT2,  /// `GL_COLOR_ATTACHMENT2`
+        COLOR3  = GL_COLOR_ATTACHMENT3,  /// `GL_COLOR_ATTACHMENT3`
+        COLOR4  = GL_COLOR_ATTACHMENT4,  /// `GL_COLOR_ATTACHMENT4`
+        COLOR5  = GL_COLOR_ATTACHMENT5,  /// `GL_COLOR_ATTACHMENT5`
+        COLOR6  = GL_COLOR_ATTACHMENT6,  /// `GL_COLOR_ATTACHMENT6`
+        COLOR7  = GL_COLOR_ATTACHMENT7,  /// `GL_COLOR_ATTACHMENT7`
+        COLOR8  = GL_COLOR_ATTACHMENT8,  /// `GL_COLOR_ATTACHMENT8`
+        COLOR9  = GL_COLOR_ATTACHMENT9,  /// `GL_COLOR_ATTACHMENT9`
+        COLOR10 = GL_COLOR_ATTACHMENT10, /// `GL_COLOR_ATTACHMENT10`
+        COLOR11 = GL_COLOR_ATTACHMENT11, /// `GL_COLOR_ATTACHMENT11`
+        COLOR12 = GL_COLOR_ATTACHMENT12, /// `GL_COLOR_ATTACHMENT12`
+        COLOR13 = GL_COLOR_ATTACHMENT13, /// `GL_COLOR_ATTACHMENT13`
+        COLOR14 = GL_COLOR_ATTACHMENT14, /// `GL_COLOR_ATTACHMENT14`
+        COLOR15 = GL_COLOR_ATTACHMENT15, /// `GL_COLOR_ATTACHMENT15`
+
+        DEPTH         = GL_DEPTH_ATTACHMENT,         /// `GL_DEPTH_ATTACHMENT`
+        STENCIL       = GL_STENCIL_ATTACHMENT,       /// `GL_STENCIL_ATTACHMENT`
+        DEPTH_STENCIL = GL_DEPTH_STENCIL_ATTACHMENT, /// `GL_DEPTH_STENCIL_ATTACHMENT`
+    }
+
+    /// `glGenFramebuffers`
     this()
     {
         if( id_stack.length == 0 ) id_stack ~= 0;
@@ -220,6 +222,17 @@ public:
     }
 
     ///
+    void drawBuffers( in Attachment[] atts... )
+    {
+        int max_bufs;
+        checkGLCall!glGetIntegerv( GL_MAX_DRAW_BUFFERS, &max_bufs );
+        enforce( atts.length < max_bufs,
+            new GLFBOException( format( "count of draw buffers greater what max value (%d>%d)", atts.length, max_bufs ) ) );
+        bind(); scope(exit) unbind();
+        checkGLCall!glDrawBuffers( cast(int)atts.length, cast(const uint*)(atts.ptr) );
+    }
+
+    ///
     void setAttachment(T)( T obj, Attachment att )
         if( is( T : GLTexture ) || is( T : GLRenderBuffer ) )
     {
@@ -238,6 +251,8 @@ public:
     void texture( GLTexture tex, Attachment att, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
     {
+        enforce( att != Attachment.NONE, new GLFBOException( "texture can't be NONE attachment" ) );
+
         bind(); scope(exit) unbind();
 
         if( trg == tex.Target.T1D )
@@ -256,6 +271,8 @@ public:
     /// set render buffer attachment
     void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
+        enforce( att != Attachment.NONE, new GLFBOException( "render buffer can't be NONE attachment" ) );
+
         bind(); scope(exit) unbind();
 
         checkGLCall!glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
@@ -264,7 +281,7 @@ public:
         logger.Debug( "[%d] as [%s]", rbo.id, att );
     }
 
-    /// glCheckFramebufferStatus
+    /// `glCheckFramebufferStatus`
     void check()
     {
         bind(); scope(exit) unbind();
@@ -275,6 +292,7 @@ public:
     }
 
 protected:
+
     override void selfDestroy()
     {
         unbind();
@@ -282,44 +300,22 @@ protected:
         logger.Debug( "pass" );
     }
 
-    static string getAttachmentEnumString(size_t COLOR_ATTACHMENT_COUNT)() @property
-    {
-        import std.string;
-        string[] ret;
-
-        ret ~= `
-        enum Attachment
-        {
-            `;
-
-        foreach( i; 0 .. COLOR_ATTACHMENT_COUNT )
-            ret ~= format( "COLOR%1d = GL_COLOR_ATTACHMENT%1d,", i, i );
-
-        ret ~= "DEPTH         = GL_DEPTH_ATTACHMENT,";
-        ret ~= "STENCIL       = GL_STENCIL_ATTACHMENT,";
-        ret ~= "DEPTH_STENCIL = GL_DEPTH_STENCIL_ATTACHMENT,";
-
-        ret ~= `}`;
-
-        return ret.join("\n");
-    }
-
     bool isValidTextureTarget( GLTexture.Target trg )
     {
         switch(trg)
         {
-        case GLTexture.Target.T1D:
-        case GLTexture.Target.T2D:
-        case GLTexture.Target.RECTANGLE:
-        case GLTexture.Target.T3D:
-        case GLTexture.Target.CUBE_MAP_POSITIVE_X:
-        case GLTexture.Target.CUBE_MAP_NEGATIVE_X:
-        case GLTexture.Target.CUBE_MAP_POSITIVE_Y:
-        case GLTexture.Target.CUBE_MAP_NEGATIVE_Y:
-        case GLTexture.Target.CUBE_MAP_POSITIVE_Z:
-        case GLTexture.Target.CUBE_MAP_NEGATIVE_Z:
-            return true;
-        default: return false;
+            case GLTexture.Target.T1D:
+            case GLTexture.Target.T2D:
+            case GLTexture.Target.RECTANGLE:
+            case GLTexture.Target.T3D:
+            case GLTexture.Target.CUBE_MAP_POSITIVE_X:
+            case GLTexture.Target.CUBE_MAP_NEGATIVE_X:
+            case GLTexture.Target.CUBE_MAP_POSITIVE_Y:
+            case GLTexture.Target.CUBE_MAP_NEGATIVE_Y:
+            case GLTexture.Target.CUBE_MAP_POSITIVE_Z:
+            case GLTexture.Target.CUBE_MAP_NEGATIVE_Z:
+                return true;
+            default: return false;
         }
     }
 }
