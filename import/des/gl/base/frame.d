@@ -160,8 +160,6 @@ public:
     ///
     enum Attachment
     {
-        NONE    = GL_NONE, /// 'GL_NONE'
-
         COLOR0  = GL_COLOR_ATTACHMENT0,  /// `GL_COLOR_ATTACHMENT0`
         COLOR1  = GL_COLOR_ATTACHMENT1,  /// `GL_COLOR_ATTACHMENT1`
         COLOR2  = GL_COLOR_ATTACHMENT2,  /// `GL_COLOR_ATTACHMENT2`
@@ -182,6 +180,29 @@ public:
         DEPTH         = GL_DEPTH_ATTACHMENT,         /// `GL_DEPTH_ATTACHMENT`
         STENCIL       = GL_STENCIL_ATTACHMENT,       /// `GL_STENCIL_ATTACHMENT`
         DEPTH_STENCIL = GL_DEPTH_STENCIL_ATTACHMENT, /// `GL_DEPTH_STENCIL_ATTACHMENT`
+    }
+
+    ///
+    enum Buffer
+    {
+        NONE    = GL_NONE, /// 'GL_NONE'
+
+        COLOR0  = GL_COLOR_ATTACHMENT0,  /// `GL_COLOR_ATTACHMENT0`
+        COLOR1  = GL_COLOR_ATTACHMENT1,  /// `GL_COLOR_ATTACHMENT1`
+        COLOR2  = GL_COLOR_ATTACHMENT2,  /// `GL_COLOR_ATTACHMENT2`
+        COLOR3  = GL_COLOR_ATTACHMENT3,  /// `GL_COLOR_ATTACHMENT3`
+        COLOR4  = GL_COLOR_ATTACHMENT4,  /// `GL_COLOR_ATTACHMENT4`
+        COLOR5  = GL_COLOR_ATTACHMENT5,  /// `GL_COLOR_ATTACHMENT5`
+        COLOR6  = GL_COLOR_ATTACHMENT6,  /// `GL_COLOR_ATTACHMENT6`
+        COLOR7  = GL_COLOR_ATTACHMENT7,  /// `GL_COLOR_ATTACHMENT7`
+        COLOR8  = GL_COLOR_ATTACHMENT8,  /// `GL_COLOR_ATTACHMENT8`
+        COLOR9  = GL_COLOR_ATTACHMENT9,  /// `GL_COLOR_ATTACHMENT9`
+        COLOR10 = GL_COLOR_ATTACHMENT10, /// `GL_COLOR_ATTACHMENT10`
+        COLOR11 = GL_COLOR_ATTACHMENT11, /// `GL_COLOR_ATTACHMENT11`
+        COLOR12 = GL_COLOR_ATTACHMENT12, /// `GL_COLOR_ATTACHMENT12`
+        COLOR13 = GL_COLOR_ATTACHMENT13, /// `GL_COLOR_ATTACHMENT13`
+        COLOR14 = GL_COLOR_ATTACHMENT14, /// `GL_COLOR_ATTACHMENT14`
+        COLOR15 = GL_COLOR_ATTACHMENT15, /// `GL_COLOR_ATTACHMENT15`
     }
 
     /// `glGenFramebuffers`
@@ -222,14 +243,14 @@ public:
     }
 
     ///
-    void drawBuffers( in Attachment[] atts... )
+    void drawBuffers( in Buffer[] bufs... )
     {
         int max_bufs;
         checkGLCall!glGetIntegerv( GL_MAX_DRAW_BUFFERS, &max_bufs );
-        enforce( atts.length < max_bufs,
-            new GLFBOException( format( "count of draw buffers greater what max value (%d>%d)", atts.length, max_bufs ) ) );
+        enforce( bufs.length < max_bufs,
+            new GLFBOException( format( "count of draw buffers greater what max value (%d>%d)", bufs.length, max_bufs ) ) );
         bind(); scope(exit) unbind();
-        checkGLCall!glDrawBuffers( cast(int)atts.length, cast(const uint*)(atts.ptr) );
+        checkGLCall!glDrawBuffers( cast(int)bufs.length, cast(const uint*)(bufs.ptr) );
     }
 
     ///
@@ -251,8 +272,6 @@ public:
     void texture( GLTexture tex, Attachment att, GLTexture.Target trg )
     in { assert( isValidTextureTarget(trg) ); } body
     {
-        enforce( att != Attachment.NONE, new GLFBOException( "texture can't be NONE attachment" ) );
-
         bind(); scope(exit) unbind();
 
         if( trg == tex.Target.T1D )
@@ -271,8 +290,6 @@ public:
     /// set render buffer attachment
     void renderBuffer( GLRenderBuffer rbo, Attachment att )
     {
-        enforce( att != Attachment.NONE, new GLFBOException( "render buffer can't be NONE attachment" ) );
-
         bind(); scope(exit) unbind();
 
         checkGLCall!glFramebufferRenderbuffer( GL_FRAMEBUFFER, cast(GLenum)att, 
