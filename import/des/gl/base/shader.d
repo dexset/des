@@ -247,7 +247,10 @@ protected:
             il.instance = format( "%d", _id );
 
         attachShaders();
+
         bindAttribLocations();
+        bindFragDataLocations();
+
         link();
 
         logger.Debug( "pass" );
@@ -300,6 +303,20 @@ protected:
         {
             checkGLCall!glBindAttribLocation( _id, val, key.toStringz );
             logger.Debug( "attrib: '%s',  location: %d", key, val );
+        }
+        logger.Debug( "pass" );
+    }
+
+    ///
+    uint[string] fragDataLocations() { return null; }
+
+    /// uses result of `fragDataLocations()` call, affect after `link()` call
+    final void bindFragDataLocations()
+    {
+        foreach( key, val; fragDataLocations() )
+        {
+            checkGLCall!glBindFragDataLocation( _id, val, key.toStringz );
+            logger.Debug( "frag data: '%s',  location: %d", key, val );
         }
         logger.Debug( "pass" );
     }
