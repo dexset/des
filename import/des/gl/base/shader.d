@@ -238,22 +238,37 @@ public:
 
 protected:
 
-    /// glCreateProgram, glAttachShader, glLinkProgram
+    /// create program, attach shaders, bind attrib locations, link program
     void create()
     {
-        foreach( sh; shaders ) if( !sh.compiled ) sh.make();
-
         _id = checkGLCall!glCreateProgram();
 
         if( auto il = cast(InstanceLogger)logger )
             il.instance = format( "%d", _id );
 
-        foreach( sh; shaders ) 
+        attachShaders();
+        bindAttribLocations();
+        link();
+
+        logger.Debug( "pass" );
+    }
+
+    /// makes shaders if are not compiled and attach their
+    final void attachShaders()
+    {
+        foreach( sh; shaders )
+        {
+            if( !sh.compiled ) sh.make();
             checkGLCall!glAttachShader( _id, sh.id );
+        }
+        logger.Debug( "pass" );
+    }
 
-        checkGLCall!glLinkProgram( _id );
-        check();
-
+    ///
+    final void detachShaders()
+    {
+        foreach( sh; shaders )
+            checkGLCall!glDetachShader( _id, sh.id );
         logger.Debug( "pass" );
     }
 
@@ -275,14 +290,34 @@ protected:
         }
     }
 
+    ///
+    uint[string] attribLocations() { return null; }
+
+    /// uses result of `attribLocations()` call, affect after `link()` call
+    final void bindAttribLocations()
+    {
+        foreach( key, val; attribLocations() )
+        {
+            checkGLCall!glBindAttribLocation( _id, val, key.toStringz );
+            logger.Debug( "attrib: '%s',  location: %d", key, val );
+        }
+        logger.Debug( "pass" );
+    }
+
+    /// link program and check status
+    final void link()
+    {
+        checkGLCall!glLinkProgram( _id );
+        check();
+        logger.Debug( "pass" );
+    }
+
     override void selfConstruct() { create(); }
 
     override void preChildsDestroy()
     {
         thisInUse = false;
-
-        foreach( sh; shaders )
-            checkGLCall!glDetachShader( _id, sh.id );
+        detachShaders();
     }
 
     override void selfDestroy()
