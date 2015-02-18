@@ -1,13 +1,13 @@
 {
-	"name": "des",
-    "description": "D Extended Set",
+    "name": "des",
+    "description": "D Extended Set: OpenGL wrap, window with SDL2, etc",
     "authors": ["Oleg Butko(deviator)", "Anton Akzhigitov(Akzwar)"],
     "license": "MIT",
 	"targetType": "sourceLibrary",
 	"importPaths": [ "import" ],
 	"sourcePaths": [ "import" ],
 	"dependencies": {
-        "descore": ">=1.3.3",
+        "descore": ">=1.2.3",
         "derelict-gl3": ">=1.0.10",
         "derelict-assimp3": ">=1.0.0",
         "derelict-sdl2": ">=1.2.8",
