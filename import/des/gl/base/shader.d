@@ -294,12 +294,12 @@ protected:
     }
 
     ///
-    uint[string] attribLocations() { return null; }
+    uint[string] attribLocations() @property { return null; }
 
     /// uses result of `attribLocations()` call, affect after `link()` call
     final void bindAttribLocations()
     {
-        foreach( key, val; attribLocations() )
+        foreach( key, val; attribLocations )
         {
             checkGLCall!glBindAttribLocation( _id, val, key.toStringz );
             logger.Debug( "attrib: '%s',  location: %d", key, val );
@@ -308,12 +308,12 @@ protected:
     }
 
     ///
-    uint[string] fragDataLocations() { return null; }
+    uint[string] fragDataLocations() @property { return null; }
 
     /// uses result of `fragDataLocations()` call, affect after `link()` call
     final void bindFragDataLocations()
     {
-        foreach( key, val; fragDataLocations() )
+        foreach( key, val; fragDataLocations )
         {
             checkGLCall!glBindFragDataLocation( _id, val, key.toStringz );
             logger.Debug( "frag data: '%s',  location: %d", key, val );
@@ -374,7 +374,7 @@ public:
 
     ///
     void setUniform(T)( int loc, in T[] vals... ) 
-        if( isAllowType!T || isAllowVector!T || isAllowMatrix!T )
+        if( isAllowType!T || isAllowVector!T || isAllowMatrix!T || is( T == bool ) )
     {
         if( loc < 0 )
         {
@@ -393,6 +393,11 @@ public:
                 mixin( format( "%sMatrix%dfv( %s );", fnc, T.height, args_str ) );
             else
                 mixin( format( "%sMatrix%dx%dfv( %s );", fnc, T.height, T.width, args_str ) );
+        }
+        else static if( is( T == bool ) )
+        {
+            auto iv = to!(int[])(vals);
+            mixin( format( "%s1iv( loc, cast(int)vals.length, iv.ptr );", fnc ) );
         }
         else
         {
@@ -429,7 +434,12 @@ public:
 
 private pure @property
 {
-    bool isAllowType(T)() { return is( T == int ) || is( T == uint ) || is( T == float ); }
+    bool isAllowType(T)()
+    {
+        return is( T == int ) ||
+               is( T == uint ) ||
+               is( T == float );
+    }
 
     bool isAllowVector(T)()
     {
