@@ -303,6 +303,8 @@ final class GLVAO : DesObject
 protected:
     uint _id;
 
+    int[int] aaset;
+
 public:
     ///
     static nothrow void unbind(){ glBindVertexArray(0); }
@@ -314,6 +316,9 @@ public:
         logger = new InstanceLogger( this, format( "%d", _id ) );
         logger.Debug( "pass" );
     }
+
+    ///
+    int[] enabled() const @property { return aaset.keys; }
 
     nothrow 
     {
@@ -331,6 +336,7 @@ public:
             if( n < 0 ) return;
             bind();
             ntCheckGLCall!glEnableVertexAttribArray( n ); 
+            aaset[n] = n;
         }
 
         /// `glDisableVertexAttribArray`
@@ -340,6 +346,7 @@ public:
             if( n < 0 ) return;
             bind();
             ntCheckGLCall!glDisableVertexAttribArray( n ); 
+            aaset.remove(n);
         }
     }
 
