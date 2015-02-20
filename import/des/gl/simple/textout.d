@@ -107,8 +107,8 @@ public:
 
         tex = newEMM!GLTexture( GLTexture.Target.T2D );
 
-        tex.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
-        tex.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
+        tex.setMinFilter( GLTexture.Filter.NEAREST );
+        tex.setMagFilter( GLTexture.Filter.NEAREST );
 
         GlyphParam gparam;
         gparam.height = size;

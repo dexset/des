@@ -46,10 +46,10 @@ private template createNew(bool buffer)
         {
             auto tex = new GLTexture( GLTexture.Target.T2D );
 
-            tex.setParameter( GLTexture.Parameter.WRAP_S, GLTexture.Wrap.CLAMP_TO_EDGE );
-            tex.setParameter( GLTexture.Parameter.WRAP_T, GLTexture.Wrap.CLAMP_TO_EDGE );
-            tex.setParameter( GLTexture.Parameter.MIN_FILTER, GLTexture.Filter.NEAREST );
-            tex.setParameter( GLTexture.Parameter.MAG_FILTER, GLTexture.Filter.NEAREST );
+            tex.setWrapS( GLTexture.Wrap.CLAMP_TO_EDGE );
+            tex.setWrapT( GLTexture.Wrap.CLAMP_TO_EDGE );
+            tex.setMinFilter( GLTexture.Filter.NEAREST );
+            tex.setMagFilter( GLTexture.Filter.NEAREST );
 
             return tex;
         }

@@ -117,6 +117,7 @@ public:
     {
         DEPTH_STENCIL_TEXTURE_MODE = GL_DEPTH_STENCIL_TEXTURE_MODE, /// `GL_DEPTH_STENCIL_TEXTURE_MODE`
         BASE_LEVEL                 = GL_TEXTURE_BASE_LEVEL,         /// `GL_TEXTURE_BASE_LEVEL`
+        MAX_LEVEL                  = GL_TEXTURE_MAX_LEVEL,          /// `GL_TEXTURE_MAX_LEVEL`
         BORDER_COLOR               = GL_TEXTURE_BORDER_COLOR,       /// `GL_TEXTURE_BORDER_COLOR`
         COMPARE_FUNC               = GL_TEXTURE_COMPARE_FUNC,       /// `GL_TEXTURE_COMPARE_FUNC`
         COMPARE_MODE               = GL_TEXTURE_COMPARE_MODE,       /// `GL_TEXTURE_COMPARE_MODE`
@@ -125,7 +126,6 @@ public:
         MAG_FILTER                 = GL_TEXTURE_MAG_FILTER,         /// `GL_TEXTURE_MAG_FILTER`
         MIN_LOD                    = GL_TEXTURE_MIN_LOD,            /// `GL_TEXTURE_MIN_LOD`
         MAX_LOD                    = GL_TEXTURE_MAX_LOD,            /// `GL_TEXTURE_MAX_LOD`
-        MAX_LEVEL                  = GL_TEXTURE_MAX_LEVEL,          /// `GL_TEXTURE_MAX_LEVEL`
         SWIZZLE_R                  = GL_TEXTURE_SWIZZLE_R,          /// `GL_TEXTURE_SWIZZLE_R`
         SWIZZLE_G                  = GL_TEXTURE_SWIZZLE_G,          /// `GL_TEXTURE_SWIZZLE_G`
         SWIZZLE_B                  = GL_TEXTURE_SWIZZLE_B,          /// `GL_TEXTURE_SWIZZLE_B`
@@ -181,6 +181,7 @@ public:
         GREEN = GL_GREEN,/// `GL_GREEN`
         BLUE  = GL_BLUE, /// `GL_BLUE`
         ALPHA = GL_ALPHA,/// `GL_ALPHA`
+        ONE   = GL_ONE,  /// `GL_ONE`
         ZERO  = GL_ZERO  /// `GL_ZERO`
     }
 
@@ -314,30 +315,108 @@ public:
     }
 
     ///
-    void setParameter(T)( Parameter pname, T[] val... )
-        if( is(T==int) || is(T==float) || isParameterEnum!T )
-    in
-    {
-        assert( val.length > 0 );
-        assert( isParametric(_target) );
-        static if( !is(T==float) )
-            assert( checkPosibleIntParamValues( pname, amap!(a=>cast(int)(a))(val) ) );
-        else
-            assert( checkPosibleFloatParamValues( pname, val ) );
-    }
-    body
+    void setParam( GLenum param, int val )
     {
         bind();
-        enum ts = is(T==float) ? "f" : "i";
-        enum cs = is(T==float) ? "float" : "int";
-        if( val.length == 1 )
-            mixin( format("glTexParameter%s( gltype, cast(GLenum)pname, cast(%s)val[0] );", ts, cs) );
-        else 
-            mixin( format("glTexParameter%sv( gltype, cast(GLenum)pname, cast(%s*)val.ptr );", ts, cs) ); 
-
-        debug checkGL;
-        logger.Debug( "[%s]: %s", pname, val );
+        checkGLCall!glTexParameteri( gltype, param, val );
     }
+
+    ///
+    void setParam( GLenum param, int[] val )
+    {
+        bind();
+        checkGLCall!glTexParameteriv( gltype, param, val.ptr );
+    }
+
+    ///
+    void setParam( GLenum param, float val )
+    {
+        bind();
+        checkGLCall!glTexParameterf( gltype, param, val );
+    }
+
+    ///
+    void setParam( GLenum param, float[] val )
+    {
+        bind();
+        checkGLCall!glTexParameterfv( gltype, param, val.ptr );
+    }
+
+    ///
+    void setMinFilter( Filter filter )
+    { setParam( Parameter.MIN_FILTER, filter ); }
+
+    ///
+    void setMagFilter( Filter filter )
+    { setParam( Parameter.MAG_FILTER, filter ); }
+
+    ///
+    void setWrapS( Wrap wrap )
+    { setParam( Parameter.WRAP_S, wrap ); }
+
+    ///
+    void setWrapT( Wrap wrap )
+    { setParam( Parameter.WRAP_T, wrap ); }
+
+    ///
+    void setWrapR( Wrap wrap )
+    { setParam( Parameter.WRAP_R, wrap ); }
+
+    ///
+    void setMinLOD( float v )
+    { setParam( Parameter.MIN_LOD, v ); }
+
+    ///
+    void setMaxLOD( float v )
+    { setParam( Parameter.MAX_LOD, v ); }
+
+    ///
+    void setLODBais( float v )
+    { setParam( Parameter.LOD_BIAS, v ); }
+
+    ///
+    void setBaseLevel( int v )
+    { setParam( Parameter.BASE_LEVEL, v ); }
+
+    ///
+    void setMaxLevel( int v )
+    { setParam( Parameter.MAX_LEVEL, v ); }
+
+    ///
+    void setBorderColor( vec4 clr )
+    { setParam( Parameter.BORDER_COLOR, clr.data ); }
+
+    ///
+    void setCompareFunc( CompareFunc cf )
+    { setParam( Parameter.COMPARE_FUNC, cf ); }
+
+    ///
+    void setCompareMode( CompareMode cm )
+    { setParam( Parameter.COMPARE_MODE, cm ); }
+
+    ///
+    void setSwizzleR( Swizzle s )
+    { setParam( Parameter.SWIZZLE_R, s ); }
+
+    ///
+    void setSwizzleG( Swizzle s )
+    { setParam( Parameter.SWIZZLE_G, s ); }
+
+    ///
+    void setSwizzleB( Swizzle s )
+    { setParam( Parameter.SWIZZLE_B, s ); }
+
+    ///
+    void setSwizzleA( Swizzle s )
+    { setParam( Parameter.SWIZZLE_A, s ); }
+
+    ///
+    void setSwizzleRGBA( Swizzle[4] s )
+    { setParam( Parameter.SWIZZLE_RGBA, to!(int[])(s) ); }
+
+    ///
+    void setDepthStencilTextureMode( DepthStencilTextureMode dstm )
+    { setParam( Parameter.DEPTH_STENCIL_TEXTURE_MODE, dstm ); }
 
     final nothrow
     {
@@ -491,64 +570,6 @@ public:
             case Target.T2D_ARRAY:
             case Target.CUBE_MAP: return true;
             default: return false;
-            }
-        }
-
-        ///
-        bool checkPosibleIntParamValues( Parameter pname, int[] valbuf... )
-        {
-            if( valbuf.length == 0 ) return false;
-
-            size_t count = valbuf.length;
-            bool single = count == 1;
-            auto val = valbuf[0];
-
-            final switch(pname)
-            {
-            case Parameter.DEPTH_STENCIL_TEXTURE_MODE: return single && oneOf!DepthStencilTextureMode(val);
-            case Parameter.BASE_LEVEL:   return single && val >= 0;
-            case Parameter.BORDER_COLOR: return count == 4 && all!(a=>a>=0)(valbuf);
-            case Parameter.COMPARE_FUNC: return single && oneOf!CompareFunc(val);
-            case Parameter.COMPARE_MODE: return single && oneOf!CompareMode(val);
-            case Parameter.LOD_BIAS:     return false; // is float
-            case Parameter.MIN_FILTER:   return single && oneOf!Filter(val);
-            case Parameter.MAG_FILTER:   return single && oneOf( [Filter.NEAREST,Filter.LINEAR], val );
-            case Parameter.MIN_LOD:      return false; // is float
-            case Parameter.MAX_LOD:      return false; // is float
-            case Parameter.MAX_LEVEL:    return single;  // initial is 1000, no info in documentation
-
-            case Parameter.SWIZZLE_R: 
-            case Parameter.SWIZZLE_G: 
-            case Parameter.SWIZZLE_B: 
-            case Parameter.SWIZZLE_A:
-                return single && oneOf!Swizzle(val);
-
-            case Parameter.SWIZZLE_RGBA: return count == 4 && all!(a=>oneOf!Swizzle(a))(valbuf);
-
-            case Parameter.WRAP_S:
-            case Parameter.WRAP_T:
-            case Parameter.WRAP_R:
-                return single && oneOf!Wrap(val);
-            }
-        }
-
-        ///
-        bool checkPosibleFloatParamValues( Parameter pname, float[] valbuf... )
-        {
-            if( valbuf.length == 0 ) return false;
-
-            size_t count = valbuf.length;
-            bool single = count == 1;
-            auto val = valbuf[0];
-
-            switch(pname)
-            {
-            case Parameter.LOD_BIAS:
-            case Parameter.MIN_LOD:
-            case Parameter.MAX_LOD:
-                return single;
-            case Parameter.BORDER_COLOR: return count == 4;
-            default: return false; // is integer;
             }
         }
 
