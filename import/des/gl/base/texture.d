@@ -203,11 +203,12 @@ public:
         COMPRESSED_RGBA       = GL_COMPRESSED_RGBA,       /// `GL_COMPRESSED_RGBA`
         COMPRESSED_SRGB       = GL_COMPRESSED_SRGB,       /// `GL_COMPRESSED_SRGB`
         COMPRESSED_SRGB_ALPHA = GL_COMPRESSED_SRGB_ALPHA, /// `GL_COMPRESSED_SRGB_ALPHA`
-        DEPTH_COMPONENT       = GL_DEPTH_COMPONENT,       /// `GL_DEPTH_COMPONENT`
-        DEPTH_COMPONENT16     = GL_DEPTH_COMPONENT16,     /// `GL_DEPTH_COMPONENT16`
-        DEPTH_COMPONENT24     = GL_DEPTH_COMPONENT24,     /// `GL_DEPTH_COMPONENT24`
-        DEPTH_COMPONENT32     = GL_DEPTH_COMPONENT32,     /// `GL_DEPTH_COMPONENT32`
-        DEPTH_COMPONENT32F    = GL_DEPTH_COMPONENT32F,    /// `GL_DEPTH_COMPONENT32F`
+        DEPTH                 = GL_DEPTH_COMPONENT,       /// `GL_DEPTH_COMPONENT`
+        DEPTH16               = GL_DEPTH_COMPONENT16,     /// `GL_DEPTH_COMPONENT16`
+        DEPTH24               = GL_DEPTH_COMPONENT24,     /// `GL_DEPTH_COMPONENT24`
+        DEPTH32               = GL_DEPTH_COMPONENT32,     /// `GL_DEPTH_COMPONENT32`
+        DEPTH32F              = GL_DEPTH_COMPONENT32F,    /// `GL_DEPTH_COMPONENT32F`
+        DEPTH_STENCIL         = GL_DEPTH_STENCIL,         /// `GL_DEPTH_STENCIL`
         R3_G3_B2              = GL_R3_G3_B2,              /// `GL_R3_G3_B2`
         RED                   = GL_RED,                   /// `GL_RED`
         RG                    = GL_RG,                    /// `GL_RG`

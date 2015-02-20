@@ -127,7 +127,7 @@ protected:
     {
         auto tmp = createNew!DB();
         static if(DB) tmp.storage( ivec2(1,1), tmp.Format.DEPTH_COMPONENT32F );
-        else tmp.image( ivec2(1,1), tmp.InternalFormat.DEPTH_COMPONENT,
+        else tmp.image( ivec2(1,1), tmp.InternalFormat.DEPTH,
                 tmp.Format.DEPTH, tmp.Type.FLOAT );
         return tmp;
     }
