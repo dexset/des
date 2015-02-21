@@ -76,6 +76,30 @@ protected:
     /// texture unit
     uint _unit;
 
+    ///
+    enum Parameter
+    {
+        DEPTH_STENCIL_TEXTURE_MODE = GL_DEPTH_STENCIL_TEXTURE_MODE, /// `GL_DEPTH_STENCIL_TEXTURE_MODE`
+        BASE_LEVEL                 = GL_TEXTURE_BASE_LEVEL,         /// `GL_TEXTURE_BASE_LEVEL`
+        MAX_LEVEL                  = GL_TEXTURE_MAX_LEVEL,          /// `GL_TEXTURE_MAX_LEVEL`
+        BORDER_COLOR               = GL_TEXTURE_BORDER_COLOR,       /// `GL_TEXTURE_BORDER_COLOR`
+        COMPARE_FUNC               = GL_TEXTURE_COMPARE_FUNC,       /// `GL_TEXTURE_COMPARE_FUNC`
+        COMPARE_MODE               = GL_TEXTURE_COMPARE_MODE,       /// `GL_TEXTURE_COMPARE_MODE`
+        LOD_BIAS                   = GL_TEXTURE_LOD_BIAS,           /// `GL_TEXTURE_LOD_BIAS`
+        MIN_FILTER                 = GL_TEXTURE_MIN_FILTER,         /// `GL_TEXTURE_MIN_FILTER`
+        MAG_FILTER                 = GL_TEXTURE_MAG_FILTER,         /// `GL_TEXTURE_MAG_FILTER`
+        MIN_LOD                    = GL_TEXTURE_MIN_LOD,            /// `GL_TEXTURE_MIN_LOD`
+        MAX_LOD                    = GL_TEXTURE_MAX_LOD,            /// `GL_TEXTURE_MAX_LOD`
+        SWIZZLE_R                  = GL_TEXTURE_SWIZZLE_R,          /// `GL_TEXTURE_SWIZZLE_R`
+        SWIZZLE_G                  = GL_TEXTURE_SWIZZLE_G,          /// `GL_TEXTURE_SWIZZLE_G`
+        SWIZZLE_B                  = GL_TEXTURE_SWIZZLE_B,          /// `GL_TEXTURE_SWIZZLE_B`
+        SWIZZLE_A                  = GL_TEXTURE_SWIZZLE_A,          /// `GL_TEXTURE_SWIZZLE_A`
+        SWIZZLE_RGBA               = GL_TEXTURE_SWIZZLE_RGBA,       /// `GL_TEXTURE_SWIZZLE_RGBA`
+        WRAP_S                     = GL_TEXTURE_WRAP_S,             /// `GL_TEXTURE_WRAP_S`
+        WRAP_T                     = GL_TEXTURE_WRAP_T,             /// `GL_TEXTURE_WRAP_T`
+        WRAP_R                     = GL_TEXTURE_WRAP_R              /// `GL_TEXTURE_WRAP_R`
+    }
+
 public:
 
     alias CrdVector!3 texsize_t; 
@@ -110,30 +134,6 @@ public:
         CUBE_MAP_NEGATIVE_Y   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Y`
         CUBE_MAP_POSITIVE_Z   = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_Z`
         CUBE_MAP_NEGATIVE_Z   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z   /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    }
-
-    ///
-    enum Parameter
-    {
-        DEPTH_STENCIL_TEXTURE_MODE = GL_DEPTH_STENCIL_TEXTURE_MODE, /// `GL_DEPTH_STENCIL_TEXTURE_MODE`
-        BASE_LEVEL                 = GL_TEXTURE_BASE_LEVEL,         /// `GL_TEXTURE_BASE_LEVEL`
-        MAX_LEVEL                  = GL_TEXTURE_MAX_LEVEL,          /// `GL_TEXTURE_MAX_LEVEL`
-        BORDER_COLOR               = GL_TEXTURE_BORDER_COLOR,       /// `GL_TEXTURE_BORDER_COLOR`
-        COMPARE_FUNC               = GL_TEXTURE_COMPARE_FUNC,       /// `GL_TEXTURE_COMPARE_FUNC`
-        COMPARE_MODE               = GL_TEXTURE_COMPARE_MODE,       /// `GL_TEXTURE_COMPARE_MODE`
-        LOD_BIAS                   = GL_TEXTURE_LOD_BIAS,           /// `GL_TEXTURE_LOD_BIAS`
-        MIN_FILTER                 = GL_TEXTURE_MIN_FILTER,         /// `GL_TEXTURE_MIN_FILTER`
-        MAG_FILTER                 = GL_TEXTURE_MAG_FILTER,         /// `GL_TEXTURE_MAG_FILTER`
-        MIN_LOD                    = GL_TEXTURE_MIN_LOD,            /// `GL_TEXTURE_MIN_LOD`
-        MAX_LOD                    = GL_TEXTURE_MAX_LOD,            /// `GL_TEXTURE_MAX_LOD`
-        SWIZZLE_R                  = GL_TEXTURE_SWIZZLE_R,          /// `GL_TEXTURE_SWIZZLE_R`
-        SWIZZLE_G                  = GL_TEXTURE_SWIZZLE_G,          /// `GL_TEXTURE_SWIZZLE_G`
-        SWIZZLE_B                  = GL_TEXTURE_SWIZZLE_B,          /// `GL_TEXTURE_SWIZZLE_B`
-        SWIZZLE_A                  = GL_TEXTURE_SWIZZLE_A,          /// `GL_TEXTURE_SWIZZLE_A`
-        SWIZZLE_RGBA               = GL_TEXTURE_SWIZZLE_RGBA,       /// `GL_TEXTURE_SWIZZLE_RGBA`
-        WRAP_S                     = GL_TEXTURE_WRAP_S,             /// `GL_TEXTURE_WRAP_S`
-        WRAP_T                     = GL_TEXTURE_WRAP_T,             /// `GL_TEXTURE_WRAP_T`
-        WRAP_R                     = GL_TEXTURE_WRAP_R              /// `GL_TEXTURE_WRAP_R`
     }
 
     ///
@@ -291,7 +291,7 @@ public:
     {
         _unit = tu;
         checkGLCall!glGenTextures( 1, &_id );
-        logger = new InstanceLogger( this, format( "%d", _id ) );
+        logger = new InstanceLogger( this, format( "%d:%d", tu, _id ) );
         _target = tg;
         logger.Debug( "with target [%s]", _target );
     }
@@ -345,79 +345,136 @@ public:
 
     ///
     void setMinFilter( Filter filter )
-    { setParam( Parameter.MIN_FILTER, filter ); }
+    {
+        setParam( Parameter.MIN_FILTER, filter );
+        logger.Debug( "to [%s]", filter );
+    }
 
     ///
     void setMagFilter( Filter filter )
-    { setParam( Parameter.MAG_FILTER, filter ); }
+    {
+        setParam( Parameter.MAG_FILTER, filter );
+        logger.Debug( "to [%s]", filter );
+    }
 
     ///
     void setWrapS( Wrap wrap )
-    { setParam( Parameter.WRAP_S, wrap ); }
+    {
+        setParam( Parameter.WRAP_S, wrap );
+        logger.Debug( "to [%s]", wrap );
+    }
 
     ///
     void setWrapT( Wrap wrap )
-    { setParam( Parameter.WRAP_T, wrap ); }
+    {
+        setParam( Parameter.WRAP_T, wrap );
+        logger.Debug( "to [%s]", wrap );
+    }
 
     ///
     void setWrapR( Wrap wrap )
-    { setParam( Parameter.WRAP_R, wrap ); }
+    {
+        setParam( Parameter.WRAP_R, wrap );
+        logger.Debug( "to [%s]", wrap );
+    }
 
     ///
     void setMinLOD( float v )
-    { setParam( Parameter.MIN_LOD, v ); }
+    {
+        setParam( Parameter.MIN_LOD, v );
+        logger.Debug( "to [%f]", v );
+    }
 
     ///
     void setMaxLOD( float v )
-    { setParam( Parameter.MAX_LOD, v ); }
+    {
+        setParam( Parameter.MAX_LOD, v );
+        logger.Debug( "to [%f]", v );
+    }
 
     ///
     void setLODBais( float v )
-    { setParam( Parameter.LOD_BIAS, v ); }
+    {
+        setParam( Parameter.LOD_BIAS, v );
+        logger.Debug( "to [%f]", v );
+    }
 
     ///
     void setBaseLevel( int v )
-    { setParam( Parameter.BASE_LEVEL, v ); }
+    {
+        setParam( Parameter.BASE_LEVEL, v );
+        logger.Debug( "to [%d]", v );
+    }
 
     ///
     void setMaxLevel( int v )
-    { setParam( Parameter.MAX_LEVEL, v ); }
+    {
+        setParam( Parameter.MAX_LEVEL, v );
+        logger.Debug( "to [%d]", v );
+    }
 
     ///
     void setBorderColor( vec4 clr )
-    { setParam( Parameter.BORDER_COLOR, clr.data ); }
+    {
+        setParam( Parameter.BORDER_COLOR, clr.data );
+        logger.Debug( "to [%f,%f,%f,%f]", clr.r, clr.g, clr.b, clr.a );
+    }
 
     ///
     void setCompareFunc( CompareFunc cf )
-    { setParam( Parameter.COMPARE_FUNC, cf ); }
+    {
+        setParam( Parameter.COMPARE_FUNC, cf );
+        logger.Debug( "to [%s]", cf );
+    }
 
     ///
     void setCompareMode( CompareMode cm )
-    { setParam( Parameter.COMPARE_MODE, cm ); }
+    {
+        setParam( Parameter.COMPARE_MODE, cm );
+        logger.Debug( "to [%s]", cm );
+    }
 
     ///
     void setSwizzleR( Swizzle s )
-    { setParam( Parameter.SWIZZLE_R, s ); }
+    {
+        setParam( Parameter.SWIZZLE_R, s );
+        logger.Debug( "to [%s]", s );
+    }
 
     ///
     void setSwizzleG( Swizzle s )
-    { setParam( Parameter.SWIZZLE_G, s ); }
+    {
+        setParam( Parameter.SWIZZLE_G, s );
+        logger.Debug( "to [%s]", s );
+    }
 
     ///
     void setSwizzleB( Swizzle s )
-    { setParam( Parameter.SWIZZLE_B, s ); }
+    {
+        setParam( Parameter.SWIZZLE_B, s );
+        logger.Debug( "to [%s]", s );
+    }
 
     ///
     void setSwizzleA( Swizzle s )
-    { setParam( Parameter.SWIZZLE_A, s ); }
+    {
+        setParam( Parameter.SWIZZLE_A, s );
+        logger.Debug( "to [%s]", s );
+    }
 
     ///
     void setSwizzleRGBA( Swizzle[4] s )
-    { setParam( Parameter.SWIZZLE_RGBA, to!(int[])(s) ); }
+    {
+        setParam( Parameter.SWIZZLE_RGBA, to!(int[])(s) );
+        logger.Debug( "to %s", s );
+    }
 
     ///
     void setDepthStencilTextureMode( DepthStencilTextureMode dstm )
-    { setParam( Parameter.DEPTH_STENCIL_TEXTURE_MODE, dstm ); }
+    {
+        setParam( Parameter.DEPTH_STENCIL_TEXTURE_MODE, dstm );
+        logger.Debug( "to [%s]", dstm );
+    }
 
     final nothrow
     {
@@ -465,7 +522,7 @@ public:
         `, N, accessVecFields!(sz) ) );
 
         debug checkGL;
-        debug logger.trace( "[%d]: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+        logger.Debug( "[%d]: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
                 _id, sz.data.dup, internal_format, data_format, data_type, data?true:false );
     }
 
