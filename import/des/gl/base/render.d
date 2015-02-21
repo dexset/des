@@ -1,165 +1,144 @@
-/+
-The MIT License (MIT)
-
-    Copyright (c) <2013> <Oleg Butko (deviator), Anton Akzhigitov (Akzwar)>
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
-+/
-
 module des.gl.base.render;
 
 import des.math.linear;
 import des.gl.base;
 import des.il;
 
-private template staticChoise(bool s,A,B)
-{
-    static if(s)
-        alias A staticChoise;
-    else
-        alias B staticChoise;
-}
-
-private template createNew(bool buffer)
-{
-    auto fnc()
-    {
-        static if(buffer)
-            return new GLRenderBuffer;
-        else
-        {
-            auto tex = new GLTexture( GLTexture.Target.T2D );
-
-            tex.setWrapS( GLTexture.Wrap.CLAMP_TO_EDGE );
-            tex.setWrapT( GLTexture.Wrap.CLAMP_TO_EDGE );
-            tex.setMinFilter( GLTexture.Filter.NEAREST );
-            tex.setMagFilter( GLTexture.Filter.NEAREST );
-
-            return tex;
-        }
-    }
-
-    alias createNew=fnc;
-}
-
 /// Render to FBO
-class GLRender(bool CB, bool DB) : DesObject
+class GLRender : DesObject
 {
     mixin DES;
     mixin ClassLogger;
 protected:
 
+    ///
     GLFrameBuffer fbo;
+
+    ///
+    GLTexture depth_buf;
+
+    ///
+    GLTexture[uint] color_bufs;
+
+    uivec2 buf_size;
+    int[4] last_vp;
 
 public:
 
     ///
-    alias staticChoise!(CB,GLRenderBuffer,GLTexture) ColorObject;
-    ///
-    alias staticChoise!(DB,GLRenderBuffer,GLTexture) DepthObject;
+    this() { fbo = newEMM!GLFrameBuffer; }
 
     ///
-    DepthObject depth;
-    ///
-    ColorObject color;
-
-    ///
-    this()
+    GLTexture defaultDepth( uint unit )
     {
-        depth = registerChildEMM( createDepth() );
-        color = registerChildEMM( createColor() );
-
-        resize( uivec2(1,1) );
-
-        fbo = newEMM!GLFrameBuffer;
-        fbo.setAttachment( depth, fbo.Attachment.DEPTH );
-        fbo.setAttachment( color, fbo.Attachment.COLOR0 );
-        fbo.unbind();
-
-        debug logger.Debug( "FBO [%d], color [%s][%d], depth [%s][%d]",
-                fbo.id, CB?"RB":"Tex", color.id, DB?"RB":"Tex", depth.id );
+        auto tex = createDefaultTexture( unit );
+        tex.image( ivec2(1,1), GLTexture.InternalFormat.DEPTH32F,
+            GLTexture.Format.DEPTH, GLTexture.Type.FLOAT );
+        return tex;
     }
 
-    /// render
-    void opCall( uivec2 sz, void delegate() draw_func )
-    in
+    ///
+    GLTexture defaultColor( uint unit )
     {
-        assert( sz.x > 0 );
-        assert( sz.y > 0 );
-        assert( draw_func !is null );
+        auto tex = createDefaultTexture( unit );
+        tex.image( ivec2(1,1), GLTexture.InternalFormat.RGBA,
+            GLTexture.Format.RGBA, GLTexture.Type.FLOAT );
+        return tex;
     }
-    body
-    {
-        int[4] vpbuf;
 
-        resize( sz );
+    ///
+    GLTexture getDepth() { return depth_buf; }
+
+    ///
+    void setDepth( GLTexture buf )
+    in{ assert( buf !is null ); } body
+    {
+        if( depth_buf is buf )
+        {
+            // TODO: warning
+            return;
+        }
+
+        removeIfChild( depth_buf );
+        registerChildEMM( buf, true );
+        depth_buf = buf;
+        fbo.setDepth( buf );
+        fbo.check();
+    }
+
+    /// get buffer setted to color attachment N
+    GLTexture getColor( uint N )
+    { return color_bufs.get( N, null ); }
+
+    /// set buf to color attachment N
+    void setColor( GLTexture buf, uint N )
+    in{ assert( buf !is null ); } body
+    {
+        if( auto tmp = color_bufs.get( N, null ) )
+        {
+            if( tmp is buf )
+            {
+                // TODO: warning
+                return;
+            }
+            removeIfChild( tmp );
+        }
+
+        registerChildEMM( buf, true );
+        color_bufs[N] = buf;
+        fbo.setColor( buf, N );
+        fbo.check();
+    }
+
+    ///
+    void resize( uivec2 sz )
+    {
+        if( sz == buf_size ) return;
+        if( depth_buf ) depth_buf.resize( sz );
+        foreach( col; color_bufs ) col.resize( sz );
+        buf_size = sz;
+        logger.Debug( "[%d,%d]", sz.x, sz.y );
+    }
+
+    ///
+    void resize( uint w, uint h )
+    { resize( uivec2( w, h ) ); }
+
+    ///
+    void bind()
+    {
         fbo.bind();
-        glGetIntegerv( GL_VIEWPORT, vpbuf.ptr );
-        glViewport( 0, 0, sz.x, sz.y );
+        checkGLCall!glGetIntegerv( GL_VIEWPORT, last_vp.ptr );
+        checkGLCall!glViewport( 0, 0, buf_size.x, buf_size.y );
+    }
 
-        draw_func();
-
+    ///
+    void unbind()
+    {
         fbo.unbind();
-        glViewport( vpbuf[0], vpbuf[1], vpbuf[2], vpbuf[3] );
-
-        debug logger.trace( "FBO [%d], size [%d,%d]", fbo.id, sz[0], sz[1] );
+        checkGLCall!glViewport( last_vp[0], last_vp[1], last_vp[2], last_vp[3] );
     }
 
 protected:
 
-    DepthObject createDepth()
+    auto createDefaultTexture( uint unit )
     {
-        auto tmp = createNew!DB();
-        static if(DB) tmp.storage( ivec2(1,1), tmp.Format.DEPTH_COMPONENT32F );
-        else tmp.image( ivec2(1,1), tmp.InternalFormat.DEPTH,
-                tmp.Format.DEPTH, tmp.Type.FLOAT );
-        return tmp;
+        auto tex = new GLTexture( GLTexture.Target.T2D, unit );
+        tex.setWrapS( GLTexture.Wrap.CLAMP_TO_EDGE );
+        tex.setWrapT( GLTexture.Wrap.CLAMP_TO_EDGE );
+        tex.setMinFilter( GLTexture.Filter.NEAREST );
+        tex.setMagFilter( GLTexture.Filter.NEAREST );
+        return tex;
     }
 
-    ColorObject createColor()
+    void removeIfChild( GLTexture t )
     {
-        auto tmp = createNew!CB();
-        static if(CB) tmp.storage( ivec2(1,1), tmp.Format.RGBA8 );
-        else tmp.image( ivec2(1,1), tmp.InternalFormat.RGBA,
-                tmp.Format.RGBA, tmp.Type.FLOAT );
-        return tmp;
+        if( depth_buf && findInChildsEMM( depth_buf ) )
+        {
+            depth_buf.destroy();
+            detachChildsEMM( depth_buf );
+        }
     }
 
-    void resize( uivec2 sz )
-    {
-        depth.resize( sz );
-        color.resize( sz );
-    }
-
-    override void selfDestroy()
-    {
-        fbo.unbind();
-        static if(!DB) depth.unbind();
-        static if(!CB) color.unbind();
-    }
+    override void selfDestroy() { fbo.unbind(); }
 }
-
-///
-alias GLRender!(false,false) GLRenderToTex;
-///
-alias GLRender!(true,true) GLRenderToRB;
-///
-alias GLRender!(false,true) GLRenderColorToTexDepthToRB;
-///
-alias GLRender!(true,false) GLRenderColorToRBDepthToTex;
