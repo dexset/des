@@ -33,6 +33,7 @@ import des.math.linear;
 import derelict.opengl3.gl3;
 
 import des.gl.base.type;
+import des.gl.base.texture;
 
 ///
 class GLShaderException : DesGLException
@@ -302,7 +303,7 @@ protected:
         foreach( key, val; attribLocations )
         {
             checkGLCall!glBindAttribLocation( _id, val, key.toStringz );
-            logger.Debug( "attrib: '%s',  location: %d", key, val );
+            logger.Debug( "attrib '%s' bind to location %d", key, val );
         }
         logger.Debug( "pass" );
     }
@@ -316,7 +317,7 @@ protected:
         foreach( key, val; fragDataLocations )
         {
             checkGLCall!glBindFragDataLocation( _id, val, key.toStringz );
-            logger.Debug( "frag data: '%s',  location: %d", key, val );
+            logger.Debug( "frag data '%s' bind to location %d", key, val );
         }
         logger.Debug( "pass" );
     }
@@ -429,6 +430,33 @@ public:
             return;
         }
         setUniform!T( loc, vals );
+    }
+
+    /// set uniform and bind texture
+    void setTexture( int loc, GLTexture tex )
+    in{ assert( tex !is null ); } body
+    {
+        if( loc < 0 )
+        {
+            logger.error( "bad texture location" );
+            return;
+        }
+
+        tex.bind();
+        setUniform!int( loc, tex.unit );
+    }
+
+    /// ditto
+    void setTexture( string name, GLTexture tex )
+    in{ assert( tex !is null ); } body
+    {
+        auto loc = getUniformLocation( name );
+        if( loc < 0 )
+        {
+            logger.error( "bad texture name: '%s'", name );
+            return;
+        }
+        setTexture( loc, tex );
     }
 }
 
