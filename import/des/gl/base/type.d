@@ -54,7 +54,7 @@ enum GLType
 }
 
 ///
-size_t sizeofGLType( GLType type )
+size_t sizeofGLType( GLType type ) pure nothrow
 {
     final switch(type)
     {
