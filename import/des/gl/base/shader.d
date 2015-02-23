@@ -200,7 +200,7 @@ protected:
     uint _id = 0;
 
     private static uint inUse = 0;
-    final @property 
+    final @property
     {
         /// check this is current shader program
         bool thisInUse() const { return inUse == _id; }
@@ -224,7 +224,7 @@ public:
     /// `create()`
     this( GLShader[] shs )
     {
-        logger = new InstanceLogger(this);
+        logger = new InstanceLogger( this );
         foreach( sh; shs )
             enforce( sh !is null, new GLShaderException( "shader is null" ) );
         shaders = registerChildEMM( shs );
@@ -246,6 +246,8 @@ protected:
 
         if( auto il = cast(InstanceLogger)logger )
             il.instance = format( "%d", _id );
+
+        logger.Debug( "program created" );
 
         attachShaders();
 
