@@ -11,7 +11,7 @@ import des.util.stdext.string;
 import des.assimp.mesh;
 
 ///
-class SRLoaderException : Exception
+class SMLoaderException : Exception
 {
     ///
     this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
@@ -19,7 +19,7 @@ class SRLoaderException : Exception
 }
 
 ///
-class SRLoader : DesObject
+class SMLoader : DesObject
 {
     mixin DES;
 protected:
@@ -152,30 +152,30 @@ public:
     }
 
     ///
-    SRMesh getMesh( string name )
+    SMMesh getMesh( string name )
     {
         foreach( i; 0 .. scene.mNumMeshes )
             if( toDStringFix( scene.mMeshes[i].mName.data ) == name )
                 return convMesh( scene.mMeshes[i] );
-        throw new SRLoaderException( "no mesh '" ~ name ~
+        throw new SMLoaderException( "no mesh '" ~ name ~
                                      "' in " ~ sourceName );
     }
 
     ///
-    SRMesh getMesh( size_t no )
+    SMMesh getMesh( size_t no )
     {
         if( no < scene.mNumMeshes )
             return convMesh( scene.mMeshes[no] );
-        throw new SRLoaderException( "no mesh #" ~ to!string(no) ~
+        throw new SMLoaderException( "no mesh #" ~ to!string(no) ~
                                      " in " ~ sourceName );
     }
 
 protected:
 
-    SRMesh convMesh( in aiMesh* m )
+    SMMesh convMesh( in aiMesh* m )
     in{ assert( m !is null ); } body
     {
-        return SRMesh
+        return SMMesh
         (
             toDStringFix( m.mName.data ),
             getIndices( m ),
@@ -195,7 +195,7 @@ protected:
         foreach( i; 0 .. m.mNumFaces )
         {
             auto f = m.mFaces[i];
-            enforce( f.mNumIndices == 3, new SRLoaderException( "one or more faces is not triangle" ) );
+            enforce( f.mNumIndices == 3, new SMLoaderException( "one or more faces is not triangle" ) );
             ret ~= getTypedArray!uint( 3, f.mIndices ).arr;
         }
 
@@ -220,9 +220,9 @@ protected:
         return getTypedArray!vec3( m.mNumVertices, buf ).arr.dup;
     }
 
-    SRTexCoord[] getTexCoords( in aiMesh* m )
+    SMTexCoord[] getTexCoords( in aiMesh* m )
     {
-        SRTexCoord[] ret;
+        SMTexCoord[] ret;
         foreach( t; 0 .. AI_MAX_NUMBER_OF_TEXTURECOORDS )
         {
             auto tc = m.mTextureCoords[t];
@@ -233,7 +233,7 @@ protected:
             foreach( i; 0 .. nvert )
                 foreach( j; 0 .. comp )
                     buf[i*comp+j] = *(cast(float*)( tc + i ) + j);
-            ret ~= SRTexCoord( comp, buf );
+            ret ~= SMTexCoord( comp, buf );
         }
         return ret;
     }

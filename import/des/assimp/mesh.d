@@ -3,7 +3,7 @@ module des.assimp.mesh;
 public import des.math.linear;
 
 ///
-struct SRTexCoord
+struct SMTexCoord
 {
     /// count of components
     uint comp;
@@ -12,7 +12,7 @@ struct SRTexCoord
 }
 
 ///
-struct SRMesh
+struct SMMesh
 {
     ///
     string name;
@@ -23,7 +23,7 @@ struct SRMesh
     ///
     vec3[] vertices;
     ///
-    SRTexCoord[] texcoords;
+    SMTexCoord[] texcoords;
     ///
     vec3[] normals;
     ///
