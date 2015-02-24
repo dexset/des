@@ -1,6 +1,7 @@
 module des.gl.base;
 
 public:
+    import des.gl.base.buffer;
     import des.gl.base.object;
     import des.gl.base.shader;
     import des.gl.base.texture;
