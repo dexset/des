@@ -1,10 +1,10 @@
 module des.gl.base.shader;
 
 import std.conv;
-import std.string;
 import std.exception;
 
 import des.math.linear;
+import des.util.stdext.string;
 
 import derelict.opengl3.gl3;
 
@@ -84,6 +84,14 @@ public:
         int res;
         checkGLCall!glGetShaderiv( _id, GL_COMPILE_STATUS, &res );
 
+        string fmtSource()
+        {
+            auto lines = source.splitLines();
+            foreach( i, ref line; lines )
+                line = format( "% 3d ", i+1 ) ~ line;
+            return lines.join("\n");
+        }
+
         if( res == GL_FALSE )
         {
             int logLen;
@@ -92,7 +100,7 @@ public:
             {
                 auto chlog = new char[logLen];
                 checkGLCall!glGetShaderInfoLog( _id, logLen, &logLen, chlog.ptr );
-                throw new GLShaderException( "shader compile error: \n" ~ chlog.idup );
+                throw new GLShaderException( "shader compile error: \n" ~ toDString(chlog.ptr) ~ "\n--- shader sources ---\n" ~ fmtSource() );
             }
         }
 
@@ -111,6 +119,18 @@ protected:
         logger.Debug( "pass" );
     }
 }
+
+///
+class GLVertShader : GLShader
+{ this( string src ) { super( Type.VERTEX, src ); } }
+
+///
+class GLFragShader : GLShader
+{ this( string src ) { super( Type.FRAGMENT, src ); } }
+
+///
+class GLGeomShader : GLShader
+{ this( string src ) { super( Type.GEOMETRY, src ); } }
 
 /++ parse solid input string to different shaders
 
@@ -203,7 +223,7 @@ public:
         logger = new InstanceLogger( this );
         foreach( sh; shs )
             enforce( sh !is null, new GLShaderException( "shader is null" ) );
-        shaders = registerChildEMM( shs );
+        shaders = registerChildEMM( shs, true );
         create();
     }
 
