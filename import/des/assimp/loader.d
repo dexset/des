@@ -177,6 +177,7 @@ protected:
     {
         return SMMesh
         (
+            SMMesh.Type.TRIANGLES,
             toDStringFix( m.mName.data ),
             getIndices( m ),
             getVertices( m ),

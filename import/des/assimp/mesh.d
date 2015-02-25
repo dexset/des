@@ -15,6 +15,18 @@ struct SMTexCoord
 struct SMMesh
 {
     ///
+    enum Type
+    {
+        POINTS,
+        LINES,
+        LINE_STRIP,
+        TRIANGLES,
+        TRIANGLE_STRIP
+    }
+
+    Type type = Type.TRIANGLES;
+
+    ///
     string name;
 
     ///
