@@ -70,6 +70,9 @@ public:
     GLTexture getColor( uint N )
     { return color_bufs.get( N, null ); }
 
+    ///
+    GLTexture[uint] getColors() { return color_bufs.dup; }
+
     /// set buf to color attachment N
     void setColor( GLTexture buf, uint N )
     in{ assert( buf !is null ); } body
@@ -100,9 +103,11 @@ public:
         logger.Debug( "[%d,%d]", sz.x, sz.y );
     }
 
+    /// `GLFrameBuffer.drawBuffers`
+    void drawBuffers( in int[] bufs... ) { fbo.drawBuffers( bufs ); }
+
     ///
-    void resize( uint w, uint h )
-    { resize( uivec2( w, h ) ); }
+    void resize( uint w, uint h ) { resize( uivec2( w, h ) ); }
 
     ///
     void bind()
