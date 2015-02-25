@@ -175,13 +175,20 @@ protected:
         debug logger.trace( "mode [%s], count [%d]", mode, count );
     }
 
+    /// by default has no index buffer
+    bool bindIndexBuffer() { return false; }
+
     ///
     void drawElements( DrawMode mode, uint count )
     {
         vao.bind();
         preDraw();
-        checkGLCall!glDrawElements( mode, count, GL_UNSIGNED_INT, null );
-        debug logger.trace( "mode [%s], count [%d]", mode, count );
+        if( bindIndexBuffer() )
+        {
+            checkGLCall!glDrawElements( mode, count, GL_UNSIGNED_INT, null );
+            debug logger.trace( "mode [%s], count [%d]", mode, count );
+        }
+        else logger.error( "unable to bind index buffer" );
     }
 
 public:
@@ -213,6 +220,9 @@ public:
 ///
 struct GLMeshData
 {
+    ///
+    GLObject.DrawMode draw_mode;
+
     ///
     uint num_vertices;
 
@@ -249,6 +259,8 @@ protected:
     ///
     GLBuffer[] buffers;
 
+    DrawMode draw_mode;
+
 public:
 
     ///
@@ -256,9 +268,28 @@ public:
 
 protected:
 
+    final override bool bindIndexBuffer()
+    {
+        if( indices is null )
+        {
+            logger.warn( "index buffer is null" );
+            return false;
+        }
+        indices.bind();
+        return true;
+    }
+
+    /// with `draw_mode` and `num_vertices`
+    void drawArrays() { super.drawArrays( draw_mode, num_vertices ); }
+
+    /// with `draw_mode` and `indices.elementCount`
+    void drawElements() { super.drawElements( draw_mode, indices.elementCount ); }
+
     /// creates buffers, set vertices count, etc
     void prepareMesh( in GLMeshData data )
     {
+        draw_mode = data.draw_mode;
+
         num_vertices = data.num_vertices;
 
         if( data.indices.length )
@@ -268,6 +299,9 @@ protected:
             logger.Debug( "indices count: ", data.indices.length );
             import std.algorithm;
             logger.Debug( "indices max: ", reduce!max( data.indices ) );
+            vao.bind();
+            indices.bind();
+            vao.unbind();
         }
 
         foreach( bufdata; data.buffers )
