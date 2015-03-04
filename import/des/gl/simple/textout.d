@@ -41,26 +41,27 @@ private:
         output_size = vec2(0);
 
         float offsetx = 0;
+
         foreach( c; output )
         {
-            if( c !in font.size )
-                continue;
-            if( font.size[c].h > output_size.h )
-                output_size.h = font.size[c].h;
+            if( c !in font.info ) continue;
+            if( font.info[c].size.h > output_size.h )
+                output_size.h = font.info[c].size.h;
         }
         
         foreach( c; output )
         {
-            if( c !in font.size )
+            if( c !in font.info )
             {
                 logger.error( "Character "w ~ c ~ "not in bitmap font."w );
                 continue;
             }
-            output_size.w += font.size[c].w;
+
+            output_size.w += font.info[c].next.w;
 
             {
-                auto v1 = pos + vec2( font.bearing[c].x + offsetx, output_size.h + font.bearing[c].y );
-                auto v2 = v1 + font.size[c];
+                auto v1 = pos + vec2( font.info[c].pos.x + offsetx, output_size.h + font.info[c].pos.y );
+                auto v2 = v1 + font.info[c].size;
 
                 vert_data ~= vec2( v1.x, v2.y );
                 vert_data ~= v1;
@@ -70,12 +71,12 @@ private:
                 vert_data ~= vec2( v1.x, v2.y );
                 vert_data ~= vec2( v2.x, v1.y );
 
-                offsetx += font.size[c].x;
+                offsetx += font.info[c].next.x;
             }
 
             {
-                auto uvoffset = vec2( font.offset[c] ) / vec2( font.texture.size );
-                auto uvsize = vec2( font.size[c] ) / vec2( font.texture.size );
+                auto uvoffset = vec2( font.info[c].offset ) / vec2( font.texture.size );
+                auto uvsize = vec2( font.info[c].size ) / vec2( font.texture.size );
 
                 auto uv1 = uvoffset;
                 auto uv2 = uv1 + uvsize;
@@ -135,8 +136,8 @@ public:
             return;
         shader.setUniform!ivec2( "win_size", win_size );
         tex.bind();
-            glDisable(GL_DEPTH_TEST);
-            drawArrays( DrawMode.TRIANGLES );
+        glDisable(GL_DEPTH_TEST);
+        drawArrays( DrawMode.TRIANGLES );
         tex.unbind();
     }
 

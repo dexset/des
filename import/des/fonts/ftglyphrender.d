@@ -12,12 +12,24 @@ import std.traits;
 
 alias CrdVector!2 imsize_t;
 
+struct BitmapChar
+{
+    /// offset in image coords
+    ivec2 offset;
+
+    /// position in offset coords
+    ivec2 pos;
+
+    /// size of glyph in image
+    ivec2 size;
+
+    /// next glyph position for drawing
+    ivec2 next;
+}
+
 struct BitmapFont
 {
-    ivec2[wchar] offset;
-    ivec2[wchar] size;
-    ivec2[wchar] bearing;
-
+    BitmapChar[wchar] info;
     Image!2 texture;
 }
 
@@ -154,28 +166,30 @@ public:
     BitmapFont generateBitmapFont( wstring chars )
     {
         BitmapFont res;
+
         GlyphInfo[wchar] glyphs;
-        foreach( c; chars )
-            glyphs[c] = render( c );
+
+        foreach( c; chars ) glyphs[c] = render( c );
+
         uint maxh = 0;
         uint width = 0;
+
         foreach( ref g; glyphs )
         {
             if( g.img.size.h > maxh )
                 maxh = cast( uint )g.img.size.h;
             width += g.img.size.w;
         }
+
         res.texture = Image!2( imsize_t( width, maxh ), imtype );
 
-        uint offset = 0;
+        auto offset = ivec2(0);
 
-        foreach( key, ref g; glyphs )
+        foreach( key, g; glyphs )
         {
-            res.offset[ key ] = ivec2( offset, 0 ); 
-            res.size[ key ] = ivec2( g.img.size );
-            res.bearing[ key ] = ivec2( g.pos );
-            imPaste( res.texture, ivec2( offset, 0 ), g.img );
-            offset += g.img.size.w;
+            res.info[key] = convGlyphInfoToBitmapChar( g, offset );
+            imPaste( res.texture, offset, g.img );
+            offset += ivec2( g.img.size.w, 0 );
         }
         return res;
     }
@@ -185,4 +199,9 @@ public:
         if( lib_inited && FT_Done_FreeType !is null ) 
             FT_Done_FreeType( ft ); 
     }
+
+protected:
+
+    BitmapChar convGlyphInfoToBitmapChar( in GlyphInfo g, ivec2 offset )
+    { return BitmapChar( offset, g.pos, g.size, g.next ); }
 }
