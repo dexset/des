@@ -14,7 +14,7 @@ import des.gl.base.rbo;
 import des.il.image;
 
 ///
-class GLFBOException : DesGLException 
+class GLFBOException : DesGLException
 {
     ///
     this( string msg, string file=__FILE__, size_t line=__LINE__ ) @safe pure nothrow
@@ -60,7 +60,7 @@ public:
 
     final nothrow
     {
-        /// `glBindFramebuffer` add id to stack 
+        /// `glBindFramebuffer` add id to stack
         void bind()
         {
             if( id_stack[$-1] == _id ) return;
@@ -95,7 +95,7 @@ public:
     }
 
     /// set render buffer as depth attachment
-    void setRBODepth( GLRenderBuffer rbo )
+    void setDepth( GLRenderBuffer rbo )
     in{ assert( rbo !is null ); } body
     {
         bind(); scope(exit) unbind();
@@ -104,7 +104,7 @@ public:
     }
 
     /// set render buffer as color attachment
-    void setRBOColor( GLRenderBuffer rbo, uint no )
+    void setColor( GLRenderBuffer rbo, uint no )
     in{ assert( rbo !is null ); } body
     {
         bind(); scope(exit) unbind();
@@ -113,7 +113,7 @@ public:
     }
 
     /// set texture as depth attachment
-    void setTexDepth( GLTexture tex )
+    void setDepth( GLTexture tex )
     {
         bind(); scope(exit) unbind();
         setTex( tex, Attachment.DEPTH );
@@ -121,29 +121,11 @@ public:
     }
 
     /// set texture as color attachment
-    void setTexColor( GLTexture tex, uint no=0 )
+    void setColor( GLTexture tex, uint no=0 )
     {
         bind(); scope(exit) unbind();
         setTex( tex, cast(GLenum)( Attachment.COLOR + no ) );
         logger.Debug( "[%d] as COLOR%d", tex.id, no );
-    }
-
-    /// set depth attachment, `T` must be `GLRenderBuffer` or `GLTexture`
-    void setDepth(T)( T buf )
-    in{ assert( buf !is null ); } body
-    {
-        static if( is( T : GLRenderBuffer ) ) setRBODepth( buf );
-        else static if( is( T : GLTexture ) ) setTexDepth( buf );
-        else static assert(0, "only GLRenderBuffer or GLTexture can be setted as attachment" );
-    }
-
-    /// set color attachment, `T` must be `GLRenderBuffer` or `GLTexture`
-    void setColor(T)( T buf, uint no=0 )
-    in{ assert( buf !is null ); } body
-    {
-        static if( is( T : GLRenderBuffer ) ) setRBOColor( buf, no );
-        else static if( is( T : GLTexture ) ) setTexColor( buf, no );
-        else static assert(0, "only GLRenderBuffer or GLTexture can be setted as attachment" );
     }
 
     /// `glCheckFramebufferStatus`
@@ -182,6 +164,7 @@ protected:
     {
         checkGLCall!glFramebufferTexture2D( GL_FRAMEBUFFER, attachment,
                                             target, tex.id, level );
+        //checkGLCall!glFramebufferTexture( GL_FRAMEBUFFER, attachment, tex.id, level );
     }
 
     /// warning: no bind
