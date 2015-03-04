@@ -73,7 +73,7 @@ public:
         SHADER_STORAGE_BUFFER     = GL_SHADER_STORAGE_BUFFER,     /// `GL_SHADER_STORAGE_BUFFER`
         TEXTURE_BUFFER            = GL_TEXTURE_BUFFER,            /// `GL_TEXTURE_BUFFER`
         TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER, /// `GL_TRANSFORM_FEEDBACK_BUFFER`
-        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`  
+        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`
     }
 
     /// `glBindBuffer( trg, 0 )`
@@ -235,7 +235,7 @@ public:
 
     /// `bind`, `glMapBufferRange`, `unbind`
     ArrayData mapUntypedDataRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
-    { 
+    {
         if( offset + length > data_size )
             throw new GLBufferException( "map buffer range: offset + length > data_size" );
         debug logger.trace( "by access [%s]: offset [%d], length [%d]", access, offset, length );
@@ -249,7 +249,7 @@ public:
     { return getTypedArray!E( mapUntypedData( access ) ); }
 
     ///
-    AlienArray!E mapDataRange(E)( size_t offset, size_t length, Access access ) 
+    AlienArray!E mapDataRange(E)( size_t offset, size_t length, Access access )
     { return getTypedArray!E( mapUntypedDataRange( offset * E.sizeof, length * E.sizeof, access ) ); }
 
     /// `bind`, `glUnmapBuffer`, `unbind`
