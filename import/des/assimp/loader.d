@@ -170,6 +170,15 @@ public:
                                      " in " ~ sourceName );
     }
 
+    ///
+    SMMesh[] getAllMeshes()
+    {
+        SMMesh[] ret;
+        foreach( i; 0 .. scene.mNumMeshes )
+            ret ~= convMesh( scene.mMeshes[i] );
+        return ret;
+    }
+
 protected:
 
     SMMesh convMesh( in aiMesh* m )
