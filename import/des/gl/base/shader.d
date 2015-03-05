@@ -177,7 +177,10 @@ GLShader[] parseGLShaderSource( string src, string separator = "//###" )
         else
         {
             if( ret.length == 0 )
+            {
+                if( ln.strip.length == 0 ) continue;
                 throw new GLShaderException( "parse shader source: no section definition" );
+            }
             ret[$-1].source = ret[$-1].source ~ ln ~ '\n';
         }
     }
