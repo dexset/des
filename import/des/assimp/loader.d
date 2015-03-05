@@ -19,7 +19,7 @@ class SMLoaderException : Exception
 }
 
 ///
-class SMLoader : DesObject
+class SMLoader : DesObject, SMMeshGenerator
 {
     mixin DES;
 protected:

@@ -45,3 +45,10 @@ struct SMMesh
     ///
     vec4[][] colors;
 }
+
+///
+interface SMMeshGenerator
+{
+    ///
+    SMMesh getMesh( string name );
+}
