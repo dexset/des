@@ -480,7 +480,7 @@ public:
     { image( sz, liformat, lformat, ltype ); }
 
     /// set image
-    void image(size_t N,T)( in Vector!(N,T) sz, InternalFormat internal_format, 
+    void image(size_t N,T)( in Vector!(N,T) sz, InternalFormat internal_format,
             Format data_format, Type data_type, in void* data=null )
     if( (N==1 || N==2 || N==3) && isIntegral!T )
     {
@@ -493,7 +493,7 @@ public:
 
         bind();
         mixin( format(`
-        glTexImage%1dD( gltype, 0, cast(int)internal_format, %s, 0,
+        glTexImage%1dD( gltarget, 0, cast(int)internal_format, %s, 0,
                         cast(GLenum)data_format, cast(GLenum)data_type, data );
         `, N, accessVecFields!(sz) ) );
 
@@ -565,29 +565,16 @@ public:
             switch(trg)
             {
             case Target.T1D:
-            case Target.T2D:
-            case Target.T3D:
             case Target.T1D_ARRAY:
+            case Target.T2D:
             case Target.T2D_ARRAY:
-            case Target.RECTANGLE:
+            case Target.T2D_MULTISAMPLE:
+            case Target.T2D_MULTISAMPLE_ARRAY:
+            case Target.T3D:
             case Target.CUBE_MAP:
-            case Target.CUBE_MAP_ARRAY: return true;
-            default: return false;
-            }
-        }
-
-        ///
-        bool isParametric( Target trg )
-        {
-            switch(trg)
-            {
-            case Target.T1D:
-            case Target.T2D:
-            case Target.T3D:
-            case Target.T1D_ARRAY:
-            case Target.T2D_ARRAY:
+            case Target.CUBE_MAP_ARRAY:
             case Target.RECTANGLE:
-            case Target.CUBE_MAP: return true;
+                return true;
             default: return false;
             }
         }
@@ -598,10 +585,10 @@ public:
             switch(trg)
             {
             case Target.T1D:
-            case Target.T2D:
-            case Target.T3D:
             case Target.T1D_ARRAY:
+            case Target.T2D:
             case Target.T2D_ARRAY:
+            case Target.T3D:
             case Target.CUBE_MAP: return true;
             default: return false;
             }
@@ -636,7 +623,7 @@ public:
         {
             final switch(type)
             {
-            case Type.BYTE:          
+            case Type.BYTE:
             case Type.UNSIGNED_BYTE:
             case Type.UNSIGNED_BYTE_3_3_2:
             case Type.UNSIGNED_BYTE_2_3_3_REV:
@@ -694,17 +681,6 @@ public:
                 case Type.FLOAT:          return DataType.FLOAT;
                 default:                  return DataType.RAWBYTE;
             }
-        }
-
-        ///
-        @property bool isParameterEnum(T)()
-        {
-            return is(T==DepthStencilTextureMode) ||
-                   is(T==CompareFunc) ||
-                   is(T==CompareMode) ||
-                   is(T==Filter) ||
-                   is(T==Swizzle) ||
-                   is(T==Wrap);
         }
 
         ///
