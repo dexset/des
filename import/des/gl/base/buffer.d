@@ -24,7 +24,7 @@ class GLBuffer : DesObject
 
 protected:
     uint _id;
-    Target type;
+    Target _target;
 
     ///
     size_t data_size;
@@ -32,9 +32,24 @@ protected:
     uint element_count;
 
     ///
-    GLenum gltype() const nothrow @property { return cast(GLenum)type; }
+    GLenum gltarget() const nothrow @property
+    { return cast(GLenum)_target; }
+
+    ///
+    GLenum validTarget( Target trg ) const nothrow
+    {
+        if( trg == Target.ZERO ) return cast(GLenum)_target;
+        else return cast(GLenum)trg;
+    }
+
+    GLenum last_target;
 
 public:
+
+    invariant()
+    {
+        assert( _target != Target.ZERO );
+    }
 
     ///
     enum Usage
@@ -61,6 +76,7 @@ public:
     ///
     enum Target
     {
+        ZERO                      = 0,                            /// `0` invalid target value
         ARRAY_BUFFER              = GL_ARRAY_BUFFER,              /// `GL_ARRAY_BUFFER`
         ATOMIC_COUNTER_BUFFER     = GL_ATOMIC_COUNTER_BUFFER,     /// `GL_ATOMIC_COUNTER_BUFFER`
         COPY_READ_BUFFER          = GL_COPY_READ_BUFFER,          /// `GL_COPY_READ_BUFFER`
@@ -76,39 +92,65 @@ public:
         UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`
     }
 
-    /// `glBindBuffer( trg, 0 )`
-    static nothrow void unbind( Target trg )
-    { glBindBuffer( cast(GLenum)trg, 0 ); }
-
     ///
-    this( Target tp=Target.ARRAY_BUFFER )
+    this( Target default_target=Target.ARRAY_BUFFER )
     {
+        _target = default_target;
+        super();
         checkGLCall!glGenBuffers( 1, &_id );
-        type = tp;
 
         logger = new InstanceLogger( this, format( "%d", _id ) );
 
-        logger.Debug( "type [%s]", type );
+        logger.Debug( "type [%s]", target );
     }
 
     final
     {
-        /// `glBindBuffer`
-        void bind()
-        {
-            checkGLCall!glBindBuffer( gltype, _id );
-            debug logger.trace( "type [%s]", type );
-        }
-
-        /// `glBindBuffer` with self target to 0
-        void unbind()
-        {
-            checkGLCall!glBindBuffer( gltype, 0 );
-            debug logger.trace( "type [%s]", type );
-        }
+        ///
+        Target target() const pure nothrow @property { return _target; }
 
         ///
         uint id() @property const { return _id; }
+
+        /++ cals `glBindBuffer`
+         +
+         +  if `trg` is `Target.ZERO` use assigned target
+         +/
+        void bind( Target trg=Target.ZERO )
+        {
+            if( last_target ) unbind();
+            last_target = validTarget(trg);
+            checkGLCall!glBindBuffer( last_target, _id );
+            debug logger.trace( "type [%s]", last_target );
+        }
+
+        /++ cals `glBindBufferBase`
+         +
+         +  if `trg` is `Target.ZERO` use assigned target
+         +/
+        void bindBase( uint index, Target trg=Target.ZERO )
+        {
+            checkGLCall!glBindBufferBase( validTarget(trg), index, _id );
+            debug logger.trace( "type [%s], index [%d]", validTarget(trg), index );
+        }
+
+        /++ cals `glBindBufferRange`
+         +
+         +  if `trg` is `Target.ZERO` use assigned target
+         +/
+        void bindRange( uint index, size_t offset, size_t size, Target trg=Target.ZERO )
+        {
+            checkGLCall!glBindBufferRange( validTarget(trg), index, _id, offset, size );
+            debug logger.trace( "type [%s], index [%d], offset [%d], size [%d]", validTarget(trg), index, offset, size );
+        }
+
+        /// `glBindBuffer` with last binded target to 0
+        void unbind()
+        {
+            checkGLCall!glBindBuffer( last_target, 0 );
+            debug logger.trace( "type [%s]", last_target );
+            last_target = 0;
+        }
     }
 
     /++ calls when element count changed (in setUntypedData)
@@ -141,7 +183,7 @@ public:
         if( !size ) throw new GLBufferException( "set buffer data size is 0" );
 
         bind();
-        checkGLCall!glBufferData( gltype, size, data_arr.ptr, cast(GLenum)mem );
+        checkGLCall!glBufferData( gltarget, size, data_arr.ptr, cast(GLenum)mem );
 
         element_count = cast(uint)( data_arr.length / element_size );
         data_size = size;
@@ -151,7 +193,7 @@ public:
         elementSizeCB( cast(uint)element_size );
 
         debug logger.trace( "[%s]: size [%d], element size [%d], usage [%s]",
-                type, size, element_size, mem );
+                target, size, element_size, mem );
 
         unbind();
     }
@@ -170,10 +212,10 @@ public:
             throw new GLBufferException( "set sub buffer data: offset+size > data_size" );
 
         bind();
-        checkGLCall!glBufferSubData( gltype, offset, size, data_arr.ptr );
+        checkGLCall!glBufferSubData( gltarget, offset, size, data_arr.ptr );
 
         debug logger.trace( "[%s]: offset [%d], size [%d], element size [%d]",
-                type, offset, size, element_size );
+                target, offset, size, element_size );
 
         unbind();
     }
@@ -230,7 +272,7 @@ public:
         debug logger.trace( "by access [%s]", access );
         bind();
         scope(exit) unbind();
-        return ArrayData( data_size, checkGLCall!glMapBuffer( gltype, cast(GLenum)access ) );
+        return ArrayData( data_size, checkGLCall!glMapBuffer( gltarget, cast(GLenum)access ) );
     }
 
     /// `bind`, `glMapBufferRange`, `unbind`
@@ -241,7 +283,7 @@ public:
         debug logger.trace( "by access [%s]: offset [%d], length [%d]", access, offset, length );
         bind();
         scope(exit) unbind();
-        return ArrayData( length, checkGLCall!glMapBufferRange( gltype, offset, length, cast(GLenum)access ) );
+        return ArrayData( length, checkGLCall!glMapBufferRange( gltarget, offset, length, cast(GLenum)access ) );
     }
 
     ///
@@ -256,7 +298,7 @@ public:
     void unmap()
     {
         bind();
-        checkGLCall!glUnmapBuffer( gltype );
+        checkGLCall!glUnmapBuffer( gltarget );
         debug logger.trace( "pass" );
         unbind();
     }
@@ -289,4 +331,11 @@ class GLIndexBuffer : GLBuffer
         enforce( element_size == uint.sizeof, new GLBufferException( "element size != uint.sizeof" ) );
         super.setSubUntypedData( offset, data_arr, element_size );
     }
+}
+
+///
+class GLShaderStorageBuffer : GLBuffer
+{
+    ///
+    this() { super( Target.SHADER_STORAGE_BUFFER ); }
 }
