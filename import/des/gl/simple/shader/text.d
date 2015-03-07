@@ -9,12 +9,13 @@ attribute vec2 vert;
 attribute vec2 uv;
 
 uniform ivec2 win_size;
+uniform vec2 offset;
 
 varying vec2 ex_uv;
 
 void main(void)
 {
-    vec2 tr_vert = vert / win_size * 2 - 1;
+    vec2 tr_vert = ( vert + offset ) / win_size * 2 - 1;
     gl_Position = vec4( tr_vert.x, -tr_vert.y, 0, 1);
     ex_uv = uv;
 }

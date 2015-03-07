@@ -22,82 +22,74 @@ private:
 
     CommonGLShaderProgram shader;
 
-    GLArrayBuffer vert, uv;
+    public GLArrayBuffer vert, uv;
 
     GLTexture tex;
 
     wstring output;
-    vec2 output_size;
 
-    vec2 pos;
+    vec2 offset;
 
     BitmapFont font;
 
-    void repos()
+    float spacing = 1.5;
+
+    fRegion2 rect;
+
+    void update()
     {
-        if( output.length == 0 )
-            return;
+        if( output.length == 0 ) return;
+
         vec2[] vert_data;
         vec2[] uv_data;
 
-        output_size = vec2(0);
+        vec2 ch_offset;
+        auto fts = vec2( font.texture.size );
 
-        float offsetx = 0;
-
-        foreach( c; output )
-        {
-            if( c !in font.info ) continue;
-            if( font.info[c].size.h > output_size.h )
-                output_size.h = font.info[c].size.h;
-        }
+        rect = fRegion2(0);
 
         foreach( c; output )
         {
+            if( c == '\n' )
+            {
+                ch_offset.x = 0;
+                ch_offset.y += font.height * spacing;
+                continue;
+            }
+
             if( c !in font.info )
             {
                 logger.error( "Character "w ~ c ~ "not in bitmap font."w );
                 continue;
             }
 
-            output_size.w += font.info[c].next.w;
+            auto chsz = vec2(font.info[c].size);
+            auto p = ch_offset + font.info[c].pos;
+            vert_data ~= computeRectPts( p, chsz );
 
-            {
-                auto v1 = pos + vec2( font.info[c].pos.x + offsetx, output_size.h + font.info[c].pos.y );
-                auto v2 = v1 + font.info[c].size;
+            rect = rect.expand(p).expand(p+chsz);
 
-                vert_data ~= vec2( v1.x, v2.y );
-                vert_data ~= v1;
-                vert_data ~= vec2( v2.x, v1.y );
+            auto uvoffset = vec2( font.info[c].offset ) / fts;
+            auto uvsize = chsz / fts;
 
-                vert_data ~= v2;
-                vert_data ~= vec2( v1.x, v2.y );
-                vert_data ~= vec2( v2.x, v1.y );
+            uv_data ~= computeRectPts( uvoffset, uvsize );
 
-                offsetx += font.info[c].next.x;
-            }
-
-            {
-                auto uvoffset = vec2( font.info[c].offset ) / vec2( font.texture.size );
-                auto uvsize = vec2( font.info[c].size ) / vec2( font.texture.size );
-
-                auto uv1 = uvoffset;
-                auto uv2 = uv1 + uvsize;
-
-                uv_data ~= vec2( uv1.x, uv2.y );
-                uv_data ~= uv1;
-                uv_data ~= vec2( uv2.x, uv1.y );
-
-                uv_data ~= uv2;
-                uv_data ~= vec2( uv1.x, uv2.y );
-                uv_data ~= vec2( uv2.x, uv1.y );
-            }
+            ch_offset += font.info[c].next;
         }
 
         vert.setData( vert_data );
         uv.setData( uv_data );
     }
 
+    vec2[] computeRectPts( vec2 v1, vec2 sz )
+    {
+        auto v2 = v1 + sz;
+        return [ vec2( v1.x, v2.y ), v1, vec2( v2.x, v1.y ),
+                 v2, vec2( v1.x, v2.y ), vec2( v2.x, v1.y ) ];
+    }
+
 public:
+
     this( string font_name, uint size=24u )
     {
         shader = newEMM!CommonGLShaderProgram( parseGLShaderSource( SS_WIN_TEXT ) );
@@ -133,8 +125,7 @@ public:
 
     void draw( ivec2 win_size )
     {
-        if( output.length == 0 )
-            return;
+        if( output.length == 0 ) return;
         shader.setUniform!ivec2( "win_size", win_size );
         tex.bind();
         glDisable(GL_DEPTH_TEST);
@@ -144,27 +135,30 @@ public:
 
     @property
     {
-        void text(T)( T t )
-            if( isSomeString!T )//TODO is convertable to wstring
+        void text(T)( T t ) if( isSomeString!T )
         {
             import std.conv;
             output = to!wstring( t );
-            repos();
+            update();
         }
+
         wstring text(){ return output; }
 
         void position( vec2 pos )
         {
-            this.pos = pos;
-            repos();
+            offset = pos;
+            shader.setUniform!vec2( "offset", offset );
         }
+
+        vec2 position() const { return offset; }
 
         void color( vec3 col ){ shader.setUniform!vec3( "color", col ); }
 
-        vec2 size(){ return output_size; }
+        fRegion2 rectangle() const { return rect; }
     }
 }
 
+/+
 class BaseMultiLineTextBox : ExternalMemoryManager
 {
     mixin EMM;
@@ -241,3 +235,4 @@ Text`;
         vec2 size(){ return output_size; }
     }
 }
++/

@@ -29,6 +29,7 @@ struct BitmapChar
 
 struct BitmapFont
 {
+    uint height;
     BitmapChar[wchar] info;
     Image!2 texture;
 }
@@ -118,6 +119,8 @@ private:
             throw new FTGlyphRenderException( "Couldn't select unicode encoding" );
     }
 
+    GlyphParam param;
+
 public:
 
     static GlyphRender get( string fontname )
@@ -129,6 +132,7 @@ public:
 
     void setParams( in GlyphParam p )
     {
+        param = p;
         FT_Set_Pixel_Sizes( face, 0, p.height );
     }
 
@@ -166,6 +170,7 @@ public:
     BitmapFont generateBitmapFont( wstring chars )
     {
         BitmapFont res;
+        res.height = param.height;
 
         GlyphInfo[wchar] glyphs;
 
