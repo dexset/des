@@ -1,22 +1,14 @@
 module des.gl.base.shader;
 
-import std.conv;
-import std.exception;
-
-import des.math.linear;
-import des.util.stdext.string;
-
-import derelict.opengl3.gl3;
-
-import des.gl.base.type;
+import des.gl.base.general;
 import des.gl.base.texture;
 
 ///
 class GLShaderException : DesGLException
 {
     ///
-    this( string msg, string file=__FILE__, size_t line=__LINE__ )
-    { super( msg, file, line ); } 
+    this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
+    { super( msg, file, line ); }
 }
 
 ///
@@ -26,7 +18,8 @@ class GLShader : DesObject
     mixin ClassLogger;
 
 protected:
-    Type _type;
+
+    GLenum _type;
     string _source;
     uint _id;
     bool _compiled;
@@ -42,7 +35,7 @@ public:
             /// get source
             string source() { return _source; }
             ///
-            Type type() { return _type; }
+            GLenum type() { return _type; }
             ///
             bool compiled() { return _compiled; }
         }
@@ -52,15 +45,7 @@ public:
     }
 
     ///
-    enum Type
-    {
-        VERTEX   = GL_VERTEX_SHADER,   /// `GL_VERTEX_SHADER`
-        GEOMETRY = GL_GEOMETRY_SHADER, /// `GL_GEOMETRY_SHADER`
-        FRAGMENT = GL_FRAGMENT_SHADER, /// `GL_FRAGMENT_SHADER`
-    }
-
-    ///
-    this( Type tp, string src )
+    this( GLenum tp, string src )
     {
         logger = new InstanceLogger(this);
         _type = tp;
@@ -70,7 +55,7 @@ public:
     /// glCreateShader, glShaderSource, glCompileShader
     void make()
     {
-        _id = checkGLCall!glCreateShader( cast(GLenum)_type );
+        _id = checkGLCall!glCreateShader( _type );
 
         if( auto il = cast(InstanceLogger)logger )
             il.instance = format( "%d", _id );
@@ -105,7 +90,7 @@ public:
         }
 
         _compiled = true;
-        logger.trace( "pass" );
+        logger.Debug( "pass" );
     }
 
 protected:
@@ -122,15 +107,15 @@ protected:
 
 ///
 class GLVertShader : GLShader
-{ this( string src ) { super( Type.VERTEX, src ); } }
+{ this( string src="" ) { super( GL_VERTEX_SHADER, src ); } }
 
 ///
 class GLFragShader : GLShader
-{ this( string src ) { super( Type.FRAGMENT, src ); } }
+{ this( string src="" ) { super( GL_FRAGMENT_SHADER, src ); } }
 
 ///
 class GLGeomShader : GLShader
-{ this( string src ) { super( Type.GEOMETRY, src ); } }
+{ this( string src="" ) { super( GL_GEOMETRY_SHADER, src ); } }
 
 /++ parse solid input string to different shaders
 
@@ -154,25 +139,13 @@ GLShader[] parseGLShaderSource( string src, string separator = "//###" )
         if( ln.startsWith(separator) )
         {
             auto str_type = ln.chompPrefix(separator).strip().toLower;
-            GLShader.Type type;
             switch( str_type )
             {
-                case "vert":
-                case "vertex":
-                    type = GLShader.Type.VERTEX;
-                    break;
-                case "geom":
-                case "geometry":
-                    type = GLShader.Type.GEOMETRY;
-                    break;
-                case "frag":
-                case "fragment":
-                    type = GLShader.Type.FRAGMENT;
-                    break;
-                default:
-                    throw new GLShaderException( "parse shader source: unknown section '" ~ str_type ~ "'" );
+                case "vert": case "vertex":   ret ~= new GLVertShader; break;
+                case "geom": case "geometry": ret ~= new GLGeomShader; break;
+                case "frag": case "fragment": ret ~= new GLFragShader; break;
+                default: throw new GLShaderException( "parse shader source: unknown section '" ~ str_type ~ "'" );
             }
-            ret ~= new GLShader( type, "" );
         }
         else
         {
@@ -231,7 +204,7 @@ public:
     }
 
     ///
-    uint id() pure nothrow const @property { return _id; }
+    uint id() pure nothrow const @safe @property { return _id; }
 
     ///
     final void use() { thisInUse = true; }

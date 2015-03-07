@@ -1,12 +1,6 @@
 module des.gl.base.buffer;
 
-import std.c.string;
-
-import derelict.opengl3.gl3;
-
-import des.gl.base.type;
-
-import des.util.data.type;
+import des.gl.base.general;
 
 ///
 class GLBufferException : DesGLException
@@ -17,39 +11,16 @@ class GLBufferException : DesGLException
 }
 
 ///
-class GLBuffer : DesObject
+abstract class GLBuffer : GLObject!"Buffer"
 {
-    mixin DES;
-    mixin ClassLogger;
-
 protected:
-    uint _id;
-    Target _target;
 
     ///
     size_t data_size;
     ///
     uint element_count;
 
-    ///
-    GLenum gltarget() const nothrow @property
-    { return cast(GLenum)_target; }
-
-    ///
-    GLenum validTarget( Target trg ) const nothrow
-    {
-        if( trg == Target.ZERO ) return cast(GLenum)_target;
-        else return cast(GLenum)trg;
-    }
-
-    GLenum last_target;
-
 public:
-
-    invariant()
-    {
-        assert( _target != Target.ZERO );
-    }
 
     ///
     enum Usage
@@ -66,190 +37,39 @@ public:
     }
 
     ///
-    enum Access
+    enum MapBits
     {
-        READ_ONLY  = GL_READ_ONLY,  /// `GL_READ_ONLY`
-        WRITE_ONLY = GL_WRITE_ONLY, /// `GL_WRITE_ONLY`
-        READ_WRITE = GL_READ_WRITE  /// `GL_READ_WRITE`
+        READ  = GL_MAP_READ_BIT,  /// `GL_MAP_READ_BIT`
+        WRITE = GL_MAP_WRITE_BIT, /// `GL_MAP_WRITE_BIT`
+
+        PERSISTENT = GL_MAP_PERSISTENT_BIT, /// `GL_MAP_PERSISTENT_BIT`
+        COHERENT   = GL_MAP_COHERENT_BIT,   /// `GL_MAP_COHERENT_BIT`
+
+        INVALIDATE_RANGE  = GL_MAP_INVALIDATE_RANGE_BIT,  /// `GL_MAP_INVALIDATE_RANGE_BIT`
+        INVALIDATE_BUFFER = GL_MAP_INVALIDATE_BUFFER_BIT, /// `GL_MAP_INVALIDATE_BUFFER_BIT`
+        FLUSH_EXPLICIT    = GL_MAP_FLUSH_EXPLICIT_BIT,    /// `GL_MAP_FLUSH_EXPLICIT_BIT`
+        UNSYNCHRONIZED    = GL_MAP_UNSYNCHRONIZED_BIT     /// `GL_MAP_UNSYNCHRONIZED_BIT`
     }
 
     ///
-    enum Target
+    enum StorageBits
     {
-        ZERO                      = 0,                            /// `0` invalid target value
-        ARRAY_BUFFER              = GL_ARRAY_BUFFER,              /// `GL_ARRAY_BUFFER`
-        ATOMIC_COUNTER_BUFFER     = GL_ATOMIC_COUNTER_BUFFER,     /// `GL_ATOMIC_COUNTER_BUFFER`
-        COPY_READ_BUFFER          = GL_COPY_READ_BUFFER,          /// `GL_COPY_READ_BUFFER`
-        COPY_WRITE_BUFFER         = GL_COPY_WRITE_BUFFER,         /// `GL_COPY_WRITE_BUFFER`
-        DRAW_INDIRECT_BUFFER      = GL_DRAW_INDIRECT_BUFFER,      /// `GL_DRAW_INDIRECT_BUFFER`
-        DISPATCH_INDIRECT_BUFFER  = GL_DISPATCH_INDIRECT_BUFFER,  /// `GL_DISPATCH_INDIRECT_BUFFER`
-        ELEMENT_ARRAY_BUFFER      = GL_ELEMENT_ARRAY_BUFFER,      /// `GL_ELEMENT_ARRAY_BUFFER`
-        PIXEL_PACK_BUFFER         = GL_PIXEL_PACK_BUFFER,         /// `GL_PIXEL_PACK_BUFFER`
-        PIXEL_UNPACK_BUFFER       = GL_PIXEL_UNPACK_BUFFER,       /// `GL_PIXEL_UNPACK_BUFFER`
-        SHADER_STORAGE_BUFFER     = GL_SHADER_STORAGE_BUFFER,     /// `GL_SHADER_STORAGE_BUFFER`
-        TEXTURE_BUFFER            = GL_TEXTURE_BUFFER,            /// `GL_TEXTURE_BUFFER`
-        TRANSFORM_FEEDBACK_BUFFER = GL_TRANSFORM_FEEDBACK_BUFFER, /// `GL_TRANSFORM_FEEDBACK_BUFFER`
-        UNIFORM_BUFFER            = GL_UNIFORM_BUFFER             /// `GL_UNIFORM_BUFFER`
+        READ  = GL_MAP_READ_BIT,  /// `GL_MAP_READ_BIT`
+        WRITE = GL_MAP_WRITE_BIT, /// `GL_MAP_WRITE_BIT`
+
+        PERSISTENT = GL_MAP_PERSISTENT_BIT, /// `GL_MAP_PERSISTENT_BIT`
+        COHERENT   = GL_MAP_COHERENT_BIT,   /// `GL_MAP_COHERENT_BIT`
+
+        DYNAMIC = GL_DYNAMIC_STORAGE_BIT, /// `GL_DYNAMIC_STORAGE_BIT`
+        CLIENT  = GL_CLIENT_STORAGE_BIT,  /// `GL_CLIENT_STORAGE_BIT`
     }
 
     ///
-    this( Target default_target=Target.ARRAY_BUFFER )
+    this( GLenum trg )
     {
-        _target = default_target;
-        super();
-        checkGLCall!glGenBuffers( 1, &_id );
-
-        logger = new InstanceLogger( this, format( "%d", _id ) );
-
-        logger.Debug( "type [%s]", target );
+        super( trg );
+        logger.Debug( "pass" );
     }
-
-    final
-    {
-        ///
-        Target target() const pure nothrow @property { return _target; }
-
-        ///
-        uint id() @property const { return _id; }
-
-        /++ cals `glBindBuffer`
-         +
-         +  if `trg` is `Target.ZERO` use assigned target
-         +/
-        void bind( Target trg=Target.ZERO )
-        {
-            if( last_target ) unbind();
-            last_target = validTarget(trg);
-            checkGLCall!glBindBuffer( last_target, _id );
-            debug logger.trace( "type [%s]", last_target );
-        }
-
-        /++ cals `glBindBufferBase`
-         +
-         +  if `trg` is `Target.ZERO` use assigned target
-         +/
-        void bindBase( uint index, Target trg=Target.ZERO )
-        {
-            checkGLCall!glBindBufferBase( validTarget(trg), index, _id );
-            debug logger.trace( "type [%s], index [%d]", validTarget(trg), index );
-        }
-
-        /++ cals `glBindBufferRange`
-         +
-         +  if `trg` is `Target.ZERO` use assigned target
-         +/
-        void bindRange( uint index, size_t offset, size_t size, Target trg=Target.ZERO )
-        {
-            checkGLCall!glBindBufferRange( validTarget(trg), index, _id, offset, size );
-            debug logger.trace( "type [%s], index [%d], offset [%d], size [%d]", validTarget(trg), index, offset, size );
-        }
-
-        /// `glBindBuffer` with last binded target to 0
-        void unbind()
-        {
-            checkGLCall!glBindBuffer( last_target, 0 );
-            debug logger.trace( "type [%s]", last_target );
-            last_target = 0;
-        }
-    }
-
-    /++ calls when element count changed (in setUntypedData)
-     +
-     + See_Also: `setUntypedData`
-     +/
-    Signal!uint elementCountCB;
-
-    /++ calls when element size changed (in setUntypedData)
-     +
-     + See_Also: `setUntypedData`
-     +/
-    Signal!uint elementSizeCB;
-
-    /++ calls when data size changed (in setUntypedData)
-     +
-     + See_Also: `setUntypedData`
-     +/
-    Signal!size_t dataSizeCB;
-
-    /++ `bind`, `glBufferData`, `unbind`
-     +  call signals:
-     +  `elementCountCB`
-     +  `elementSizeCB`
-     +  `dataSizeCB`
-     +/
-    void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
-    {
-        auto size = data_arr.length;
-        if( !size ) throw new GLBufferException( "set buffer data size is 0" );
-
-        bind();
-        checkGLCall!glBufferData( gltarget, size, data_arr.ptr, cast(GLenum)mem );
-
-        element_count = cast(uint)( data_arr.length / element_size );
-        data_size = size;
-
-        elementCountCB( cast(uint)element_count );
-        dataSizeCB( data_size );
-        elementSizeCB( cast(uint)element_size );
-
-        debug logger.trace( "[%s]: size [%d], element size [%d], usage [%s]",
-                target, size, element_size, mem );
-
-        unbind();
-    }
-
-    /// `setUntypedData( data_arr, E.sizeof, mem )`
-    void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
-    { setUntypedData( data_arr, E.sizeof, mem ); }
-
-    /// `bind`, `glBufferSubData`, `unbind`
-    void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
-    {
-        auto size = data_arr.length;
-
-        if( !size ) throw new GLBufferException( "set sub buffer data size is 0" );
-        if( offset + size > data_size )
-            throw new GLBufferException( "set sub buffer data: offset+size > data_size" );
-
-        bind();
-        checkGLCall!glBufferSubData( gltarget, offset, size, data_arr.ptr );
-
-        debug logger.trace( "[%s]: offset [%d], size [%d], element size [%d]",
-                target, offset, size, element_size );
-
-        unbind();
-    }
-
-    /// `setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof )`
-    void setSubData(E)( size_t offset, in E[] data_arr )
-    { setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof ); }
-
-    /// return ubtyped copy of buffer data
-    void[] getUntypedData()
-    {
-        auto mp = mapUntypedData( Access.READ_ONLY );
-        auto buf = new void[]( data_size );
-        memcpy( buf.ptr, mp.ptr, data_size );
-        unmap();
-        return buf;
-    }
-
-    /// cast untyped copy of buffer data to `E[]`
-    E[] getData(E)() { return cast(E[])getUntypedData(); }
-
-    /// return untyped copy of buffer sub data
-    void[] getSubUntypedData( size_t offset, size_t length )
-    {
-        auto mp = mapUntypedDataRange( offset, length, Access.READ_ONLY );
-        auto buf = new void[]( length );
-        memcpy( buf.ptr, mp.ptr, length );
-        unmap();
-        return buf;
-    }
-
-    /// cast untyped copy of buffer sub data to `E[]`
-    E[] getSubData(E)( size_t offset, size_t count )
-    { return cast(E[])getSubUntypedData( E.sizeof * offset, E.sizeof * count ); }
 
     @property
     {
@@ -266,76 +86,321 @@ public:
         }
     }
 
-    /// `bind`, `glMapBuffer`, `unbind`
-    ArrayData mapUntypedData( Access access=Access.READ_ONLY )
+    //===== sets =====
+
+    /// `bind`, `glBufferData`, `unbind`
+    void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
     {
-        debug logger.trace( "by access [%s]", access );
-        bind();
-        scope(exit) unbind();
-        return ArrayData( data_size, checkGLCall!glMapBuffer( gltarget, cast(GLenum)access ) );
+        auto size = data_arr.length;
+        if( !size ) throw new GLBufferException( "set buffer data size is 0" );
+
+        bind(); scope(exit) unbind();
+        checkGLCall!glBufferData( target, size, data_arr.ptr, cast(GLenum)mem );
+
+        element_count = cast(uint)( data_arr.length / element_size );
+        data_size = size;
+
+        debug logger.trace( "size [%db : %d by %db], usage [%s]", size, element_count, element_size, mem );
     }
 
+    /// `setUntypedData( data_arr, E.sizeof, mem )`
+    void setData(E)( in E[] data_arr, Usage mem=Usage.DYNAMIC_DRAW )
+    { setUntypedData( data_arr, E.sizeof, mem ); }
+
+    /// `bind`, `glBufferSubData`, `unbind`
+    void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
+    {
+        auto size = data_arr.length;
+
+        if( !size ) throw new GLBufferException( "set sub buffer data size is 0" );
+        if( offset + size > data_size )
+            throw new GLBufferException( "set sub buffer data: offset+size > data_size" );
+
+        bind(); scope(exit) unbind();
+        checkGLCall!glBufferSubData( target, offset, size, data_arr.ptr );
+
+        debug logger.trace( "[%s]: offset [%d], size [%d], element size [%d]",
+                target, offset, size, element_size );
+    }
+
+    /// `setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof )`
+    void setSubData(E)( size_t offset, in E[] data_arr )
+    { setSubUntypedData( offset * E.sizeof, data_arr, E.sizeof ); }
+
+    //===== gets =====
+
+    /// return untyped copy of buffer data
+    void[] getUntypedData( size_t offset=0, size_t size=0 )
+    {
+        ptrdiff_t sz = size ? size : cast(ptrdiff_t)dataSize - offset;
+
+        auto buf = new void[]( sz );
+        bind();
+        checkGLCall!glGetBufferSubData( target, offset, sz, buf.ptr );
+        unbind();
+
+        debug
+        {
+            auto es = elementSize;
+
+            if( offset % es ) logger.warn( "offset is not a multiple of element size" );
+            if( size % es ) logger.warn( "size is not a multiple of element size" );
+
+            logger.trace( "[%s]: offset [%d], size [%d], offset in elements [%d], size in elements [%d]",
+                target, offset, sz, offset / es, sz / es );
+        }
+
+        return buf;
+    }
+
+    /// cast untyped copy of buffer data to `E[]`
+    E[] getData(E)( size_t offset=0, size_t count=0 )
+    {
+        debug if( E.sizeof != elementSize )
+            logger.warn( "mismatch sizes of type %s [%d] and element size [%d]",
+                    E.stringof, E.sizeof, elementSize );
+
+        return cast(E[])getUntypedData( E.sizeof * offset, E.sizeof * count );
+    }
+
+    //===== maps =====
+
     /// `bind`, `glMapBufferRange`, `unbind`
-    ArrayData mapUntypedDataRange( size_t offset, size_t length, Access access=Access.READ_ONLY )
+    void[] mapUntypedDataRange( size_t offset, size_t length, in MapBits[] bits... )
     {
         if( offset + length > data_size )
             throw new GLBufferException( "map buffer range: offset + length > data_size" );
-        debug logger.trace( "by access [%s]: offset [%d], length [%d]", access, offset, length );
-        bind();
-        scope(exit) unbind();
-        return ArrayData( length, checkGLCall!glMapBufferRange( gltarget, offset, length, cast(GLenum)access ) );
+
+        debug logger.trace( "by bits %s: offset [%d], length [%d]", bits, offset, length );
+
+        bind(); scope(exit) unbind();
+
+        return getTypedArray!void( length, checkGLCall!glMapBufferRange( target, offset, length, packBitMask(bits) ) );
     }
 
     ///
-    AlienArray!E mapData(E)( Access access )
-    { return getTypedArray!E( mapUntypedData( access ) ); }
+    E[] mapDataRange(E)( size_t offset, size_t length, in MapBits[] bits... )
+    { return cast(E[])mapUntypedDataRange( offset * E.sizeof, length * E.sizeof, bits ); }
+
+    /// `bind`, `glMapBufferRange( 0, data_size )`, `unbind`
+    void[] mapUntypedData( in MapBits[] bits... )
+    { return mapUntypedDataRange( 0, data_size, bits ); }
 
     ///
-    AlienArray!E mapDataRange(E)( size_t offset, size_t length, Access access )
-    { return getTypedArray!E( mapUntypedDataRange( offset * E.sizeof, length * E.sizeof, access ) ); }
+    E[] mapData(E)( in MapBits[] bits... )
+    { return cast(E[])mapUntypedDataRange( 0, data_size, bits ); }
 
     /// `bind`, `glUnmapBuffer`, `unbind`
     void unmap()
     {
         bind();
-        checkGLCall!glUnmapBuffer( gltarget );
+        checkGLCall!glUnmapBuffer( target );
         debug logger.trace( "pass" );
         unbind();
     }
 
+    ///
+    void flushMappedRange( size_t offset, size_t length, size_t elem_size=1 )
+    {
+        bind(); scope(exit) unbind();
+        checkGLCall!glFlushMappedBufferRange( target, offset * elem_size, length * elem_size );
+        debug logger.trace( "offset [%d], length [%d], elem_size [%d]", offset, length, elem_size );
+    }
+
+    ///
+    void storage( void[] data, StorageBits[] bits... )
+    {
+        bind(); scope(exit) unbind();
+        checkGLCall!glBufferStorage( target, data.length, data.ptr, packBitMask(bits) );
+    }
+
+    ///
+    void storage( size_t size, StorageBits[] bits... )
+    {
+        bind(); scope(exit) unbind();
+        checkGLCall!glBufferStorage( target, size, null, packBitMask(bits) );
+    }
+}
+
+///
+void bindCopyReadBuffer( GLBuffer buf )
+{ checkGLCall!glBindBuffer( GL_COPY_READ_BUFFER, buf.id ); }
+
+///
+void unbindCopyReadBuffer()
+{ checkGLCall!glBindBuffer( GL_COPY_READ_BUFFER, 0 ); }
+
+///
+void bindCopyWriteBuffer( GLBuffer buf )
+{ checkGLCall!glBindBuffer( GL_COPY_WRITE_BUFFER, buf.id ); }
+
+///
+void unbindCopyWriteBuffer()
+{ checkGLCall!glBindBuffer( GL_COPY_WRITE_BUFFER, 0 ); }
+
+///
+class GLArrayBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_ARRAY_BUFFER ); }
+}
+
+///
+class GLDispatchIndirectBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_DISPATCH_INDIRECT_BUFFER ); }
+}
+
+///
+class GLDrawIndirectBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_DRAW_INDIRECT_BUFFER ); }
+}
+
+///
+class GLElementArrayBuffer : GLBuffer
+{
+private:
+
+    bool inner_call = false;
+
 protected:
 
-    override void selfDestroy()
+    Type _type;
+
+public:
+
+    ///
+    enum Type : GLType
     {
-        checkGLCall!glDeleteBuffers( 1, &_id );
-        debug logger.Debug( "pass" );
+        UBYTE  = GLType.UBYTE, /// `GL_UNSIGNED_BYTE`
+        USHORT = GLType.USHORT, /// `GL_UNSIGNED_SHORT`
+        UINT   = GLType.UINT, /// `GL_UNSIGNED_INT`
+    }
+
+    final nothrow pure const @nogc @property
+    {
+        GLType type() { return _type; }
+    }
+
+    ///
+    this() { super( GL_ELEMENT_ARRAY_BUFFER ); }
+
+    override void setUntypedData( in void[] data, size_t es, Usage mem=Usage.DYNAMIC_DRAW )
+    {
+        enforce( inner_call, new GLBufferException( "forbiden not inner call, use 'set' method" ) );
+        super.setUntypedData( data, es, mem );
+    }
+
+    ///
+    void set(T)( in T[] data, Usage mem=Usage.STATIC_DRAW )
+        if( is( T == ubyte ) || is( T == ushort ) || is( T == uint ) )
+    {
+        inner_call = true;
+        setUntypedData( data, T.sizeof, mem );
+        inner_call = false;
+        _type = cast(Type)toGLType!T;
     }
 }
 
 ///
-class GLIndexBuffer : GLBuffer
+class GLPixelPackBuffer : GLBuffer
 {
     ///
-    this() { super( Target.ELEMENT_ARRAY_BUFFER ); }
+    this() { super( GL_PIXEL_PACK_BUFFER ); }
+}
 
-    /// throw exception if element size != uint.sizeof
-    override void setUntypedData( in void[] data_arr, size_t element_size, Usage mem=Usage.DYNAMIC_DRAW )
+///
+class GLPixelUnpackBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_PIXEL_UNPACK_BUFFER ); }
+}
+
+///
+class GLQueryBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_QUERY_BUFFER ); }
+}
+
+///
+class GLTextureBuffer : GLBuffer
+{
+    ///
+    this() { super( GL_TEXTURE_BUFFER ); }
+}
+
+///
+abstract class GLIndexedBuffer : GLBuffer
+{
+public:
+
+    this( GLenum trg ) { super(trg); }
+
+    invariant()
     {
-        enforce( element_size == uint.sizeof, new GLBufferException( "element size != uint.sizeof" ) );
-        super.setUntypedData( data_arr, element_size, mem );
+        assert( isValidIndexedTarget( _target ) );
     }
 
-    /// throw exception if element size != uint.sizeof
-    override void setSubUntypedData( size_t offset, in void[] data_arr, size_t element_size )
+    /// calls `glBindBufferBase`
+    void bindBase( uint index )
     {
-        enforce( element_size == uint.sizeof, new GLBufferException( "element size != uint.sizeof" ) );
-        super.setSubUntypedData( offset, data_arr, element_size );
+        checkGLCall!glBindBufferBase( target, index, id );
+        debug logger.trace( "index [%d]", index );
+    }
+
+    /// calls `glBindBufferRange`
+    void bindRange( uint index, size_t offset, size_t size )
+    {
+        checkGLCall!glBindBufferRange( target, index, id, offset, size );
+        debug logger.trace( "index [%d], offset [%d], size [%d]", index, offset, size );
+    }
+
+private:
+
+    ///
+    bool isValidIndexedTarget( GLenum trg ) const nothrow
+    {
+        switch( trg )
+        {
+            case GL_ATOMIC_COUNTER_BUFFER:
+            case GL_TRANSFORM_FEEDBACK_BUFFER:
+            case GL_UNIFORM_BUFFER:
+            case GL_SHADER_STORAGE_BUFFER:
+                return true;
+            default:
+                return false;
+        }
     }
 }
 
 ///
-class GLShaderStorageBuffer : GLBuffer
+class GLAtomicCounterBuffer : GLIndexedBuffer
 {
     ///
-    this() { super( Target.SHADER_STORAGE_BUFFER ); }
+    this() { super( GL_ATOMIC_COUNTER_BUFFER ); }
+}
+
+///
+class GLTransformFeedbackBuffer : GLIndexedBuffer
+{
+    ///
+    this() { super( GL_TRANSFORM_FEEDBACK_BUFFER ); }
+}
+
+///
+class GLUniformBuffer : GLIndexedBuffer
+{
+    ///
+    this() { super( GL_UNIFORM_BUFFER ); }
+}
+
+///
+class GLShaderStorageBuffer : GLIndexedBuffer
+{
+    ///
+    this() { super( GL_SHADER_STORAGE_BUFFER ); }
 }

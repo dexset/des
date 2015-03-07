@@ -1,6 +1,5 @@
 module des.gl.base.render;
 
-import des.math.linear;
 import des.gl.base;
 import des.il;
 

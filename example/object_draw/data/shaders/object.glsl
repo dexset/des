@@ -1,7 +1,7 @@
 //### vert
 #version 330
 
-in vec4 pos;
+layout(location=0) in vec4 pos;
 
 uniform mat4 prj;
 

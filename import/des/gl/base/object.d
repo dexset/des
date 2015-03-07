@@ -1,13 +1,7 @@
 module des.gl.base.object;
 
-import std.c.string;
-
-import derelict.opengl3.gl3;
-
-import des.gl.base.type;
+import des.gl.base.general;
 import des.gl.base.buffer;
-
-import des.util.data.type;
 
 ///
 class GLObjException : DesGLException
@@ -33,12 +27,14 @@ struct GLAttrib
     size_t stride;
     ///
     size_t offset;
+    ///
+    bool norm;
 
 pure:
     ///
     this( string name, int location, uint elements,
           GLType type=GLType.FLOAT,
-          size_t stride=0, size_t offset=0 )
+          size_t stride=0, size_t offset=0, bool norm=false )
     {
         this.name     = name;
         this.location = location;
@@ -46,6 +42,7 @@ pure:
         this.type     = type;
         this.stride   = stride;
         this.offset   = offset;
+        this.norm     = norm;
     }
 
     size_t dataSize() const @property
@@ -56,13 +53,9 @@ pure:
 }
 
 /// Vertex Array Object
-final class GLVAO : DesObject
+final class GLVAO : GLObject!("VertexArray",false)
 {
-    mixin DES;
-    mixin ClassLogger;
-
 protected:
-    uint _id;
 
     int[int] aaset;
 
@@ -73,52 +66,50 @@ public:
     /// `glGenVertexArrays`
     this()
     {
-        checkGLCall!glGenVertexArrays( 1, &_id );
-        logger = new InstanceLogger( this, format( "%d", _id ) );
+        super(0);
         logger.Debug( "pass" );
     }
 
     ///
     int[] enabled() const @property { return aaset.keys; }
 
-    nothrow
+    /// `glBindVertexArray( id )`
+    override void bind()
     {
-        /// `glBindVertexArray`
-        void bind()
-        {
-            ntCheckGLCall!glBindVertexArray( _id );
-            debug logger.trace( "pass" );
-        }
-
-        /// `glEnableVertexAttribArray`
-        void enable( int n )
-        {
-            debug scope(exit) logger.Debug( "[%d]", n );
-            if( n < 0 ) return;
-            bind();
-            ntCheckGLCall!glEnableVertexAttribArray( n );
-            aaset[n] = n;
-        }
-
-        /// `glDisableVertexAttribArray`
-        void disable( int n )
-        {
-            debug scope(exit) logger.Debug( "[%d]", n );
-            if( n < 0 ) return;
-            bind();
-            ntCheckGLCall!glDisableVertexAttribArray( n );
-            aaset.remove(n);
-        }
+        checkGLCall!glBindVertexArray( id );
+        debug logger.trace( "pass" );
     }
 
-protected:
+    /// `glBindVertexArray( 0 )`
+    override void unbind()
+    {
+        checkGLCall!glBindVertexArray( 0 );
+        debug logger.trace( "pass" );
+    }
 
-    /// `glDeleteVertexArrays`
-    override void selfDestroy() { glDeleteVertexArrays( 1, &_id ); }
+    /// `glEnableVertexAttribArray`
+    void enable( int n )
+    {
+        debug scope(exit) logger.Debug( "[%d]", n );
+        if( n < 0 ) return;
+        bind();
+        ntCheckGLCall!glEnableVertexAttribArray( n );
+        aaset[n] = n;
+    }
+
+    /// `glDisableVertexAttribArray`
+    void disable( int n )
+    {
+        debug scope(exit) logger.Debug( "[%d]", n );
+        if( n < 0 ) return;
+        bind();
+        ntCheckGLCall!glDisableVertexAttribArray( n );
+        aaset.remove(n);
+    }
 }
 
 ///
-class GLObject : DesObject
+class GLDrawObject : DesObject
 {
     mixin DES;
     mixin ClassLogger;
@@ -130,36 +121,35 @@ protected:
     final
     {
         /// `glVertexAttribPointer`
-        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
+        void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
                 GLType attype, size_t stride, size_t offset, bool norm=false )
         {
             vao.enable( index );
 
-            buffer.bind();
+            buffer.bind(); scope(exit) buffer.unbind();
+
             checkGLCall!glVertexAttribPointer( index, cast(int)per_element,
                     cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
 
             logger.Debug( "VAO [%d], buffer [%d], "~
                             "index [%d], per element [%d][%s]"~
                             "%s%s",
-                            vao._id, buffer.id,
+                            vao.id, buffer.id,
                             index, per_element, attype,
                             stride != 0 ? ntFormat(", stride [%d], offset [%d]", stride, offset ) : "",
                             norm ? ntFormat( ", norm [%s]", norm ) : "" );
-
-            buffer.unbind();
         }
 
         /// ditto
-        void setAttribPointer( GLBuffer buffer, int index, uint per_element,
+        void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
                 GLType attype, bool norm=false )
         { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
 
         /// ditto
-        void setAttribPointer( GLBuffer buffer, in GLAttrib attr )
+        void setAttribPointer( GLArrayBuffer buffer, in GLAttrib attr )
         {
             setAttribPointer( buffer, attr.location, attr.elements,
-                              attr.type, attr.stride, attr.offset );
+                              attr.type, attr.stride, attr.offset, attr.norm );
         }
     }
 
@@ -167,28 +157,33 @@ protected:
     void preDraw() {}
 
     ///
-    void drawArrays( DrawMode mode, uint count, uint start=0 )
+    void drawArrays( DrawMode mode, uint start, uint count )
     {
         vao.bind();
         preDraw();
         checkGLCall!glDrawArrays( mode, start, count );
-        debug logger.trace( "mode [%s], count [%d]", mode, count );
+        debug logger.trace( "mode [%s], start [%d], count [%d]", mode, start, count );
     }
 
     /// by default has no index buffer
-    bool bindIndexBuffer() { return false; }
+    bool bindElementArrayBuffer() { return false; }
 
     ///
-    void drawElements( DrawMode mode, uint count )
+    void drawElements( DrawMode mode, GLElementArrayBuffer eab )
     {
-        vao.bind();
-        preDraw();
-        if( bindIndexBuffer() )
+        if( eab is null )
         {
-            checkGLCall!glDrawElements( mode, count, GL_UNSIGNED_INT, null );
-            debug logger.trace( "mode [%s], count [%d]", mode, count );
+            logger.error( "element array buffer is null" );
+            return;
         }
-        else logger.error( "unable to bind index buffer" );
+
+        vao.bind();
+        eab.bind();
+
+        preDraw();
+
+        checkGLCall!glDrawElements( mode, eab.elementCount, cast(GLenum)eab.type, null );
+        debug logger.trace( "mode [%s]", mode );
     }
 
 public:
@@ -221,7 +216,7 @@ public:
 struct GLMeshData
 {
     ///
-    GLObject.DrawMode draw_mode;
+    GLDrawObject.DrawMode draw_mode;
 
     ///
     uint num_vertices;
@@ -246,7 +241,7 @@ struct GLMeshData
 }
 
 ///
-class GLMeshObject : GLObject
+class GLMeshObject : GLDrawObject
 {
 protected:
 
@@ -254,10 +249,10 @@ protected:
     uint num_vertices;
 
     ///
-    GLIndexBuffer indices;
+    GLElementArrayBuffer indices;
 
     ///
-    GLBuffer[] buffers;
+    GLArrayBuffer[] arrays;
 
     DrawMode draw_mode;
 
@@ -268,22 +263,11 @@ public:
 
 protected:
 
-    final override bool bindIndexBuffer()
-    {
-        if( indices is null )
-        {
-            logger.warn( "index buffer is null" );
-            return false;
-        }
-        indices.bind();
-        return true;
-    }
-
     /// with `draw_mode` and `num_vertices`
-    void drawArrays() { super.drawArrays( draw_mode, num_vertices ); }
+    void drawArrays() { super.drawArrays( draw_mode, 0, num_vertices ); }
 
     /// with `draw_mode` and `indices.elementCount`
-    void drawElements() { super.drawElements( draw_mode, indices.elementCount ); }
+    void drawElements() { super.drawElements( draw_mode, indices ); }
 
     /// creates buffers, set vertices count, etc
     void prepareMesh( in GLMeshData data )
@@ -294,23 +278,20 @@ protected:
 
         if( data.indices.length )
         {
-            indices = newEMM!GLIndexBuffer();
-            indices.setData( data.indices );
+            indices = newEMM!GLElementArrayBuffer();
+            indices.set( data.indices );
             logger.Debug( "indices count: ", data.indices.length );
             import std.algorithm;
             logger.Debug( "indices max: ", reduce!max( data.indices ) );
-            vao.bind();
-            indices.bind();
-            vao.unbind();
         }
 
         foreach( bufdata; data.buffers )
             if( auto buf = prepareBuffer( bufdata, data.attribs ) )
-                buffers ~= buf;
+                arrays ~= buf;
     }
 
     /// create buffer, set attrib pointer, set data if exists
-    GLBuffer prepareBuffer( in GLMeshData.Buffer bd, in GLAttrib[] attrlist )
+    GLArrayBuffer prepareBuffer( in GLMeshData.Buffer bd, in GLAttrib[] attrlist )
     {
         if( bd.data is null )
         {
@@ -339,6 +320,5 @@ protected:
     }
 
     /// override if want to create specific buffers
-    GLBuffer createArrayBuffer()
-    { return newEMM!GLBuffer( GLBuffer.Target.ARRAY_BUFFER ); }
+    GLArrayBuffer createArrayBuffer() { return newEMM!GLArrayBuffer(); }
 }

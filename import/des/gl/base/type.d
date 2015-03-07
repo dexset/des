@@ -3,30 +3,19 @@ module des.gl.base.type;
 import std.stdio;
 import std.string;
 
-import derelict.opengl3.gl3;
-
-public import des.math.linear.vector;
-public import des.util.arch;
-public import des.util.logsys;
-
-///
-class DesGLException : Exception
-{
-    ///
-    this( string msg, string file=__FILE__, size_t line=__LINE__ ) pure nothrow @safe
-    { super( msg, file, line ); }
-}
+import des.gl.base.general;
 
 ///
 enum GLType
 {
-    UNSIGNED_BYTE  = GL_UNSIGNED_BYTE,  /// `GL_UNSIGNED_BYTE`
-    BYTE           = GL_BYTE,           /// `GL_BYTE`
-    UNSIGNED_SHORT = GL_UNSIGNED_SHORT, /// `GL_UNSIGNED_SHORT`
-    SHORT          = GL_SHORT,          /// `GL_SHORT`
-    UNSIGNED_INT   = GL_UNSIGNED_INT,   /// `GL_UNSIGNED_INT`
-    INT            = GL_INT,            /// `GL_INT`
-    FLOAT          = GL_FLOAT,          /// `GL_FLOAT`
+    UBYTE  = GL_UNSIGNED_BYTE,  /// `GL_UNSIGNED_BYTE`
+    BYTE   = GL_BYTE,           /// `GL_BYTE`
+    USHORT = GL_UNSIGNED_SHORT, /// `GL_UNSIGNED_SHORT`
+    SHORT  = GL_SHORT,          /// `GL_SHORT`
+    UINT   = GL_UNSIGNED_INT,   /// `GL_UNSIGNED_INT`
+    INT    = GL_INT,            /// `GL_INT`
+    FLOAT  = GL_FLOAT,          /// `GL_FLOAT`
+    DOUBLE = GL_DOUBLE,         /// `GL_DOUBLE`
 }
 
 ///
@@ -35,39 +24,44 @@ size_t sizeofGLType( GLType type ) pure nothrow
     final switch(type)
     {
     case GLType.BYTE:
-    case GLType.UNSIGNED_BYTE:
+    case GLType.UBYTE:
         return byte.sizeof;
 
     case GLType.SHORT:
-    case GLType.UNSIGNED_SHORT:
+    case GLType.USHORT:
         return short.sizeof;
 
     case GLType.INT:
-    case GLType.UNSIGNED_INT:
+    case GLType.UINT:
         return int.sizeof;
 
     case GLType.FLOAT:
         return float.sizeof;
+
+    case GLType.DOUBLE:
+        return double.sizeof;
     }
 }
 
 ///
-GLType toGLType(T)() @property
+GLType toGLType(T)() nothrow pure @nogc @safe @property
 {
     static if( is( T == ubyte ) )
-        return GLType.UNSIGNED_BYTE;
+        return GLType.UBYTE;
     else static if( is( T == byte ) )
         return GLType.BYTE;
     else static if( is( T == ushort ) )
-        return GLType.UNSIGNED_SHORT;
+        return GLType.USHORT;
     else static if( is( T == short ) )
         return GLType.SHORT;
     else static if( is( T == uint ) )
-        return GLType.UNSIGNED_INT;
+        return GLType.UINT;
     else static if( is( T == int ) )
         return GLType.INT;
     else static if( is( T == float ) )
         return GLType.FLOAT;
+    else static if( is( T == double ) )
+        return GLType.DOUBLE;
     else
     {
         pragma(msg, "no GLType for ", T );
@@ -78,74 +72,39 @@ GLType toGLType(T)() @property
 ///
 unittest
 {
-    assert( toGLType!ubyte == GLType.UNSIGNED_BYTE );
-    assert( toGLType!byte == GLType.BYTE );
-    assert( toGLType!ushort == GLType.UNSIGNED_SHORT );
-    assert( toGLType!short == GLType.SHORT );
-    assert( toGLType!uint == GLType.UNSIGNED_INT );
-    assert( toGLType!int == GLType.INT );
-    assert( toGLType!float == GLType.FLOAT );
+    assert( toGLType!ubyte  == GLType.UBYTE );
+    assert( toGLType!byte   == GLType.BYTE );
+    assert( toGLType!ushort == GLType.USHORT );
+    assert( toGLType!short  == GLType.SHORT );
+    assert( toGLType!uint   == GLType.UINT );
+    assert( toGLType!int    == GLType.INT );
+    assert( toGLType!float  == GLType.FLOAT );
+    assert( toGLType!double == GLType.DOUBLE );
 }
 
 ///
-enum GLError
+enum GLBufferTarget
 {
-    NO                = GL_NO_ERROR,          /// `GL_NO_ERROR`
-    INVALID_ENUM      = GL_INVALID_ENUM,      /// `GL_INVALID_ENUM`
-    INVALID_VALUE     = GL_INVALID_VALUE,     /// `GL_INVALID_VALUE`
-    INVALID_OPERATION = GL_INVALID_OPERATION, /// `GL_INVALID_OPERATION`
-    STACK_OVERFLOW    = 0x0503,               /// `0x0503`
-    STACK_UNDERFLOW   = 0x0504,               /// `0x0504`
-    OUT_OF_MEMORY     = GL_OUT_OF_MEMORY,     /// `GL_OUT_OF_MEMORY`
-    INVALID_FRAMEBUFFER_OPERATION = 0x0506    /// `0x0506`
+    UNKNOWN            = 0,                            /// equals zero
+    ARRAY              = GL_ARRAY_BUFFER,              /// `GL_ARRAY_BUFFER`
+    ATOMIC_COUNTER     = GL_ATOMIC_COUNTER_BUFFER,     /// `GL_ATOMIC_COUNTER_BUFFER`
+    DISPATCH_INDIRECT  = GL_DISPATCH_INDIRECT_BUFFER,  /// `GL_DISPATCH_INDIRECT_BUFFER`
+    DRAW_INDIRECT      = GL_DRAW_INDIRECT_BUFFER,      /// `GL_DRAW_INDIRECT_BUFFER`
+    ELEMENT_ARRAY      = GL_ELEMENT_ARRAY_BUFFER,      /// `GL_ELEMENT_ARRAY_BUFFER`
+    PIXEL_PACK         = GL_PIXEL_PACK_BUFFER,         /// `GL_PIXEL_PACK_BUFFER`
+    PIXEL_UNPACK       = GL_PIXEL_UNPACK_BUFFER,       /// `GL_PIXEL_UNPACK_BUFFER`
+    QUERY              = GL_QUERY_BUFFER,              /// `GL_QUERY_BUFFER`
+    SHADER_STORAGE     = GL_SHADER_STORAGE_BUFFER,     /// `GL_SHADER_STORAGE_BUFFER`
+    TEXTURE            = GL_TEXTURE_BUFFER,            /// `GL_TEXTURE_BUFFER`
+    TRANSFORM_FEEDBACK = GL_TRANSFORM_FEEDBACK_BUFFER, /// `GL_TRANSFORM_FEEDBACK_BUFFER`
+    UNIFORM            = GL_UNIFORM_BUFFER,            /// `GL_UNIFORM_BUFFER`
 }
 
-/// `glGetError`, if has error throw exception
-void checkGL( string file=__FILE__, size_t line=__LINE__ )
+///
+GLBufferTarget glBufferTarget( GLenum trg ) pure nothrow @nogc
 {
-    debug
-    {
-        GLError err = cast(GLError)glGetError();
-        if( err != GLError.NO )
-            throw new DesGLException( format("%s", err), file, line );
-    }
-    else
-    {
-        pragma(msg,"warning: no check GL errors");
-    }
-}
-
-/// `glGetError`, no throw exception, output to logger error
-void ntCheckGL( string file=__FILE__, size_t line=__LINE__ ) nothrow
-{
-    debug
-    {
-        try checkGL(file,line);
-        catch( DesGLException e )
-            logger.error( ntFormat( "GL ERROR at [%s:%d] %s", e.file, e.line, e.msg ) );
-        catch( Exception e )
-            logger.error( ntFormat( "[%s:%d] %s", e.file, e.line, e.msg ) );
-    } else return;
-}
-
-/// call `checkGL` after function call
-template checkGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
-{
-    auto checkGLCall(Args...)( Args args )
-    {
-        debug scope(exit) checkGL(file,line);
-        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
-        else return fnc( args );
-    }
-}
-
-/// call `ntCheckGL` after function call
-template ntCheckGLCall(alias fnc, string file=__FILE__, size_t line=__LINE__, Args...)
-{
-    auto ntCheckGLCall(Args...)( Args args ) nothrow
-    {
-        debug scope(exit) ntCheckGL(file,line);
-        static if( is( typeof(fnc(args)) == void ) ) fnc( args );
-        else return fnc( args );
-    }
+    import std.traits : EnumMembers;
+    foreach( e; [EnumMembers!GLBufferTarget] )
+        if( cast(GLenum)e == trg ) return e;
+    return GLBufferTarget.UNKNOWN;
 }

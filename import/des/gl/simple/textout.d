@@ -2,7 +2,7 @@ module des.gl.simple.textout;
 
 import des.fonts.ftglyphrender;
 
-import des.gl.simple;
+import des.gl.base;
 import des.gl.simple.shader.text;
 
 import std.traits;
@@ -16,11 +16,13 @@ wstring wformat(S,Args...)( S fmt, Args args )
     if( is( S == string ) || is( S == wstring ) )
 { return to!wstring( format( to!string(fmt), args ) ); }
 
-class BaseLineTextBox : GLSimpleObject
+class BaseLineTextBox : GLDrawObject
 {
 private:
 
-    GLBuffer vert, uv;
+    CommonGLShaderProgram shader;
+
+    GLArrayBuffer vert, uv;
 
     GLTexture tex;
 
@@ -48,7 +50,7 @@ private:
             if( font.info[c].size.h > output_size.h )
                 output_size.h = font.info[c].size.h;
         }
-        
+
         foreach( c; output )
         {
             if( c !in font.info )
@@ -98,12 +100,12 @@ private:
 public:
     this( string font_name, uint size=24u )
     {
-        super( SS_WIN_TEXT );
+        shader = newEMM!CommonGLShaderProgram( parseGLShaderSource( SS_WIN_TEXT ) );
 
-        vert = createArrayBuffer();
+        vert = newEMM!GLArrayBuffer;
         setAttribPointer( vert, shader.getAttribLocation( "vert" ), 2, GLType.FLOAT );
 
-        uv = createArrayBuffer();
+        uv = newEMM!GLArrayBuffer;
         setAttribPointer( uv, shader.getAttribLocation( "uv" ), 2, GLType.FLOAT );
 
         tex = newEMM!GLTexture( GLTexture.Target.T2D );
@@ -124,7 +126,6 @@ public:
 
         font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
-
         tex.image( font.texture );
 
         text = "Default text";
@@ -137,7 +138,7 @@ public:
         shader.setUniform!ivec2( "win_size", win_size );
         tex.bind();
         glDisable(GL_DEPTH_TEST);
-        drawArrays( DrawMode.TRIANGLES );
+        drawArrays( DrawMode.TRIANGLES, 0, vert.elementCount );
         tex.unbind();
     }
 
@@ -153,9 +154,9 @@ public:
         wstring text(){ return output; }
 
         void position( vec2 pos )
-        { 
-            this.pos = pos; 
-            repos(); 
+        {
+            this.pos = pos;
+            repos();
         }
 
         void color( vec3 col ){ shader.setUniform!vec3( "color", col ); }
@@ -206,7 +207,7 @@ public:
         this.font_name = font_name;
         this.font_size = font_size;
 
-        text = 
+        text =
 `Default
 Multi
 Line
@@ -230,9 +231,9 @@ Text`;
         wstring text(){ return output; }
 
         void position( vec2 pos )
-        { 
-            this.pos = pos; 
-            repos(); 
+        {
+            this.pos = pos;
+            repos();
         }
 
         void color( vec3 col ){ this.col = col; }

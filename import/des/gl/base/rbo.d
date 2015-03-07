@@ -1,16 +1,9 @@
 module des.gl.base.rbo;
 
-import std.exception;
-import std.conv;
-
-import derelict.opengl3.gl3;
-
-import des.math.linear;
-
-import des.gl.base.type;
+import des.gl.base.general;
 
 ///
-class GLRenderBuffer : DesObject
+class GLRenderBuffer : GLObject!"Renderbuffer"
 {
     mixin DES;
     mixin ClassLogger;
@@ -59,35 +52,17 @@ public:
         STENCIL_INDEX8     = GL_STENCIL_INDEX8      /// `GL_STENCIL_INDEX8`
     }
 
-    /// `glGenRenderbuffers`
+    ///
     this()
     {
-        checkGLCall!glGenRenderbuffers( 1, &_id );
-        logger = new InstanceLogger( this, std.string.format( "%d", _id ) );
+        super( GL_RENDERBUFFER );
         logger.Debug( "pass" );
     }
 
     final pure const @property
     {
         ///
-        uint id() { return _id; }
-
-        ///
         Format format() { return _format; }
-    }
-
-    /// `glBindRenderbuffer( GL_RENDERBUFFER, id )`
-    void bind()
-    {
-        checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, _id );
-        debug logger.trace( "[%d]", id );
-    }
-
-    /// `glBindRenderbuffer( GL_RENDERBUFFER, 0 )`
-    void unbind()
-    {
-        checkGLCall!glBindRenderbuffer( GL_RENDERBUFFER, 0 );
-        debug logger.trace( "call from [%d]", _id );
     }
 
     /// `glRenderbufferStorage`
@@ -134,13 +109,4 @@ public:
         assert( sz[1] > 0 );
     }
     body { resize( uivec2(sz) ); }
-
-protected:
-
-    override void selfDestroy()
-    {
-        unbind();
-        checkGLCall!glDeleteRenderbuffers( 1, &_id );
-        logger.Debug( "pass" );
-    }
 }

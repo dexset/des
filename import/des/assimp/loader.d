@@ -148,7 +148,7 @@ public:
     {
         scene_file_name = fname;
         scene = aiImportFile( fname.toStringz,
-                buildFlags( default_post_process ~ pp ) );
+                packBitMask( default_post_process ~ pp ) );
     }
 
     ///

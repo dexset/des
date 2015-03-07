@@ -2,11 +2,9 @@ module des.gl.base.texture;
 
 import std.string;
 
-public import derelict.opengl3.gl3;
+import des.gl.base.general;
 
-import des.gl.base.type;
-
-import des.il;
+public import des.il;
 
 import std.algorithm;
 import des.util.stdext.algorithm;
@@ -493,7 +491,7 @@ public:
 
         bind();
         mixin( format(`
-        glTexImage%1dD( gltarget, 0, cast(int)internal_format, %s, 0,
+        glTexImage%1dD( gltype, 0, cast(int)internal_format, %s, 0,
                         cast(GLenum)data_format, cast(GLenum)data_type, data );
         `, N, accessVecFields!(sz) ) );
 
