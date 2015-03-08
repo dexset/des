@@ -31,9 +31,8 @@ protected:
 
     override void prepare()
     {
-        prepareFPSOutput();
-
-        tester = newEMM!Tester;
+        prepareTextOutput();
+        prepareTester();
 
         connect( draw,
         {
@@ -60,12 +59,9 @@ protected:
         {
             if( ke.scan == ke.Scan.ESCAPE ) app.quit();
         });
-
-        connect( tester.changeInfo, (wstring txt) { info.text = txt; });
-        connect( tester.changeInfoLog, (wstring txt) { info_log.text = txt; });
     }
 
-    void prepareFPSOutput()
+    void prepareTextOutput()
     {
         fps_output = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 16u );
         fps_output.color = vec3(1);
@@ -84,6 +80,18 @@ protected:
         checkGLCall!glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         checkGLCall!glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
         checkGLCall!glPixelStorei( GL_PACK_ALIGNMENT, 1 );
+    }
+
+    void prepareTester()
+    {
+        tester = newEMM!Tester;
+
+        connect( key, &(tester.keyReaction) );
+        connect( mouse, &(tester.mouseReaction) );
+        connect( event.resized, &(tester.resize) );
+
+        connect( tester.changeInfo, (wstring txt) { info.text = txt; });
+        connect( tester.changeInfoLog, (wstring txt) { info_log.text = txt; });
     }
 }
 

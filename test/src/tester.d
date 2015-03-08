@@ -1,23 +1,11 @@
 module tester;
 
 import des.gl;
+public import des.app.event;
 import des.util.arch;
 import des.util.timer;
 
 import tests;
-
-interface Test
-{
-    void idle();
-    void draw();
-
-    @property
-    {
-        wstring name();
-        wstring info();
-        bool complite();
-    }
-}
 
 class Tester : DesObject
 {
@@ -26,14 +14,17 @@ protected:
 
     Timer timer;
 
-    Test[] test;
-    size_t cur;
+    Test[] tests;
+    Test current;
+    size_t curno;
 
     wstring info_log;
 
     void prepareTests()
     {
-        test ~= newEMM!EmptyTest( "empty test"w );
+        tests ~= newEMM!EmptyTest( "empty test"w, 100 );
+        current = tests[0];
+        tests ~= registerChildEMM( getAllTests() );
     }
 
 public:
@@ -49,23 +40,48 @@ public:
 
     void idle()
     {
-        if( cur >= test.length ) return;
+        if( current is null ) return;
 
-        test[cur%$].idle();
+        current.idle();
 
-        changeInfo( wformat( "[%s] %s", test[cur%$].name, test[cur%$].info ) );
+        changeInfo( wformat( "[%s] %s", current.name, current.info ) );
 
-        if( test[cur%$].complite )
+        if( current.complite )
         {
-            info_log ~= wformat( "\n[%s] complite", test[cur%$].name );
+            info_log ~= wformat( "\n[%s] complite", current.name );
             changeInfoLog( info_log );
-            cur++;
+            current.clear();
+            nextTest();
         }
-
-        if( cur >= test.length ) changeInfo( "all tests complited" );
     }
 
-    void draw() { test[cur%$].draw(); }
+    void draw() { if( current !is null ) current.draw(); }
+
+    void keyReaction( in KeyboardEvent ke )
+    { if( current !is null ) current.keyReaction(ke); }
+
+    void mouseReaction( in MouseEvent me )
+    { if( current !is null ) current.mouseReaction(me); }
+
+    void resize( ivec2 sz )
+    { if( current !is null ) current.resize(sz); }
+
+protected:
+
+    void nextTest()
+    {
+        curno++;
+        if( curno >= tests.length )
+        {
+            changeInfo( "all tests complited" );
+            current = null;
+        }
+        else
+        {
+            current = tests[curno%$];
+            current.init();
+        }
+    }
 }
 
 class EmptyTest : Test
@@ -79,8 +95,15 @@ class EmptyTest : Test
         limit = l;
     }
 
-    void idle() { }
-    void draw() { }
+    void init() {}
+    void clear() {}
+
+    void idle() {}
+    void draw() {}
+
+    void keyReaction( in KeyboardEvent ) {}
+    void mouseReaction( in MouseEvent ) {}
+    void resize( ivec2 ) {}
 
     @property
     {
