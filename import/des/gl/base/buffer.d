@@ -170,6 +170,8 @@ public:
     {
         if( offset + length > data_size )
             throw new GLBufferException( "map buffer range: offset + length > data_size" );
+        if( bits.length == 0 )
+            throw new GLBufferException( "map buffer range must accept bits" );
 
         debug logger.trace( "by bits %s: offset [%d], length [%d]", bits, offset, length );
 
@@ -208,17 +210,27 @@ public:
     }
 
     ///
-    void storage( void[] data, StorageBits[] bits... )
+    void storage( void[] data, size_t elem_size, StorageBits[] bits )
     {
         bind(); scope(exit) unbind();
+        element_count = cast(uint)( data.length / elem_size );
+        data_size = data.length;
         checkGLCall!glBufferStorage( target, data.length, data.ptr, packBitMask(bits) );
+        debug logger.trace( "by bits %s: size [%d : %d x %d]", bits, data_size, element_count, elementSize );
     }
 
     ///
-    void storage( size_t size, StorageBits[] bits... )
+    void storage(T)( T[] data, StorageBits[] bits )
+    { storage( data, T.sizeof, bits ); }
+
+    ///
+    void storage( size_t elem_count, size_t elem_size, StorageBits[] bits )
     {
         bind(); scope(exit) unbind();
-        checkGLCall!glBufferStorage( target, size, null, packBitMask(bits) );
+        element_count = cast(uint)elem_count;
+        data_size = elem_count * elem_size;
+        checkGLCall!glBufferStorage( target, data_size, null, packBitMask(bits) );
+        debug logger.trace( "by bits %s: size [%d : %d x %d]", bits, data_size, element_count, elementSize );
     }
 }
 

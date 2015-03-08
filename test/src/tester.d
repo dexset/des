@@ -48,7 +48,8 @@ public:
 
         if( current.complite )
         {
-            info_log ~= wformat( "\n[%s] complite", current.name );
+            info_log ~= wformat( "\n[%s] complite [%s]", current.name,
+                                 current.success ? "success" : "fails" );
             changeInfoLog( info_log );
             current.clear();
             nextTest();
@@ -110,5 +111,6 @@ class EmptyTest : Test
         wstring name() { return _name; }
         wstring info() { return wformat( "%d/%d", counter, limit ); }
         bool complite() { return counter++ > limit; }
+        bool success() { return true; }
     }
 }

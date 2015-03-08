@@ -183,7 +183,8 @@ public:
 
 package:
     void setApp( DesApp owner ) { app = owner; }
-    void makeCurrent() { SDL_GL_MakeCurrent( win, app.context );}
+
+    void makeCurrent() { SDL_GL_MakeCurrent( win, app.context ); }
 
 protected:
 

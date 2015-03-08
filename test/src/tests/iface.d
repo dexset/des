@@ -7,6 +7,7 @@ public
     import des.gl;
     import des.util.arch;
     import des.util.logsys;
+    import des.util.testsuite;
 }
 
 class TestException : Exception
@@ -32,6 +33,7 @@ interface Test
         wstring name();
         wstring info();
         bool complite();
+        bool success();
     }
 }
 
@@ -88,6 +90,7 @@ abstract class AutoTestWithCases : DesObject, Test
     {
         wstring info() { return current_info; }
         bool complite() { return subtest is null; }
+        bool success() { return complite; }
     }
 
 protected:
