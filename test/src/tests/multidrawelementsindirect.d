@@ -44,7 +44,7 @@ class MultiDrawElementsIndirectTest : GLDrawObject, Test
         }
         l1 ~= uint.max;
         l2 ~= uint.max;
-        
+
         return l1 ~ l2;
     }
 
@@ -140,23 +140,23 @@ enum SS_DRAW_VARIANTS = `
 //### vert
 #version 430 core
 layout(location=0) in vec2 pos;
-layout(location=0) out vec3 v_color;
+layout(location=0) out vec3 out_color;
 void main()
 {
     vec2 offset = vec2(1,-1) * 0.08 * gl_InstanceID;
 
-         if( gl_InstanceID == 0 ) v_color = vec3(1,0,0);
-    else if( gl_InstanceID == 1 ) v_color = vec3(0,1,0);
-    else if( gl_InstanceID == 2 ) v_color = vec3(0,0,1);
-    else if( gl_InstanceID == 3 ) v_color = vec3(1,1,0);
-    else if( gl_InstanceID == 4 ) v_color = vec3(0,1,1);
-    else if( gl_InstanceID == 5 ) v_color = vec3(1,0,1);
+         if( gl_InstanceID == 0 ) out_color = vec3(1,0,0);
+    else if( gl_InstanceID == 1 ) out_color = vec3(0,1,0);
+    else if( gl_InstanceID == 2 ) out_color = vec3(0,0,1);
+    else if( gl_InstanceID == 3 ) out_color = vec3(1,1,0);
+    else if( gl_InstanceID == 4 ) out_color = vec3(0,1,1);
+    else if( gl_InstanceID == 5 ) out_color = vec3(1,0,1);
 
     gl_Position = vec4(pos*(vec2(1)-offset),0,1);
 }
 //### frag
 #version 430 core
-layout(location=0) in vec3 v_color;
+layout(location=0) in vec3 in_color;
 layout(location=0) out vec4 color;
-void main() { color = vec4( v_color, 1 ); }
+void main() { color = vec4( in_color, 1 ); }
 `;

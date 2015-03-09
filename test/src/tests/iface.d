@@ -3,11 +3,17 @@ module tests.iface;
 public
 {
     import des.math.linear;
+    import des.space;
+    import des.assimp;
+    import des.il.io;
     import des.app.event;
-    import des.gl;
     import des.util.arch;
     import des.util.logsys;
+    import des.util.helpers;
+    import des.util.timer;
     import des.util.testsuite;
+    import des.util.stdext.algorithm;
+    import des.gl;
 }
 
 class TestException : Exception

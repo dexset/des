@@ -377,13 +377,21 @@ class GLTextureBuffer : GLBuffer
 ///
 abstract class GLIndexedBuffer : GLBuffer
 {
+private:
+    bool target_setted = false;
+
 public:
 
-    this( GLenum trg ) { super(trg); }
+    this( GLenum trg )
+    {
+        super(trg);
+        target_setted = true;
+    }
 
     invariant()
     {
-        assert( isValidIndexedTarget( _target ) );
+        if( target_setted )
+            assert( isValidIndexedTarget( _target ) );
     }
 
     /// calls `glBindBufferBase`

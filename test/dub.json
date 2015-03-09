@@ -7,6 +7,7 @@
     "targetType": "executable",
     "importPaths": [ "../import" ],
     "sourcePaths": [ "src", "../import" ],
+    "stringImportPaths": [ "src/tests" ],
     "dependencies":
     {
         "descore": "~>1.2.5",
