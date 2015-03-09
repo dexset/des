@@ -22,7 +22,7 @@ class BufferPRWCM : GLDrawObject, Test
 
         points = newEMM!GLArrayBuffer;
 
-        points.storage( [ vec2(0,.5), vec2(.3,-.3), vec2(-.3,-.3) ],
+        points.storage( 30, vec2.sizeof,
                 [ GLBuffer.StorageBits.READ,
                   GLBuffer.StorageBits.WRITE,
                   GLBuffer.StorageBits.PERSISTENT,
@@ -49,19 +49,18 @@ class BufferPRWCM : GLDrawObject, Test
         step++;
 
         float R = 0.5;
-        float t0 = step / 90.0f;
-        float t1 = step / 120.0f;
-        float t2 = step / 1500.0f;
 
-        data[0] = vec2( cos(t0), sin(t0) ) * R;
-        data[1] = vec2( cos(t1), sin(t1) ) * R;
-        data[2] = vec2( cos(t2), sin(t2) ) * R;
+        foreach( i, ref p; data )
+        {
+            auto t = step / 200.0 * (1.0 + i*0.01);
+            p = vec2( cos(t), sin(t*(1.0f + i*0.01)) ) * R;
+        }
     }
 
     void draw()
     {
         shader.use();
-        drawArrays( DrawMode.LINE_LOOP, 0, 3 );
+        drawArrays( DrawMode.LINE_STRIP, 0, points.elementCount );
     }
 
     void keyReaction( in KeyboardEvent ke )
@@ -87,7 +86,7 @@ class BufferPRWCM : GLDrawObject, Test
     @property
     {
         wstring name() { return "buffer PRWCM"w; }
-        wstring info() { return "see you red rotated triangle? [y/N]:"w; }
+        wstring info() { return "see you red sin-moved line? [y/N]:"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }

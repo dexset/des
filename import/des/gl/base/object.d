@@ -118,73 +118,8 @@ protected:
     ///
     GLVAO vao;
 
-    final
-    {
-        /// `glVertexAttribPointer`
-        void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
-                GLType attype, size_t stride, size_t offset, bool norm=false )
-        {
-            vao.enable( index );
-
-            buffer.bind(); scope(exit) buffer.unbind();
-
-            checkGLCall!glVertexAttribPointer( index, cast(int)per_element,
-                    cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
-
-            logger.Debug( "VAO [%d], buffer [%d], "~
-                            "index [%d], per element [%d][%s]"~
-                            "%s%s",
-                            vao.id, buffer.id,
-                            index, per_element, attype,
-                            stride != 0 ? ntFormat(", stride [%d], offset [%d]", stride, offset ) : "",
-                            norm ? ntFormat( ", norm [%s]", norm ) : "" );
-        }
-
-        /// ditto
-        void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
-                GLType attype, bool norm=false )
-        { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
-
-        /// ditto
-        void setAttribPointer( GLArrayBuffer buffer, in GLAttrib attr )
-        {
-            setAttribPointer( buffer, attr.location, attr.elements,
-                              attr.type, attr.stride, attr.offset, attr.norm );
-        }
-    }
-
     /// override this for any action before draw
     void preDraw() {}
-
-    ///
-    void drawArrays( DrawMode mode, uint start, uint count )
-    {
-        vao.bind();
-        preDraw();
-        checkGLCall!glDrawArrays( mode, start, count );
-        debug logger.trace( "mode [%s], start [%d], count [%d]", mode, start, count );
-    }
-
-    /// by default has no index buffer
-    bool bindElementArrayBuffer() { return false; }
-
-    ///
-    void drawElements( DrawMode mode, GLElementArrayBuffer eab )
-    {
-        if( eab is null )
-        {
-            logger.error( "element array buffer is null" );
-            return;
-        }
-
-        vao.bind();
-        eab.bind();
-
-        preDraw();
-
-        checkGLCall!glDrawElements( mode, eab.elementCount, cast(GLenum)eab.type, null );
-        debug logger.trace( "mode [%s]", mode );
-    }
 
 public:
 
@@ -209,6 +144,105 @@ public:
         LINE_STRIP_ADJACENCY     = GL_LINE_STRIP_ADJACENCY,    /// `GL_LINE_STRIP_ADJACENCY`
         TRIANGLES_ADJACENCY      = GL_TRIANGLES_ADJACENCY,     /// `GL_TRIANGLES_ADJACENCY`
         TRIANGLE_STRIP_ADJACENCY = GL_TRIANGLE_STRIP_ADJACENCY /// `GL_TRIANGLE_STRIP_ADJACENCY`
+    }
+
+protected:
+
+    /// `glVertexAttribPointer`
+    void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
+            GLType attype, size_t stride, size_t offset, bool norm=false )
+    {
+        vao.enable( index );
+
+        buffer.bind(); scope(exit) buffer.unbind();
+
+        checkGLCall!glVertexAttribPointer( index, cast(int)per_element,
+                cast(GLenum)attype, norm, cast(int)stride, cast(void*)offset );
+
+        logger.Debug( "VAO [%d], buffer [%d], "~
+                        "index [%d], per element [%d][%s]"~
+                        "%s%s",
+                        vao.id, buffer.id,
+                        index, per_element, attype,
+                        stride != 0 ? ntFormat(", stride [%d], offset [%d]", stride, offset ) : "",
+                        norm ? ntFormat( ", norm [%s]", norm ) : "" );
+    }
+
+    /// ditto
+    void setAttribPointer( GLArrayBuffer buffer, int index, uint per_element,
+            GLType attype, bool norm=false )
+    { setAttribPointer( buffer, index, per_element, attype, 0, 0, norm ); }
+
+    /// ditto
+    void setAttribPointer( GLArrayBuffer buffer, in GLAttrib attr )
+    {
+        setAttribPointer( buffer, attr.location, attr.elements,
+                            attr.type, attr.stride, attr.offset, attr.norm );
+    }
+
+    /// `glDrawArraysInstancedBaseInstance`
+    void drawArrays( DrawMode mode, uint start, uint count,
+                     uint instcount=1, uint baseinst=0 )
+    {
+        vao.bind();
+        preDraw();
+        checkGLCall!glDrawArraysInstancedBaseInstance( mode,
+                start, count, instcount, baseinst );
+        debug logger.trace( "mode [%s], start [%d], count [%d], " ~
+                            "instance count [%d], base instance [%d]",
+                            mode, start, count, instcount, baseinst );
+    }
+
+    ///
+    void multiDrawArraysIndirect( DrawMode mode, GLDrawIndirectBuffer dib,
+                                  size_t offset=0, uint count=0 )
+    {
+        enforce( dib !is null, new GLObjException( "draw indirect buffer is null" ) );
+        vao.bind();
+        preDraw();
+        dib.bind();
+        auto dibes = dib.elementSize;
+        checkGLCall!glMultiDrawArraysIndirect( mode,
+                cast(const(void)*)(offset*dibes), count, dibes );
+        debug logger.trace( "mode [%s]", mode );
+    }
+
+    /// `glDrawElementsInstancedBaseVertexBaseInstance`
+    void drawElements( DrawMode mode, GLElementArrayBuffer eab,
+                       uint instcount=1, uint basevert=0, uint baseinst=0 )
+    {
+        preElementDraw( eab );
+        checkGLCall!glDrawElementsInstancedBaseVertexBaseInstance( mode,
+                        eab.elementCount, cast(GLenum)eab.type, null,
+                        instcount, basevert, baseinst );
+        debug logger.trace( "mode [%s]", mode );
+    }
+
+    ///
+    void multiDrawElementsIndirect( DrawMode mode, GLElementArrayBuffer eab,
+                                    GLDrawIndirectBuffer dib, uint offset=0,
+                                    uint count=0 )
+    {
+        enforce( dib !is null, new GLObjException( "draw indirect buffer is null" ) );
+        preElementDraw( eab );
+        dib.bind();
+        auto dibes = dib.elementSize;
+        checkGLCall!glMultiDrawElementsIndirect( mode, eab.type,
+                cast(void*)(offset*dibes),
+                (count?count:(dib.elementCount-offset)), dibes );
+        debug logger.trace( "mode [%s]", mode );
+    }
+
+private:
+
+    void preElementDraw( GLElementArrayBuffer eab )
+    {
+        enforce( eab !is null, new GLObjException( "element array buffer is null" ) );
+
+        vao.bind();
+        eab.bind();
+
+        preDraw();
     }
 }
 

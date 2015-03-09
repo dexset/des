@@ -220,8 +220,7 @@ public:
     }
 
     ///
-    void storage(T)( T[] data, StorageBits[] bits )
-    { storage( data, T.sizeof, bits ); }
+    void storage(T)( T[] data, StorageBits[] bits ) { storage( data, T.sizeof, bits ); }
 
     ///
     void storage( size_t elem_count, size_t elem_size, StorageBits[] bits )
@@ -269,6 +268,34 @@ class GLDrawIndirectBuffer : GLBuffer
 {
     ///
     this() { super( GL_DRAW_INDIRECT_BUFFER ); }
+
+    ///
+    struct ArrayCmd
+    {
+        ///
+        uint count;
+        ///
+        uint instanceCount;
+        ///
+        uint first;
+        ///
+        uint baseInstance;
+    }
+
+    ///
+    struct ElementCmd
+    {
+        /// indices count
+        uint count;
+        ///
+        uint instanceCount;
+        /// offset in index array
+        uint firstIndex;
+        ///
+        uint baseVertex;
+        /// not affect to glsl `gl_InstanceID`, only attrib divisor
+        uint baseInstance;
+    }
 }
 
 ///
@@ -315,6 +342,8 @@ public:
         inner_call = false;
         _type = cast(Type)toGLType!T;
     }
+
+    // TODO: override storage func
 }
 
 ///
