@@ -50,7 +50,7 @@ class MultiDrawElementsIndirectTest : GLDrawObject, Test
 
     void init()
     {
-        shader = newEMM!CommonGLShaderProgram( 
+        shader = newEMM!CommonGLShaderProgram(
                 parseGLShaderSource( SS_DRAW_VARIANTS ) );
 
         points = newEMM!GLArrayBuffer;
@@ -75,21 +75,21 @@ class MultiDrawElementsIndirectTest : GLDrawObject, Test
         }
 
         addFigure( vec2(-.5,.5), PI_2, 3, 1 );
-        addFigure( vec2(  0,.5), PI_4, 4, 2 ); 
-        addFigure( vec2( .5,.5), PI_2, 5, 3 ); 
+        addFigure( vec2(  0,.5), PI_4, 4, 2 );
+        addFigure( vec2( .5,.5), PI_2, 5, 3 );
 
         addFigure( vec2(-.5,0), PI_4, 4, 3 );
-        addFigure( vec2(  0,0), PI_2, 3, 4 ); 
-        addFigure( vec2( .5,0),   0, 36, 5 ); 
+        addFigure( vec2(  0,0), PI_2, 3, 4 );
+        addFigure( vec2( .5,0),   0, 36, 5 );
 
         addFigure( vec2(-.5,-.5), PI_2, 36, 3 );
-        addFigure( vec2(  0,-.5), PI_4, 4, 4 ); 
-        addFigure( vec2( .5,-.5), PI_2, 5, 6 ); 
-        
+        addFigure( vec2(  0,-.5), PI_4, 4, 4 );
+        addFigure( vec2( .5,-.5), PI_2, 5, 6 );
+
         auto sf = [ GLBuffer.StorageBits.WRITE ];
-        points.storage( vertices, sf );
-        eab.set( indices, GLBuffer.Usage.STATIC_DRAW );
-        dib.setData( drawcmd, GLBuffer.Usage.STATIC_DRAW );
+        points.storageData( vertices, sf );
+        eab.storage( indices, sf );
+        dib.storage( drawcmd, sf );
 
         setAttribPointer( points, 0, 2, GLType.FLOAT );
 

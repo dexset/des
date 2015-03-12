@@ -10,7 +10,7 @@ class SSBOLightTest : DesObject, Test
     bool result = false;
 
     CommonGLShaderProgram shader;
-    DrawSphere obj;
+    SimpleDraw obj;
 
     GLShaderStorageBuffer light_buffer;
 
@@ -27,8 +27,8 @@ class SSBOLightTest : DesObject, Test
         shader = newEMM!CommonGLShaderProgram(
                 parseGLShaderSource( import("ssbo_light.glsl") ) );
 
-        obj = newEMM!DrawSphere( convMesh(
-                    smGetSphereMesh( "sphere", 2, 24, 24 ) ) );
+        obj = newEMM!SimpleDraw( convMesh(
+                    smGetSphereMesh( "sphere", 2, 32, 32 ) ) );
 
         cam = newEMM!MouseControlCamera;
 
@@ -51,10 +51,10 @@ class SSBOLightTest : DesObject, Test
                 auto q = quat.fromAngle( .8 * dt, a );
                 l.ltr.pos = q.rot(l.ltr.pos);
             }
-
-            auto sll = amap!(a=>a.packed(cam))( lights );
-            light_buffer.setData( sll, GLBuffer.Usage.DYNAMIC_DRAW );
         }
+
+        auto sll = amap!(a=>a.packed(cam))( lights );
+        light_buffer.setData( sll, GLBuffer.Usage.DYNAMIC_DRAW );
     }
 
     void draw()
@@ -75,18 +75,17 @@ class SSBOLightTest : DesObject, Test
 
         if( ke.scan == ke.Scan.Y ) { answer = true; result = true; }
         if( ke.scan == ke.Scan.N ) { answer = true; result = false; }
-        if( ke.scan == ke.Scan.M ) lights_move = !lights_move;
+        if( ke.scan == ke.Scan.L ) lights_move = !lights_move;
     }
 
-    void mouseReaction( in MouseEvent me )
-    { cam.mouseReaction( me ); }
+    void mouseReaction( in MouseEvent me ) { cam.mouseReaction( me ); }
 
     void resize( ivec2 ) { }
 
     @property
     {
         wstring name() { return "ssbo lights"w; }
-        wstring info() { return "see you lighted sphere? [y/N] move lights trigger [M]"w; }
+        wstring info() { return "see you lighted sphere? [y/N] move lights trigger [L]"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }
@@ -126,38 +125,22 @@ protected:
         md.num_vertices = cast(uint)( m.vertices.length );
         md.indices = m.indices.dup;
 
-        md.attribs = [ vertexAttrib, tcoordAttrib, normalAttrib, tangentAttrib ];
+        md.attribs = [ vertexAttrib, normalAttrib ];
 
         md.buffers ~= GLMeshData.Buffer( m.vertices.dup, [0] );
-
-        if( m.texcoords !is null )
-            md.buffers ~= GLMeshData.Buffer( getTexCoords( m.texcoords[0] ), [1] );
-
-        md.buffers ~= GLMeshData.Buffer( m.normals.dup, [2] );
-
-        if( m.tangents )
-            md.buffers ~= GLMeshData.Buffer( m.tangents.dup, [3] );
+        md.buffers ~= GLMeshData.Buffer( m.normals.dup, [1] );
 
         return md;
-    }
-
-    vec2[] getTexCoords( in SMTexCoord tc )
-    {
-        enforce( tc.comp == 2 );
-        enforce( tc.data !is null );
-        return cast(vec2[])tc.data.dup;
     }
 
     const @property
     {
         GLAttrib vertexAttrib() { return GLAttrib( "vertex", 0, 3 ); }
-        GLAttrib tcoordAttrib() { return GLAttrib( "tcoord", 1, 2 ); }
-        GLAttrib normalAttrib() { return GLAttrib( "normal", 2, 3 ); }
-        GLAttrib tangentAttrib() { return GLAttrib( "tangent", 3, 3 ); }
+        GLAttrib normalAttrib() { return GLAttrib( "normal", 1, 3 ); }
     }
 }
 
-class DrawSphere : GLMeshObject, SpaceNode
+class SimpleDraw : GLMeshObject, SpaceNode
 {
     mixin DES;
     mixin SpaceNodeHelper;

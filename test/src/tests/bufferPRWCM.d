@@ -22,7 +22,9 @@ class BufferPRWCM : GLDrawObject, Test
 
         points = newEMM!GLArrayBuffer;
 
-        points.storage( 30, vec2.sizeof,
+        size_t pcount = 30;
+
+        points.allocData!vec2( pcount,
                 [ GLBuffer.StorageBits.READ,
                   GLBuffer.StorageBits.WRITE,
                   GLBuffer.StorageBits.PERSISTENT,
@@ -30,11 +32,13 @@ class BufferPRWCM : GLDrawObject, Test
 
         setAttribPointer( points, 0, 2, GLType.FLOAT );
 
-        data = points.mapData!vec2(
+        data = points.mapData!vec2([
                 GLBuffer.MapBits.READ,
                 GLBuffer.MapBits.WRITE,
                 GLBuffer.MapBits.PERSISTENT,
-                GLBuffer.MapBits.COHERENT );
+                GLBuffer.MapBits.COHERENT ]);
+
+        assert( data.length == pcount );
     }
 
     void clear()

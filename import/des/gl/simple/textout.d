@@ -3,7 +3,6 @@ module des.gl.simple.textout;
 import des.fonts.ftglyphrender;
 
 import des.gl.base;
-import des.gl.simple.shader.text;
 
 import std.traits;
 import std.conv;
@@ -15,6 +14,35 @@ import des.util.arch.emm;
 wstring wformat(S,Args...)( S fmt, Args args )
     if( is( S == string ) || is( S == wstring ) )
 { return to!wstring( format( to!string(fmt), args ) ); }
+
+enum SS_WIN_TEXT =
+`//### vert
+#version 120
+attribute vec2 vert;
+attribute vec2 uv;
+
+uniform ivec2 win_size;
+uniform vec2 offset;
+
+varying vec2 ex_uv;
+
+void main(void)
+{
+    vec2 tr_vert = ( vert + offset ) / win_size * 2 - 1;
+    gl_Position = vec4( tr_vert.x, -tr_vert.y, 0, 1);
+    ex_uv = uv;
+}
+//### frag
+#version 120
+uniform sampler2D ttu;
+uniform vec3 color;
+
+varying vec2 ex_uv;
+
+void main(void)
+{
+    gl_FragColor = vec4( color, texture2D( ttu, ex_uv ).r );
+}`;
 
 class BaseLineTextBox : GLDrawObject
 {
@@ -157,82 +185,3 @@ public:
         fRegion2 rectangle() const { return rect; }
     }
 }
-
-/+
-class BaseMultiLineTextBox : ExternalMemoryManager
-{
-    mixin EMM;
-private:
-    BaseLineTextBox[] lines;
-
-    wstring output;
-    vec2 output_size;
-    vec2 pos;
-
-    string font_name;
-    uint font_size;
-
-    void repos()
-    {
-        foreach( ref l; lines )
-            l.destroy();
-        lines.destroy();
-        auto ll = output.split( "\n" );
-        float ysize = 0;
-        float xsize = 0;
-        foreach( i, l; ll )
-        {
-            lines ~= newEMM!BaseLineTextBox( font_name, font_size );
-            lines[$-1].text = l;
-            lines[$-1].color = col;
-            lines[$-1].position = pos + vec2( 0, i * font_size );
-            if( lines[$-1].size.x > xsize )
-                xsize = lines[$-1].size.x;
-            ysize += lines[$-1].size.y;
-        }
-
-        output_size = vec2( xsize, ysize );
-    }
-
-    vec3 col;
-public:
-    this( string font_name, uint font_size = 24u )
-    {
-        this.font_name = font_name;
-        this.font_size = font_size;
-
-        text =
-`Default
-Multi
-Line
-Text`;
-    }
-
-    void draw( ivec2 win_size )
-    {
-        foreach( l; lines )
-            l.draw( win_size );
-    }
-
-    @property
-    {
-        void text(T)( T t )
-            if( isSomeString!T )
-        {
-            output = to!wstring( t );
-            repos();
-        }
-        wstring text(){ return output; }
-
-        void position( vec2 pos )
-        {
-            this.pos = pos;
-            repos();
-        }
-
-        void color( vec3 col ){ this.col = col; }
-
-        vec2 size(){ return output_size; }
-    }
-}
-+/

@@ -36,7 +36,7 @@ class BufferTest : AutoTestWithCases
         addSubTest( "map read data",
         {
             buf0.setData( origin );
-            auto test = buf0.mapData!vec3( GLBuffer.MapBits.READ );
+            auto test = buf0.mapData!vec3( [GLBuffer.MapBits.READ] );
             scope(exit) buf0.unmap();
             return eq( test, origin );
         });
@@ -44,8 +44,8 @@ class BufferTest : AutoTestWithCases
         addSubTest( "map read/write data",
         {
             buf0.setData( origin );
-            auto test = buf0.mapData!vec3( GLBuffer.MapBits.READ,
-                                           GLBuffer.MapBits.WRITE );
+            auto test = buf0.mapData!vec3( [GLBuffer.MapBits.READ,
+                                            GLBuffer.MapBits.WRITE] );
             scope(exit) buf0.unmap();
 
             test[2] = vec3(20,30,40);
@@ -56,7 +56,7 @@ class BufferTest : AutoTestWithCases
         addSubTest( "map read sub data",
         {
             buf0.setData( origin );
-            auto test = buf0.mapDataRange!vec3( 3, 2, GLBuffer.MapBits.READ );
+            auto test = buf0.mapRangeData!vec3( 3, 2, [GLBuffer.MapBits.READ] );
             scope(exit) buf0.unmap();
 
             return eq( test, [ vec3(10,11,12), vec3(13,14,15) ] );

@@ -2,20 +2,12 @@
 #version 430
 
 layout(location=0) in vec3 vertex;
-layout(location=1) in vec2 tcoord;
-layout(location=2) in vec3 normal;
-layout(location=3) in vec3 tangent;
+layout(location=1) in vec3 normal;
 
 uniform mat4 fprj;
 uniform mat4 camspace;
 
-out Vertex
-{
-    vec3 pos;
-    vec2 uv;
-    vec3 norm;
-    vec3 tang;
-} vert;
+out Vertex { vec3 pos; vec3 norm; } vert;
 
 vec3 tr( mat4 mtr, vec3 v, float point )
 { return ( mtr * vec4( v, point ) ).xyz; }
@@ -24,22 +16,14 @@ void main()
 {
     gl_Position = fprj * vec4( vertex, 1.0 );
 
-    vert.uv = tcoord;
     vert.pos  = tr( camspace, vertex, 1.0 );
     vert.norm = tr( camspace, normal, 0.0 );
-    vert.tang = tr( camspace, tangent, 0.0 );
 }
 
 //### frag
 #version 430
 
-in Vertex
-{
-    vec3 pos;
-    vec2 uv;
-    vec3 norm;
-    vec3 tang;
-} vert;
+in Vertex { vec3 pos; vec3 norm; } vert;
 
 struct Light
 {
@@ -70,11 +54,13 @@ vec3[2] calcLight( Light ll, vec3 pos, vec3 norm, float spow )
     if( ll.type < 0 ) return ret;
 
     vec3 lvec = ll.pos - pos;
-    vec3 ldir = normalize( lvec );
     float ldst = length( lvec );
-    float visible = 1.0;
 
     float atten = calcAttenuation( ldst, 0.1, ll.attenuation ) * ll.intensity;
+    if( atten <= 0.001 ) return ret;
+
+    vec3 ldir = normalize( lvec );
+    float visible = 1.0;
 
     float nxdir = max( 0.0, dot( norm, ldir ) );
 
