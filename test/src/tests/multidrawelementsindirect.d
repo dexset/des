@@ -130,7 +130,7 @@ class MultiDrawElementsIndirectTest : GLDrawObject, Test
     @property
     {
         wstring name() { return "draw variants"w; }
-        wstring info() { return "see you 9 full red figures with different colors duplicates? [y/N]:"w; }
+        wstring info() { return "9 full red figures with different colors duplicates [y/N]"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }

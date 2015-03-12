@@ -3,6 +3,7 @@ module tests.ssbo_light;
 import tests.iface;
 
 import camera;
+import meshnode;
 
 class SSBOLightTest : DesObject, Test
 {
@@ -10,7 +11,7 @@ class SSBOLightTest : DesObject, Test
     bool result = false;
 
     CommonGLShaderProgram shader;
-    SimpleDraw obj;
+    MeshNode obj;
 
     GLShaderStorageBuffer light_buffer;
 
@@ -27,7 +28,7 @@ class SSBOLightTest : DesObject, Test
         shader = newEMM!CommonGLShaderProgram(
                 parseGLShaderSource( import("ssbo_light.glsl") ) );
 
-        obj = newEMM!SimpleDraw( convMesh(
+        obj = newEMM!MeshNode( convMesh(
                     smGetSphereMesh( "sphere", 2, 32, 32 ) ) );
 
         cam = newEMM!MouseControlCamera;
@@ -85,7 +86,7 @@ class SSBOLightTest : DesObject, Test
     @property
     {
         wstring name() { return "ssbo lights"w; }
-        wstring info() { return "see you lighted sphere? [y/N] move lights trigger [L]"w; }
+        wstring info() { return "lighted sphere [y/N] move lights trigger [L]"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }
@@ -121,7 +122,7 @@ protected:
 
         enforce( m.vertices !is null );
 
-        md.draw_mode = smMeshTypeToGLObjectDrawMode( m.type );
+        md.draw_mode = smConvMeshTypeToDrawMode( m.type );
         md.num_vertices = cast(uint)( m.vertices.length );
         md.indices = m.indices.dup;
 
@@ -137,26 +138,6 @@ protected:
     {
         GLAttrib vertexAttrib() { return GLAttrib( "vertex", 0, 3 ); }
         GLAttrib normalAttrib() { return GLAttrib( "normal", 1, 3 ); }
-    }
-}
-
-class SimpleDraw : GLMeshObject, SpaceNode
-{
-    mixin DES;
-    mixin SpaceNodeHelper;
-    this( in GLMeshData md ) { super( md ); }
-    void draw() { drawElements(); }
-}
-
-GLDrawObject.DrawMode smMeshTypeToGLObjectDrawMode( SMMesh.Type tp )
-{
-    final switch( tp )
-    {
-        case SMMesh.Type.POINTS:         return GLDrawObject.DrawMode.POINTS;
-        case SMMesh.Type.LINES:          return GLDrawObject.DrawMode.LINES;
-        case SMMesh.Type.LINE_STRIP:     return GLDrawObject.DrawMode.LINE_STRIP;
-        case SMMesh.Type.TRIANGLES:      return GLDrawObject.DrawMode.TRIANGLES;
-        case SMMesh.Type.TRIANGLE_STRIP: return GLDrawObject.DrawMode.TRIANGLE_STRIP;
     }
 }
 

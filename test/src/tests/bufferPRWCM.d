@@ -90,7 +90,7 @@ class BufferPRWCM : GLDrawObject, Test
     @property
     {
         wstring name() { return "buffer PRWCM"w; }
-        wstring info() { return "see you red sin-moved line? [y/N]:"w; }
+        wstring info() { return "red sin-moved line [y/N]"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }
