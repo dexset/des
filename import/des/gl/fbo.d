@@ -1,11 +1,11 @@
-module des.gl.base.frame;
+module des.gl.fbo;
 
 import std.exception;
 import std.conv;
 
-import des.gl.base.general;
-import des.gl.base.texture;
-import des.gl.base.rbo;
+import des.gl.general;
+import des.gl.texture;
+import des.gl.rbo;
 
 ///
 class GLFBOException : DesGLException
@@ -139,16 +139,15 @@ protected:
     in { assert( tex !is null ); } body
     {
         checkGLCall!glFramebufferTexture1D( GL_FRAMEBUFFER, attachment,
-                                            tex.Target.T1D, tex.id, level );
+                                            GL_TEXTURE_1D, tex.id, level );
     }
 
     /// warning: no bind
-    void texture2D( GLTexture tex, GLenum attachment,
-                    GLTexture.Target target=GLTexture.Target.T2D, uint level=0 )
+    void texture2D( GLTexture tex, GLenum attachment, uint level=0 )
     in { assert( tex !is null ); } body
     {
         checkGLCall!glFramebufferTexture2D( GL_FRAMEBUFFER, attachment,
-                                            target, tex.id, level );
+                                            tex.target, tex.id, level );
     }
 
     /// warning: no bind
@@ -169,15 +168,15 @@ protected:
 
 
     /// warning: no bind
-    void setTex( GLTexture tex, GLenum attachment, GLTexture.Target target=GLTexture.Target.T2D )
+    void setTex( GLTexture tex, GLenum attachment )
     {
-        if( tex.target == tex.Target.T1D )
+        if( tex.target == GL_TEXTURE_1D )
             texture1D( tex, attachment );
-        else if( tex.target == tex.Target.T3D ||
-                 tex.target == tex.Target.T2D_ARRAY ||
-                 tex.target == tex.Target.CUBE_MAP_ARRAY )
+        else if( tex.target == GL_TEXTURE_3D ||
+                 tex.target == GL_TEXTURE_2D_ARRAY ||
+                 tex.target == GL_TEXTURE_CUBE_MAP_ARRAY )
             texture3D( tex, attachment );
         else
-            texture2D( tex, attachment, target );
+            texture2D( tex, attachment, tex.target );
     }
 }

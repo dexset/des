@@ -1,6 +1,6 @@
-module des.gl.base.object;
+module des.gl.object;
 
-import des.gl.base.general;
+import des.gl.general;
 
 ///
 abstract class GLObject(string Subj,bool write_bind=true) : DesObject

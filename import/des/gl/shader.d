@@ -1,7 +1,7 @@
-module des.gl.base.shader;
+module des.gl.shader;
 
-import des.gl.base.general;
-import des.gl.base.texture;
+import des.gl.general;
+import des.gl.texture;
 
 ///
 class GLShaderException : DesGLException

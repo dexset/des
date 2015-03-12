@@ -1,9 +1,9 @@
-module des.gl.base.type;
+module des.gl.type;
 
 import std.stdio;
 import std.string;
 
-import des.gl.base.general;
+import des.gl.general;
 
 ///
 enum GLType
@@ -82,6 +82,8 @@ unittest
     assert( toGLType!double == GLType.DOUBLE );
 }
 
+import std.traits : EnumMembers;
+
 ///
 enum GLBufferTarget
 {
@@ -101,10 +103,33 @@ enum GLBufferTarget
 }
 
 ///
-GLBufferTarget glBufferTarget( GLenum trg ) pure nothrow @nogc
+GLBufferTarget toGLBufferTarget( GLenum trg ) pure nothrow @nogc
 {
-    import std.traits : EnumMembers;
     foreach( e; [EnumMembers!GLBufferTarget] )
         if( cast(GLenum)e == trg ) return e;
     return GLBufferTarget.UNKNOWN;
+}
+
+///
+enum GLTextureTarget
+{
+    UNKNOWN               = 0,                            /// equals zero
+    T1D                   = GL_TEXTURE_1D,                   /// `GL_TEXTURE_1D`
+    T1D_ARRAY             = GL_TEXTURE_1D_ARRAY,             /// `GL_TEXTURE_1D_ARRAY`
+    T2D                   = GL_TEXTURE_2D,                   /// `GL_TEXTURE_2D`
+    T2D_ARRAY             = GL_TEXTURE_2D_ARRAY,             /// `GL_TEXTURE_2D_ARRAY`
+    T2D_MULTISAMPLE       = GL_TEXTURE_2D_MULTISAMPLE,       /// `GL_TEXTURE_2D_MULTISAMPLE`
+    T2D_MULTISAMPLE_ARRAY = GL_TEXTURE_2D_MULTISAMPLE_ARRAY, /// `GL_TEXTURE_2D_MULTISAMPLE_ARRAY`
+    T3D                   = GL_TEXTURE_3D,                   /// `GL_TEXTURE_3D`
+    CUBE_MAP              = GL_TEXTURE_CUBE_MAP,             /// `GL_TEXTURE_CUBE_MAP`
+    CUBE_MAP_ARRAY        = GL_TEXTURE_CUBE_MAP_ARRAY,       /// `GL_TEXTURE_CUBE_MAP_ARRAY`
+    RECTANGLE             = GL_TEXTURE_RECTANGLE,            /// `GL_TEXTURE_RECTANGLE`
+}
+
+///
+GLTextureTarget toGLTextureTarget( GLenum trg ) pure nothrow @nogc
+{
+    foreach( e; [EnumMembers!GLTextureTarget] )
+        if( cast(GLenum)e == trg ) return e;
+    return GLTextureTarget.UNKNOWN;
 }

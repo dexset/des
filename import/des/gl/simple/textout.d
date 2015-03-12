@@ -2,7 +2,7 @@ module des.gl.simple.textout;
 
 import des.fonts.ftglyphrender;
 
-import des.gl.base;
+import des.gl;
 
 import std.traits;
 import std.conv;
@@ -52,7 +52,7 @@ private:
 
     public GLArrayBuffer vert, uv;
 
-    GLTexture tex;
+    GLTexture2D tex;
 
     wstring output;
 
@@ -128,7 +128,7 @@ public:
         uv = newEMM!GLArrayBuffer;
         setAttribPointer( uv, shader.getAttribLocation( "uv" ), 2, GLType.FLOAT );
 
-        tex = newEMM!GLTexture( GLTexture.Target.T2D );
+        tex = newEMM!GLTexture2D(0);
 
         tex.setMinFilter( GLTexture.Filter.NEAREST );
         tex.setMagFilter( GLTexture.Filter.NEAREST );
@@ -146,7 +146,7 @@ public:
 
         font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
-        tex.image( font.texture );
+        tex.setImage( font.texture );
 
         text = "Default text";
     }

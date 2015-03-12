@@ -1,8 +1,8 @@
-module des.gl.base.texture;
+module des.gl.texture;
 
 import std.string;
 
-import des.gl.base.general;
+import des.gl.general;
 
 public import des.il;
 
@@ -18,27 +18,12 @@ class GLTextureException : DesGLException
 }
 
 ///
-class GLTexture : DesObject
+abstract class GLTexture : GLObject!("Texture",false)
 {
     mixin DES;
     mixin ClassLogger;
-private:
-    uint _id;
 
 protected:
-    ///
-    texsize_t img_size;
-
-    override void selfDestroy()
-    {
-        unbind();
-        checkGLCall!glDeleteTextures( 1, &_id );
-    }
-
-    Target _target;
-
-    ///
-    nothrow @property GLenum gltype() const { return cast(GLenum)_target; }
 
     ///
     InternalFormat liformat;
@@ -60,8 +45,6 @@ protected:
         COMPARE_FUNC               = GL_TEXTURE_COMPARE_FUNC,       /// `GL_TEXTURE_COMPARE_FUNC`
         COMPARE_MODE               = GL_TEXTURE_COMPARE_MODE,       /// `GL_TEXTURE_COMPARE_MODE`
         LOD_BIAS                   = GL_TEXTURE_LOD_BIAS,           /// `GL_TEXTURE_LOD_BIAS`
-        MIN_FILTER                 = GL_TEXTURE_MIN_FILTER,         /// `GL_TEXTURE_MIN_FILTER`
-        MAG_FILTER                 = GL_TEXTURE_MAG_FILTER,         /// `GL_TEXTURE_MAG_FILTER`
         MIN_LOD                    = GL_TEXTURE_MIN_LOD,            /// `GL_TEXTURE_MIN_LOD`
         MAX_LOD                    = GL_TEXTURE_MAX_LOD,            /// `GL_TEXTURE_MAX_LOD`
         SWIZZLE_R                  = GL_TEXTURE_SWIZZLE_R,          /// `GL_TEXTURE_SWIZZLE_R`
@@ -75,98 +58,6 @@ protected:
     }
 
 public:
-
-    alias CrdVector!3 texsize_t;
-
-    @property
-    {
-        ///
-        Target target() const { return _target; }
-        ///
-        void target( Target trg ) { _target = trg; }
-    }
-
-    ///
-    enum Target
-    {
-        T1D                   = GL_TEXTURE_1D,                   /// `GL_TEXTURE_1D`
-        T2D                   = GL_TEXTURE_2D,                   /// `GL_TEXTURE_2D`
-        T3D                   = GL_TEXTURE_3D,                   /// `GL_TEXTURE_3D`
-        T1D_ARRAY             = GL_TEXTURE_1D_ARRAY,             /// `GL_TEXTURE_1D_ARRAY`
-        T2D_ARRAY             = GL_TEXTURE_2D_ARRAY,             /// `GL_TEXTURE_2D_ARRAY`
-        RECTANGLE             = GL_TEXTURE_RECTANGLE,            /// `GL_TEXTURE_RECTANGLE`
-        CUBE_MAP              = GL_TEXTURE_CUBE_MAP,             /// `GL_TEXTURE_CUBE_MAP`
-        CUBE_MAP_ARRAY        = GL_TEXTURE_CUBE_MAP_ARRAY,       /// `GL_TEXTURE_CUBE_MAP_ARRAY`
-
-        BUFFER                = GL_TEXTURE_BUFFER,               /// `GL_TEXTURE_BUFFER`
-        T2D_MULTISAMPLE       = GL_TEXTURE_2D_MULTISAMPLE,       /// `GL_TEXTURE_2D_MULTISAMPLE`
-        T2D_MULTISAMPLE_ARRAY = GL_TEXTURE_2D_MULTISAMPLE_ARRAY, /// `GL_TEXTURE_2D_MULTISAMPLE_ARRAY`
-
-        CUBE_MAP_POSITIVE_X   = GL_TEXTURE_CUBE_MAP_POSITIVE_X,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_X`
-        CUBE_MAP_NEGATIVE_X   = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_X`
-        CUBE_MAP_POSITIVE_Y   = GL_TEXTURE_CUBE_MAP_POSITIVE_Y,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_Y`
-        CUBE_MAP_NEGATIVE_Y   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Y`
-        CUBE_MAP_POSITIVE_Z   = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_Z`
-        CUBE_MAP_NEGATIVE_Z   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z   /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    }
-
-    ///
-    enum DepthStencilTextureMode
-    {
-        DEPTH   = GL_DEPTH_COMPONENT,   /// `GL_DEPTH_COMPONENT`
-        STENCIL = GL_STENCIL_COMPONENTS /// `GL_STENCIL_COMPONENTS`
-    }
-
-    ///
-    enum CompareFunc
-    {
-        LEQUAL   = GL_LEQUAL,   /// `GL_LEQUAL`
-        GEQUAL   = GL_GEQUAL,   /// `GL_GEQUAL`
-        LESS     = GL_LESS,     /// `GL_LESS`
-        GREATER  = GL_GREATER,  /// `GL_GREATER`
-        EQUAL    = GL_EQUAL,    /// `GL_EQUAL`
-        NOTEQUAL = GL_NOTEQUAL, /// `GL_NOTEQUAL`
-        ALWAYS   = GL_ALWAYS,   /// `GL_ALWAYS`
-        NEVER    = GL_NEVER     /// `GL_NEVER`
-    }
-
-    ///
-    enum CompareMode
-    {
-        REF_TO_TEXTURE = GL_COMPARE_REF_TO_TEXTURE, /// `GL_COMPARE_REF_TO_TEXTURE`
-        NONE = GL_NONE /// `GL_NONE`
-    }
-
-    ///
-    enum Filter
-    {
-        NEAREST                = GL_NEAREST,                /// `GL_NEAREST`
-        LINEAR                 = GL_LINEAR,                 /// `GL_LINEAR`
-        NEAREST_MIPMAP_NEAREST = GL_NEAREST_MIPMAP_NEAREST, /// `GL_NEAREST_MIPMAP_NEAREST`
-        LINEAR_MIPMAP_NEAREST  = GL_LINEAR_MIPMAP_NEAREST,  /// `GL_LINEAR_MIPMAP_NEAREST`
-        NEAREST_MIPMAP_LINEAR  = GL_NEAREST_MIPMAP_LINEAR,  /// `GL_NEAREST_MIPMAP_LINEAR`
-        LINEAR_MIPMAP_LINEAR   = GL_LINEAR_MIPMAP_LINEAR    /// `GL_LINEAR_MIPMAP_LINEAR`
-    }
-
-    ///
-    enum Swizzle
-    {
-        RED   = GL_RED,  /// `GL_RED`
-        GREEN = GL_GREEN,/// `GL_GREEN`
-        BLUE  = GL_BLUE, /// `GL_BLUE`
-        ALPHA = GL_ALPHA,/// `GL_ALPHA`
-        ONE   = GL_ONE,  /// `GL_ONE`
-        ZERO  = GL_ZERO  /// `GL_ZERO`
-    }
-
-    ///
-    enum Wrap
-    {
-        CLAMP_TO_EDGE   = GL_CLAMP_TO_EDGE,   /// `GL_CLAMP_TO_EDGE`
-        CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER, /// `GL_CLAMP_TO_BORDER`
-        MIRRORED_REPEAT = GL_MIRRORED_REPEAT, /// `GL_MIRRORED_REPEAT`
-        REPEAT          = GL_REPEAT           /// `GL_REPEAT`
-    }
 
     ///
     enum InternalFormat
@@ -253,10 +144,9 @@ public:
     }
 
     ///
-    this( Target tg, uint tu = 0 )
+    this( GLenum tg, uint tu = 0 )
     in
     {
-        assert( isBase(tg) );
         int max_tu;
         checkGLCall!glGetIntegerv( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_tu );
         assert( tu < max_tu );
@@ -264,71 +154,97 @@ public:
     body
     {
         _unit = tu;
-        checkGLCall!glGenTextures( 1, &_id );
-        logger = new InstanceLogger( this, format( "tu:%d, id:%d", tu, _id ) );
-        _target = tg;
-        logger.Debug( "with target [%s]", _target );
+        super( tg );
+        logger.Debug( "with target [%s] texture unit [%d]", target, tu );
     }
 
-    final pure @property
+    enum Dim { ONE, TWO, THREE }
+
+    pure nothrow @nogc @property
     {
-        ///
-        uint id() const { return _id; }
-        ///
-        uint unit() const { return _unit; }
-        ///
-        void unit( uint tu ) { _unit = tu; }
+        final
+        {
+            ///
+            uint unit() const { return _unit; }
+            ///
+            void unit( uint tu ) { _unit = tu; }
+        }
+
+        abstract bool mipmapable();
+        abstract bool isArray();
+        abstract Dim imageDim();
+        abstract Dim allocDim();
     }
 
-    /// bind, glGenerateMipmap
+    ///
     void genMipmap()
-    in { assert( isMipmapable(_target) ); } body
     {
+        if( !mipmapable ) throw new GLTextureException( this.toString ~ " is not mipmapable" );
         bind();
-        checkGLCall!glGenerateMipmap(gltype);
-        logger.Debug( "with target [%s]", _target );
+        checkGLCall!glGenerateMipmap(target);
+        logger.Debug( "with target [%s]", target );
     }
 
     ///
     void setParam( GLenum param, int val )
     {
         bind();
-        checkGLCall!glTexParameteri( gltype, param, val );
+        checkGLCall!glTexParameteri( target, param, val );
     }
 
     ///
     void setParam( GLenum param, int[] val )
     {
         bind();
-        checkGLCall!glTexParameteriv( gltype, param, val.ptr );
+        checkGLCall!glTexParameteriv( target, param, val.ptr );
     }
 
     ///
     void setParam( GLenum param, float val )
     {
         bind();
-        checkGLCall!glTexParameterf( gltype, param, val );
+        checkGLCall!glTexParameterf( target, param, val );
     }
 
     ///
     void setParam( GLenum param, float[] val )
     {
         bind();
-        checkGLCall!glTexParameterfv( gltype, param, val.ptr );
+        checkGLCall!glTexParameterfv( target, param, val.ptr );
+    }
+
+    ///
+    enum Filter
+    {
+        NEAREST                = GL_NEAREST,                /// `GL_NEAREST`
+        LINEAR                 = GL_LINEAR,                 /// `GL_LINEAR`
+        NEAREST_MIPMAP_NEAREST = GL_NEAREST_MIPMAP_NEAREST, /// `GL_NEAREST_MIPMAP_NEAREST`
+        LINEAR_MIPMAP_NEAREST  = GL_LINEAR_MIPMAP_NEAREST,  /// `GL_LINEAR_MIPMAP_NEAREST`
+        NEAREST_MIPMAP_LINEAR  = GL_NEAREST_MIPMAP_LINEAR,  /// `GL_NEAREST_MIPMAP_LINEAR`
+        LINEAR_MIPMAP_LINEAR   = GL_LINEAR_MIPMAP_LINEAR    /// `GL_LINEAR_MIPMAP_LINEAR`
     }
 
     ///
     void setMinFilter( Filter filter )
     {
-        setParam( Parameter.MIN_FILTER, filter );
+        setParam( GL_TEXTURE_MIN_FILTER, filter );
         logger.Debug( "to [%s]", filter );
     }
 
     ///
     void setMagFilter( Filter filter )
     {
-        setParam( Parameter.MAG_FILTER, filter );
+        setParam( GL_TEXTURE_MAG_FILTER, filter );
         logger.Debug( "to [%s]", filter );
+    }
+
+    ///
+    enum Wrap
+    {
+        CLAMP_TO_EDGE   = GL_CLAMP_TO_EDGE,   /// `GL_CLAMP_TO_EDGE`
+        CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER, /// `GL_CLAMP_TO_BORDER`
+        MIRRORED_REPEAT = GL_MIRRORED_REPEAT, /// `GL_MIRRORED_REPEAT`
+        REPEAT          = GL_REPEAT           /// `GL_REPEAT`
     }
 
     ///
@@ -395,6 +311,19 @@ public:
     }
 
     ///
+    enum CompareFunc
+    {
+        LEQUAL   = GL_LEQUAL,   /// `GL_LEQUAL`
+        GEQUAL   = GL_GEQUAL,   /// `GL_GEQUAL`
+        LESS     = GL_LESS,     /// `GL_LESS`
+        GREATER  = GL_GREATER,  /// `GL_GREATER`
+        EQUAL    = GL_EQUAL,    /// `GL_EQUAL`
+        NOTEQUAL = GL_NOTEQUAL, /// `GL_NOTEQUAL`
+        ALWAYS   = GL_ALWAYS,   /// `GL_ALWAYS`
+        NEVER    = GL_NEVER     /// `GL_NEVER`
+    }
+
+    ///
     void setCompareFunc( CompareFunc cf )
     {
         setParam( Parameter.COMPARE_FUNC, cf );
@@ -402,10 +331,28 @@ public:
     }
 
     ///
+    enum CompareMode
+    {
+        REF_TO_TEXTURE = GL_COMPARE_REF_TO_TEXTURE, /// `GL_COMPARE_REF_TO_TEXTURE`
+        NONE = GL_NONE /// `GL_NONE`
+    }
+
+    ///
     void setCompareMode( CompareMode cm )
     {
         setParam( Parameter.COMPARE_MODE, cm );
         logger.Debug( "to [%s]", cm );
+    }
+
+    ///
+    enum Swizzle
+    {
+        RED   = GL_RED,  /// `GL_RED`
+        GREEN = GL_GREEN,/// `GL_GREEN`
+        BLUE  = GL_BLUE, /// `GL_BLUE`
+        ALPHA = GL_ALPHA,/// `GL_ALPHA`
+        ONE   = GL_ONE,  /// `GL_ONE`
+        ZERO  = GL_ZERO  /// `GL_ZERO`
     }
 
     ///
@@ -444,154 +391,40 @@ public:
     }
 
     ///
+    enum DepthStencilTextureMode
+    {
+        DEPTH   = GL_DEPTH_COMPONENT,   /// `GL_DEPTH_COMPONENT`
+        STENCIL = GL_STENCIL_COMPONENTS /// `GL_STENCIL_COMPONENTS`
+    }
+
+    ///
     void setDepthStencilTextureMode( DepthStencilTextureMode dstm )
     {
         setParam( Parameter.DEPTH_STENCIL_TEXTURE_MODE, dstm );
         logger.Debug( "to [%s]", dstm );
     }
 
-    final nothrow
+    final
     {
         /// glActiveTexture, glBindTexture
-        void bind()
+        override void bind()
         {
-            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
-            ntCheckGLCall!glBindTexture( gltype, _id );
+            checkGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
+            checkGLCall!glBindTexture( target, id );
             debug logger.trace( "pass" );
         }
 
         ///
-        void unbind()
+        override void unbind()
         {
-            ntCheckGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
-            ntCheckGLCall!glBindTexture( gltype, 0 );
+            checkGLCall!glActiveTexture( GL_TEXTURE0 + _unit );
+            checkGLCall!glBindTexture( target, 0 );
             debug logger.trace( "pass" );
         }
-
-        ///
-        texsize_t size() const { return img_size; }
-    }
-
-    ///
-    void resize(size_t N,T)( in Vector!(N,T) sz )
-        if( (N==1 || N==2 || N==3) && isIntegral!T )
-    { image( sz, liformat, lformat, ltype ); }
-
-    /// set image
-    void image(size_t N,T)( in Vector!(N,T) sz, InternalFormat internal_format,
-            Format data_format, Type data_type, in void* data=null )
-    if( (N==1 || N==2 || N==3) && isIntegral!T )
-    {
-        enum N = sz.length;
-        img_size = texsize_t( sz, [1,1][0 .. 3-N] );
-
-        liformat = internal_format;
-        lformat = data_format;
-        ltype = data_type;
-
-        bind();
-        mixin( format(`
-        glTexImage%1dD( gltype, 0, cast(int)internal_format, %s, 0,
-                        cast(GLenum)data_format, cast(GLenum)data_type, data );
-        `, N, accessVecFields!(sz) ) );
-
-        debug checkGL;
-        logger.Debug( "[%d]: size %s, internal format [%s], format [%s], type [%s], with data [%s]",
-                _id, sz.data.dup, internal_format, data_format, data_type, data?true:false );
-    }
-
-    /// ditto
-    final void image(size_t N)( in Image!N img ) if( N >= 1 && N <= 3 )
-    in
-    {
-        switch( N )
-        {
-            case 1: assert( target == Target.T1D ); break;
-            case 2: assert( target == Target.T2D ); break;
-            case 3: assert( target == Target.T3D ); break;
-            default: assert(0);
-        }
-    }
-    body
-    {
-        Type type = typeFromImageDataType( img.info.comp );
-        auto fmt = formatFromImageChanelsCount( img.info.channels );
-        image( img.size, fmt[0], fmt[1], type, img.data.ptr );
-    }
-
-    ///
-    final void getImage( ref Image!2 img )
-    in { assert( _target == Target.T2D ); } body
-    { getImage( img, ltype ); }
-
-    ///
-    final void getImage( ref Image!2 img, Type type )
-    in { assert( _target == Target.T2D ); } body
-    {
-        enum uint level = 0;
-
-        bind();
-        debug checkGL;
-        int w, h;
-        glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &(w));
-        debug checkGL;
-        glGetTexLevelParameteriv( GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &(h));
-        debug checkGL;
-
-        auto elemSize = formatElemCount(lformat) * sizeofType(type);
-
-        auto dsize = w * h * elemSize;
-
-        if( img.size != CrdVector!2(w,h) || img.info.bpe != elemSize )
-        {
-            img.size = ivec2( w, h );
-            img.info = imageElemInfo( lformat, type );
-        }
-
-        glGetTexImage( GL_TEXTURE_2D, level, cast(GLenum)lformat, cast(GLenum)type, img.data.ptr );
-        debug checkGL;
-        unbind();
-        debug checkGL;
-        debug logger.trace( "[%d] size [%d,%d], format [%s], type [%s]", _id, w,h, lformat, type );
     }
 
     protected static
     {
-        ///
-        bool isBase( Target trg )
-        {
-            switch(trg)
-            {
-            case Target.T1D:
-            case Target.T1D_ARRAY:
-            case Target.T2D:
-            case Target.T2D_ARRAY:
-            case Target.T2D_MULTISAMPLE:
-            case Target.T2D_MULTISAMPLE_ARRAY:
-            case Target.T3D:
-            case Target.CUBE_MAP:
-            case Target.CUBE_MAP_ARRAY:
-            case Target.RECTANGLE:
-                return true;
-            default: return false;
-            }
-        }
-
-        ///
-        bool isMipmapable( Target trg )
-        {
-            switch(trg)
-            {
-            case Target.T1D:
-            case Target.T1D_ARRAY:
-            case Target.T2D:
-            case Target.T2D_ARRAY:
-            case Target.T3D:
-            case Target.CUBE_MAP: return true;
-            default: return false;
-            }
-        }
-
         ///
         size_t formatElemCount( Format fmt )
         {
@@ -717,10 +550,412 @@ public:
     }
 }
 
-private @property string accessVecFields(alias T)()
+abstract class GLTexture1DBase : GLTexture
 {
-    string[] ret;
-    foreach( i; 0 .. T.length )
-        ret ~= format( "cast(int)(%s[%d])", T.stringof, i );
-    return ret.join(",");
+protected:
+    uint _size;
+
+public:
+
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    @property
+    {
+        final override const pure nothrow @nogc
+        {
+            ///
+            Dim allocDim() { return Dim.ONE; }
+        }
+
+        uint size() const pure nothrow { return _size; }
+
+        void size( uint sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
+    }
+
+    void setImage( uint sz, InternalFormat store_format, Format input_format,
+                   Type input_type, in void* data=null, uint level=0 )
+    {
+        _size = sz;
+
+        liformat = store_format;
+        lformat = input_format;
+        ltype = input_type;
+
+        bind();
+        checkGLCall!glTexImage1D( target, level, store_format, sz, 0,
+                                  input_format, input_type, data );
+
+        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                sz, store_format, input_format, input_type, data?true:false );
+    }
+
+    void setImage( in Image!1 img, uint level=0 )
+    {
+        Type type = typeFromImageDataType( img.info.comp );
+        auto fmt = formatFromImageChanelsCount( img.info.channels );
+        setImage( cast(uint)(img.size[0]), fmt[0], fmt[1], type, img.data.ptr, level );
+    }
+
+    void getImage( ref Image!1 img, uint level=0 ) { getImage( img, ltype, level ); }
+
+    void getImage( ref Image!1 img, Type type, uint level=0 )
+    {
+        bind();
+        int w;
+        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
+
+        auto elemSize = formatElemCount(lformat) * sizeofType(type);
+
+        auto dsize = w * elemSize;
+
+        if( img.size != CrdVector!1(w) || img.info.bpe != elemSize )
+        {
+            img.size = CrdVector!1(w);
+            img.info = imageElemInfo( lformat, type );
+        }
+
+        glGetTexImage( target, level, lformat, type, img.data.ptr );
+
+        unbind();
+
+        debug logger.trace( "size [%d], format [%s], type [%s]", w, lformat, type );
+    }
+}
+
+abstract class GLTexture2DBase : GLTexture
+{
+protected:
+
+    uivec2 _size;
+
+public:
+
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    @property
+    {
+        final override const pure nothrow @nogc
+        {
+            ///
+            Dim allocDim() { return Dim.TWO; }
+        }
+
+        uivec2 size() const pure nothrow { return _size; }
+
+        void size( uivec2 sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
+    }
+
+    void setImage( uivec2 sz, InternalFormat store_format, Format input_format,
+                   Type input_type, in void* data=null, uint level=0 )
+    {
+        _size = sz;
+
+        liformat = store_format;
+        lformat = input_format;
+        ltype = input_type;
+
+        bind();
+        checkGLCall!glTexImage2D( target, level, store_format, sz.x, sz.y, 0,
+                                  input_format, input_type, data );
+
+        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                sz.data.dup, store_format, input_format, input_type, data?true:false );
+    }
+
+    void setImage( in Image!2 img, uint level=0 )
+    {
+        Type type = typeFromImageDataType( img.info.comp );
+        auto fmt = formatFromImageChanelsCount( img.info.channels );
+        setImage( uivec2( img.size ), fmt[0], fmt[1], type, img.data.ptr, level );
+    }
+
+    void getImage( ref Image!2 img, uint level=0 ) { getImage( img, ltype, level ); }
+
+    void getImage( ref Image!2 img, Type type, uint level=0 )
+    {
+        bind();
+        int w,h;
+        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
+        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_HEIGHT, &(h));
+
+        auto elemSize = formatElemCount(lformat) * sizeofType(type);
+
+        auto dsize = w * h * elemSize;
+
+        if( img.size != uivec2(w,h) || img.info.bpe != elemSize )
+        {
+            img.size = uivec2(w,h);
+            img.info = imageElemInfo( lformat, type );
+        }
+
+        glGetTexImage( target, level, lformat, type, img.data.ptr );
+
+        unbind();
+
+        debug logger.trace( "size [%d,%d], format [%s], type [%s]", w,h, lformat, type );
+    }
+}
+
+abstract class GLTexture3DBase : GLTexture
+{
+protected:
+
+    uivec3 _size;
+
+public:
+
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    @property
+    {
+        final override const pure nothrow @nogc
+        {
+            ///
+            Dim allocDim() { return Dim.THREE; }
+        }
+
+        uivec3 size() const pure nothrow { return _size; }
+
+        void size( uivec3 sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
+    }
+
+    void setImage( uivec3 sz, InternalFormat store_format, Format input_format,
+                   Type input_type, in void* data=null, uint level=0 )
+    {
+        _size = sz;
+
+        liformat = store_format;
+        lformat = input_format;
+        ltype = input_type;
+
+        bind();
+        checkGLCall!glTexImage3D( target, level, store_format, sz.x, sz.y, sz.z, 0,
+                                  input_format, input_type, data );
+
+        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                sz, store_format, input_format, input_type, data?true:false );
+    }
+
+    void setImage( in Image!3 img, uint level=0 )
+    {
+        Type type = typeFromImageDataType( img.info.comp );
+        auto fmt = formatFromImageChanelsCount( img.info.channels );
+        setImage( uivec3( img.size ), fmt[0], fmt[1], type, img.data.ptr, level );
+    }
+
+    void getImage( ref Image!3 img, uint level=0 ) { getImage( img, ltype, level ); }
+
+    void getImage( ref Image!3 img, Type type, uint level=0 )
+    {
+        bind();
+        int w,h,d;
+        if( target == GL_TEXTURE_CUBE_MAP )
+        {
+            checkGLCall!glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, level, GL_TEXTURE_WIDTH, &(w));
+            d = h = w;
+        }
+        else
+        {
+            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
+            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_HEIGHT, &(h));
+            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_DEPTH, &(d));
+        }
+
+        auto elemSize = formatElemCount(lformat) * sizeofType(type);
+
+        auto dsize = w * h * d * elemSize;
+
+        if( img.size != uivec3(w,h,d) || img.info.bpe != elemSize )
+        {
+            img.size = uivec3(w,h,d);
+            img.info = imageElemInfo( lformat, type );
+        }
+
+        glGetTexImage( target, level, lformat, type, img.data.ptr );
+
+        unbind();
+
+        debug logger.trace( "size [%d,%d,%d], format [%s], type [%s]",
+                            w,h,d, lformat, type );
+    }
+}
+
+///
+class GLTexture1D : GLTexture1DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_1D, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim imageDim() { return Dim.ONE; }
+    }
+}
+
+///
+class GLTexture1DArray : GLTexture2DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_1D_ARRAY, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return true; }
+        ///
+        Dim imageDim() { return Dim.ONE; }
+    }
+}
+
+///
+class GLTexture2D : GLTexture2DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_2D, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTexture2DArray : GLTexture3DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_2D_ARRAY, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return true; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTextureRectangle : GLTexture2DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_RECTANGLE, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return false; }
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTexture3D : GLTexture3DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_3D, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim imageDim() { return Dim.THREE; }
+    }
+}
+
+///
+class GLTextureCubeMap : GLTexture2DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_CUBE_MAP, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTextureCubeMapArray : GLTexture3DBase
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_CUBE_MAP_ARRAY, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return true; }
+        ///
+        bool isArray() { return true; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+abstract class GLMultisampleTexture : GLTexture
+{
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool mipmapable() { return false; }
+        ///
+        Dim imageDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTexture2DMultisample : GLMultisampleTexture
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_2D_MULTISAMPLE, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool isArray() { return false; }
+        ///
+        Dim allocDim() { return Dim.TWO; }
+    }
+}
+
+///
+class GLTexture2DMultisampleArray : GLMultisampleTexture
+{
+    ///
+    this( uint tu ) { super( GL_TEXTURE_2D_MULTISAMPLE_ARRAY, tu ); }
+
+    final override const pure nothrow @nogc @property
+    {
+        ///
+        bool isArray() { return true; }
+        ///
+        Dim allocDim() { return Dim.THREE; }
+    }
 }

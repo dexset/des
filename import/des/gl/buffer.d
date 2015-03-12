@@ -1,6 +1,6 @@
-module des.gl.base.buffer;
+module des.gl.buffer;
 
-import des.gl.base.general;
+import des.gl.general;
 
 ///
 class GLBufferException : DesGLException

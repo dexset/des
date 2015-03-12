@@ -1,6 +1,6 @@
-module des.gl.base.error;
+module des.gl.error;
 
-import des.gl.base.general;
+import des.gl.general;
 
 ///
 enum GLError

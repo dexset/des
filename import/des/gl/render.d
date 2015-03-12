@@ -1,6 +1,6 @@
-module des.gl.base.render;
+module des.gl.render;
 
-import des.gl.base;
+import des.gl;
 import des.il;
 
 /// Render to FBO
@@ -14,10 +14,10 @@ protected:
     GLFrameBuffer fbo;
 
     ///
-    GLTexture depth_buf;
+    GLTexture2D depth_buf;
 
     ///
-    GLTexture[uint] color_bufs;
+    GLTexture2D[uint] color_bufs;
 
     uivec2 buf_size;
     int[4] last_vp;
@@ -28,28 +28,28 @@ public:
     this() { fbo = newEMM!GLFrameBuffer; }
 
     ///
-    GLTexture defaultDepth( uint unit )
+    GLTexture2D defaultDepth( uint unit )
     {
         auto tex = createDefaultTexture( unit );
-        tex.image( ivec2(1,1), GLTexture.InternalFormat.DEPTH32F,
+        tex.setImage( uivec2(1,1), GLTexture.InternalFormat.DEPTH32F,
             GLTexture.Format.DEPTH, GLTexture.Type.FLOAT );
         return tex;
     }
 
     ///
-    GLTexture defaultColor( uint unit )
+    GLTexture2D defaultColor( uint unit )
     {
         auto tex = createDefaultTexture( unit );
-        tex.image( ivec2(1,1), GLTexture.InternalFormat.RGBA,
+        tex.setImage( uivec2(1,1), GLTexture.InternalFormat.RGBA,
             GLTexture.Format.RGBA, GLTexture.Type.FLOAT );
         return tex;
     }
 
     ///
-    GLTexture getDepth() { return depth_buf; }
+    GLTexture2D getDepth() { return depth_buf; }
 
     ///
-    void setDepth( GLTexture buf )
+    void setDepth( GLTexture2D buf )
     in{ assert( buf !is null ); } body
     {
         if( depth_buf is buf )
@@ -66,14 +66,14 @@ public:
     }
 
     /// get buffer setted to color attachment N
-    GLTexture getColor( uint N )
+    GLTexture2D getColor( uint N )
     { return color_bufs.get( N, null ); }
 
     ///
-    GLTexture[uint] getColors() { return color_bufs.dup; }
+    GLTexture2D[uint] getColors() { return color_bufs.dup; }
 
     /// set buf to color attachment N
-    void setColor( GLTexture buf, uint N )
+    void setColor( GLTexture2D buf, uint N )
     in{ assert( buf !is null ); } body
     {
         if( auto tmp = color_bufs.get( N, null ) )
@@ -96,8 +96,8 @@ public:
     void resize( uivec2 sz )
     {
         if( sz == buf_size ) return;
-        if( depth_buf ) depth_buf.resize( sz );
-        foreach( col; color_bufs ) col.resize( sz );
+        if( depth_buf ) depth_buf.size = sz;
+        foreach( col; color_bufs ) col.size = sz;
         buf_size = sz;
         logger.Debug( "[%d,%d]", sz.x, sz.y );
     }
@@ -127,7 +127,7 @@ protected:
 
     auto createDefaultTexture( uint unit )
     {
-        auto tex = new GLTexture( GLTexture.Target.T2D, unit );
+        auto tex = new GLTexture2D( unit );
         tex.setWrapS( GLTexture.Wrap.CLAMP_TO_EDGE );
         tex.setWrapT( GLTexture.Wrap.CLAMP_TO_EDGE );
         tex.setMinFilter( GLTexture.Filter.NEAREST );
@@ -135,7 +135,7 @@ protected:
         return tex;
     }
 
-    void removeIfChild( GLTexture t )
+    void removeIfChild( GLTexture2D t )
     {
         if( depth_buf && findInChildsEMM( depth_buf ) )
         {

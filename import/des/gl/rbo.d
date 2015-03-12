@@ -1,6 +1,6 @@
-module des.gl.base.rbo;
+module des.gl.rbo;
 
-import des.gl.base.general;
+import des.gl.general;
 
 ///
 class GLRenderBuffer : GLObject!"Renderbuffer"

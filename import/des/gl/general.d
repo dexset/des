@@ -1,4 +1,4 @@
-module des.gl.base.general;
+module des.gl.general;
 
 public
 {
@@ -16,9 +16,9 @@ public
     import des.util.helpers : packBitMask;
     import des.util.stdext.string;
 
-    import des.gl.base.type;
-    import des.gl.base.error;
-    import des.gl.base.object;
+    import des.gl.type;
+    import des.gl.error;
+    import des.gl.object;
 }
 
 ///
