@@ -1,11 +1,11 @@
-module tests.simpletexture;
+module tests.texture_cube;
 
 import tests.iface;
 
 import camera;
 import meshnode;
 
-class SimpleTextureTest : DesObject, Test
+class TextureCubeTest : DesObject, Test
 {
     bool answer = false;
     bool result = false;
@@ -15,21 +15,18 @@ class SimpleTextureTest : DesObject, Test
     MeshNode obj;
 
     GLTextureCubeMap texCM;
-    //GLTexture2DArray tex2DArr;
 
     void init()
     {
         shader = newEMM!CommonGLShaderProgram(
-                parseGLShaderSource( import("simple_texture.glsl") ) );
+                parseGLShaderSource( import("texture_cube.glsl") ) );
 
         obj = newEMM!MeshNode( convMesh(
                     smGetSphereMesh( "sphere", 1, 32, 32 ) ) );
 
-        //tex2DArr = newEMM!GLTexture2DArray( 0 );
         texCM = newEMM!GLTextureCubeMap( 0 );
 
         auto texImg = imLoad( appPath("..","data","textures","light_cube_map.png" ), false );
-        //auto texImg = imLoad( appPath("..","data","textures","4_cube.jpg" ), false );
         uint w = cast(uint)(texImg.size.h / 3);
         texCM.setImages( texImg, w, [ uivec2(0,w), uivec2(2*w,w),
                                       uivec2(w,w), uivec2(3*w,w),
@@ -38,6 +35,9 @@ class SimpleTextureTest : DesObject, Test
                                       ImRepack.ROT180, ImRepack.NONE,
                                       ImRepack.ROT180, ImRepack.NONE ]
                                      );
+
+        texCM.setMinFilter( GLTexture.Filter.LINEAR );
+        texCM.setMagFilter( GLTexture.Filter.LINEAR );
 
         cam = newEMM!MouseControlCamera;
     }
@@ -72,10 +72,7 @@ class SimpleTextureTest : DesObject, Test
 
     void mouseReaction( in MouseEvent me ) { cam.mouseReaction( me ); }
 
-    void resize( ivec2 )
-    {
-
-    }
+    void resize( ivec2 sz ) { cam.ratio = sz.w / cast(float)(sz.h); }
 
     @property
     {

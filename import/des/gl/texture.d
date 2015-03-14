@@ -613,15 +613,10 @@ protected:
 
         bind();
 
-        static if( N == 1 )
-            checkGLCall!glTexImage1D( trg, level, store_format, sz, 0, input_format, input_type, data );
-        else
-        {
-            mixin( format( q{
-                checkGLCall!glTexImage%1$dD( trg, level, store_format, %2$s, 0,
-                                            input_format, input_type, data );
-                }, N, accessComponents("sz") ) );
-        }
+        mixin( format( q{
+            checkGLCall!glTexImage%1$dD( trg, level, store_format, %2$s, 0,
+                                        input_format, input_type, data );
+            }, N, accessComponents!N("sz") ) );
 
         logger.Debug( "to [%s], size %s, internal format [%s], format [%s], type [%s], with data [%s]",
                 toGLTextureTarget(trg), sz, store_format, input_format, input_type, data?true:false );
@@ -683,11 +678,15 @@ private:
                 "is not cube map assert" );
     }
 
-    static string accessComponents( string name ) pure
+    static string accessComponents(size_t N)( string name ) pure
     {
-        string[] ret;
-        foreach( i; 0 .. N ) ret ~= format( "%s[%d]", name, i );
-        return ret.join(",");
+        static if( N == 1 ) return name;
+        else
+        {
+            string[] ret;
+            foreach( i; 0 .. N ) ret ~= format( "%s[%d]", name, i );
+            return ret.join(",");
+        }
     }
 }
 
@@ -856,12 +855,12 @@ abstract class GLTextureCubeBase(bool array) : GLTextureBase!(2+cast(uint)array)
 
         static if( CubeDim == 2 )
         {
-        setImage( Side.PX, imRepackRegion( img, getRegion( pos[0], width ), tr[0] ), level );
-        setImage( Side.NX, imRepackRegion( img, getRegion( pos[1], width ), tr[1] ), level );
-        setImage( Side.PY, imRepackRegion( img, getRegion( pos[2], width ), tr[2] ), level );
-        setImage( Side.NY, imRepackRegion( img, getRegion( pos[3], width ), tr[3] ), level );
-        setImage( Side.PZ, imRepackRegion( img, getRegion( pos[4], width ), tr[4] ), level );
-        setImage( Side.NZ, imRepackRegion( img, getRegion( pos[5], width ), tr[5] ), level );
+        setImage( Side.PX, imCopy( img, getRegion( pos[0], width ), tr[0] ), level );
+        setImage( Side.NX, imCopy( img, getRegion( pos[1], width ), tr[1] ), level );
+        setImage( Side.PY, imCopy( img, getRegion( pos[2], width ), tr[2] ), level );
+        setImage( Side.NY, imCopy( img, getRegion( pos[3], width ), tr[3] ), level );
+        setImage( Side.PZ, imCopy( img, getRegion( pos[4], width ), tr[4] ), level );
+        setImage( Side.NZ, imCopy( img, getRegion( pos[5], width ), tr[5] ), level );
         } else assert(0);
     }
 

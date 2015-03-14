@@ -81,7 +81,7 @@ class SSBOLightTest : DesObject, Test
 
     void mouseReaction( in MouseEvent me ) { cam.mouseReaction( me ); }
 
-    void resize( ivec2 ) { }
+    void resize( ivec2 sz ) { cam.ratio = sz.w / cast(float)(sz.h); }
 
     @property
     {
