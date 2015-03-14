@@ -5,6 +5,7 @@ public
     import des.math.linear;
     import des.space;
     import des.assimp;
+    import des.il;
     import des.il.io;
     import des.app.event;
     import des.util.arch;

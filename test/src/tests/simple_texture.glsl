@@ -2,35 +2,28 @@
 #version 430
 
 layout(location=0) in vec3 vertex;
-layout(location=1) in vec2 tcoord;
 
 uniform mat4 fprj;
-uniform mat4 camspace;
 
-out Vertex { vec3 pos; vec3 uv; } vert;
-
-vec3 tr( mat4 mtr, vec3 v, float point )
-{ return ( mtr * vec4( v, point ) ).xyz; }
+out vec3 uvCube;
 
 void main()
 {
     gl_Position = fprj * vec4( vertex, 1.0 );
-
-    vert.pos  = tr( camspace, vertex, 1.0 );
-    vert.uv = tcoord;
+    uvCube = vertex;
 }
 
 //### frag
 #version 430
 
-in Vertex { vec3 pos; vec3 uv; } vert;
+in vec3 uvCube;
 
-uniform sampler2DArray tex;
-uniform uint layer;
+uniform samplerCube texCM;
 
 out vec4 result;
 
 void main()
 {
-    result = texture( tex, vec3(uv,layer) );
+    vec3 clr = texture( texCM, uvCube ).xyz;
+    result = vec4( clr.xy, clr.z + .1, 1 );
 }

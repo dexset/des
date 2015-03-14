@@ -14,6 +14,7 @@ class SimpleTextureTest : DesObject, Test
     CommonGLShaderProgram shader;
     MeshNode obj;
 
+    GLTextureCubeMap texCM;
     //GLTexture2DArray tex2DArr;
 
     void init()
@@ -24,7 +25,19 @@ class SimpleTextureTest : DesObject, Test
         obj = newEMM!MeshNode( convMesh(
                     smGetSphereMesh( "sphere", 1, 32, 32 ) ) );
 
-        //tex2DArr = newEMM!GLTexture2DArray
+        //tex2DArr = newEMM!GLTexture2DArray( 0 );
+        texCM = newEMM!GLTextureCubeMap( 0 );
+
+        auto texImg = imLoad( appPath("..","data","textures","light_cube_map.png" ), false );
+        //auto texImg = imLoad( appPath("..","data","textures","4_cube.jpg" ), false );
+        uint w = cast(uint)(texImg.size.h / 3);
+        texCM.setImages( texImg, w, [ uivec2(0,w), uivec2(2*w,w),
+                                      uivec2(w,w), uivec2(3*w,w),
+                                      uivec2(w,0), uivec2(w,2*w) ],
+                                    [ ImRepack.ROT90, ImRepack.ROT270,
+                                      ImRepack.ROT180, ImRepack.NONE,
+                                      ImRepack.ROT180, ImRepack.NONE ]
+                                     );
 
         cam = newEMM!MouseControlCamera;
     }
@@ -38,7 +51,14 @@ class SimpleTextureTest : DesObject, Test
 
     void draw()
     {
+        shader.use();
 
+        auto cs = cam.resolve(obj);
+        auto fprj = cam.projectMatrix * cs;
+        glEnable( GL_DEPTH_TEST );
+        shader.setUniform!mat4( "fprj", fprj );
+        shader.setTexture( "texCM", texCM );
+        obj.draw();
     }
 
     void keyReaction( in KeyboardEvent ke )
@@ -60,7 +80,7 @@ class SimpleTextureTest : DesObject, Test
     @property
     {
         wstring name() { return "texture test"w; }
-        wstring info() { return ""w; }
+        wstring info() { return "[y/N]"w; }
         bool complite() { return answer; }
         bool success() { return result; }
     }

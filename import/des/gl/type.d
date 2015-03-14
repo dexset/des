@@ -113,7 +113,7 @@ GLBufferTarget toGLBufferTarget( GLenum trg ) pure nothrow @nogc
 ///
 enum GLTextureTarget
 {
-    UNKNOWN               = 0,                            /// equals zero
+    UNKNOWN               = 0,                               /// equals zero
     T1D                   = GL_TEXTURE_1D,                   /// `GL_TEXTURE_1D`
     T1D_ARRAY             = GL_TEXTURE_1D_ARRAY,             /// `GL_TEXTURE_1D_ARRAY`
     T2D                   = GL_TEXTURE_2D,                   /// `GL_TEXTURE_2D`
@@ -124,6 +124,12 @@ enum GLTextureTarget
     CUBE_MAP              = GL_TEXTURE_CUBE_MAP,             /// `GL_TEXTURE_CUBE_MAP`
     CUBE_MAP_ARRAY        = GL_TEXTURE_CUBE_MAP_ARRAY,       /// `GL_TEXTURE_CUBE_MAP_ARRAY`
     RECTANGLE             = GL_TEXTURE_RECTANGLE,            /// `GL_TEXTURE_RECTANGLE`
+    CUBE_MAP_POSITIVE_X   = GL_TEXTURE_CUBE_MAP_POSITIVE_X,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_X`
+    CUBE_MAP_NEGATIVE_X   = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_X`
+    CUBE_MAP_POSITIVE_Y   = GL_TEXTURE_CUBE_MAP_POSITIVE_Y,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_X`
+    CUBE_MAP_NEGATIVE_Y   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_X`
+    CUBE_MAP_POSITIVE_Z   = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,  /// `GL_TEXTURE_CUBE_MAP_POSITIVE_X`
+    CUBE_MAP_NEGATIVE_Z   = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_X`
 }
 
 ///

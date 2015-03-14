@@ -5,12 +5,11 @@
     "license": "MIT",
     "targetPath": "bin",
     "targetType": "executable",
-    "importPaths": [ "../import" ],
-    "sourcePaths": [ "src", "../import" ],
+    "importPaths": [ "../import", "../../descore/import" ],
+    "sourcePaths": [ "src", "../import", "../../descore/import" ],
     "stringImportPaths": [ "src/tests" ],
     "dependencies":
     {
-        "descore": "~>1.2.5",
         "derelict-gl3": ">=1.0.12",
         "derelict-assimp3": ">=1.0.0",
         "derelict-sdl2": ">=1.2.8",

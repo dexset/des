@@ -98,6 +98,16 @@ public:
         SRGB8_ALPHA8          = GL_SRGB8_ALPHA8           /// `GL_SRGB8_ALPHA8`
     }
 
+    enum Side
+    {
+        PX = GL_TEXTURE_CUBE_MAP_POSITIVE_X, /// `GL_TEXTURE_CUBE_MAP_POSITIVE_X`
+        NX = GL_TEXTURE_CUBE_MAP_NEGATIVE_X, /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_X`
+        PY = GL_TEXTURE_CUBE_MAP_POSITIVE_Y, /// `GL_TEXTURE_CUBE_MAP_POSITIVE_Y`
+        NY = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Y`
+        PZ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z, /// `GL_TEXTURE_CUBE_MAP_POSITIVE_Z`
+        NZ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z  /// `GL_TEXTURE_CUBE_MAP_NEGATIVE_Z`
+    }
+
     ///
     enum Format
     {
@@ -155,10 +165,12 @@ public:
     {
         _unit = tu;
         super( tg );
-        logger.Debug( "with target [%s] texture unit [%d]", target, tu );
+        logger.Debug( "with target [%s] texture unit [%d]", toGLTextureTarget(target), tu );
+        setMinFilter( Filter.NEAREST );
+        setMagFilter( Filter.NEAREST );
     }
 
-    enum Dim { ONE, TWO, THREE }
+    enum Dim { ONE=1, TWO=2, THREE=3 }
 
     pure nothrow @nogc @property
     {
@@ -550,13 +562,20 @@ public:
     }
 }
 
-abstract class GLTexture1DBase : GLTexture
+abstract class GLTextureBase(uint N) : GLTexture
+    if( N == 1 || N == 2 || N == 3 )
 {
+    ///
+    static if( N==1 ) alias texsize_t = uint;
+    else alias texsize_t = Vector!(N,uint);
+
 protected:
-    uint _size;
+    ///
+    texsize_t _size;
 
 public:
 
+    ///
     this( GLenum trg, uint tu ) { super( trg, tu ); }
 
     @property
@@ -564,16 +583,27 @@ public:
         final override const pure nothrow @nogc
         {
             ///
-            Dim allocDim() { return Dim.ONE; }
+            Dim allocDim()
+            {
+                static if( N == 1 ) return Dim.ONE;
+                else static if( N == 2 ) return Dim.TWO;
+                else static if( N == 3 ) return Dim.THREE;
+                else static assert(0,"unsuported texture size");
+            }
         }
 
-        uint size() const pure nothrow { return _size; }
+        ///
+        texsize_t size() const pure nothrow { return _size; }
 
-        void size( uint sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
+        //void size( in texsize_t sz ) { setImage( sz, target, liformat, lformat, ltype, null, 0 ); }
     }
 
-    void setImage( uint sz, InternalFormat store_format, Format input_format,
-                   Type input_type, in void* data=null, uint level=0 )
+protected:
+
+    ///
+    void setImageTrg( GLenum trg, in texsize_t sz, InternalFormat store_format,
+                   Format input_format, Type input_type, in void* data=null, uint level=0 )
+    in{ assertNotCubeMap(trg); } body
     {
         _size = sz;
 
@@ -582,206 +612,111 @@ public:
         ltype = input_type;
 
         bind();
-        checkGLCall!glTexImage1D( target, level, store_format, sz, 0,
-                                  input_format, input_type, data );
 
-        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
-                sz, store_format, input_format, input_type, data?true:false );
-    }
-
-    void setImage( in Image!1 img, uint level=0 )
-    {
-        Type type = typeFromImageDataType( img.info.comp );
-        auto fmt = formatFromImageChanelsCount( img.info.channels );
-        setImage( cast(uint)(img.size[0]), fmt[0], fmt[1], type, img.data.ptr, level );
-    }
-
-    void getImage( ref Image!1 img, uint level=0 ) { getImage( img, ltype, level ); }
-
-    void getImage( ref Image!1 img, Type type, uint level=0 )
-    {
-        bind();
-        int w;
-        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
-
-        auto elemSize = formatElemCount(lformat) * sizeofType(type);
-
-        auto dsize = w * elemSize;
-
-        if( img.size != CrdVector!1(w) || img.info.bpe != elemSize )
-        {
-            img.size = CrdVector!1(w);
-            img.info = imageElemInfo( lformat, type );
-        }
-
-        glGetTexImage( target, level, lformat, type, img.data.ptr );
-
-        unbind();
-
-        debug logger.trace( "size [%d], format [%s], type [%s]", w, lformat, type );
-    }
-}
-
-abstract class GLTexture2DBase : GLTexture
-{
-protected:
-
-    uivec2 _size;
-
-public:
-
-    this( GLenum trg, uint tu ) { super( trg, tu ); }
-
-    @property
-    {
-        final override const pure nothrow @nogc
-        {
-            ///
-            Dim allocDim() { return Dim.TWO; }
-        }
-
-        uivec2 size() const pure nothrow { return _size; }
-
-        void size( uivec2 sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
-    }
-
-    void setImage( uivec2 sz, InternalFormat store_format, Format input_format,
-                   Type input_type, in void* data=null, uint level=0 )
-    {
-        _size = sz;
-
-        liformat = store_format;
-        lformat = input_format;
-        ltype = input_type;
-
-        bind();
-        checkGLCall!glTexImage2D( target, level, store_format, sz.x, sz.y, 0,
-                                  input_format, input_type, data );
-
-        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
-                sz.data.dup, store_format, input_format, input_type, data?true:false );
-    }
-
-    void setImage( in Image!2 img, uint level=0 )
-    {
-        Type type = typeFromImageDataType( img.info.comp );
-        auto fmt = formatFromImageChanelsCount( img.info.channels );
-        setImage( uivec2( img.size ), fmt[0], fmt[1], type, img.data.ptr, level );
-    }
-
-    void getImage( ref Image!2 img, uint level=0 ) { getImage( img, ltype, level ); }
-
-    void getImage( ref Image!2 img, Type type, uint level=0 )
-    {
-        bind();
-        int w,h;
-        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
-        checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_HEIGHT, &(h));
-
-        auto elemSize = formatElemCount(lformat) * sizeofType(type);
-
-        auto dsize = w * h * elemSize;
-
-        if( img.size != uivec2(w,h) || img.info.bpe != elemSize )
-        {
-            img.size = uivec2(w,h);
-            img.info = imageElemInfo( lformat, type );
-        }
-
-        glGetTexImage( target, level, lformat, type, img.data.ptr );
-
-        unbind();
-
-        debug logger.trace( "size [%d,%d], format [%s], type [%s]", w,h, lformat, type );
-    }
-}
-
-abstract class GLTexture3DBase : GLTexture
-{
-protected:
-
-    uivec3 _size;
-
-public:
-
-    this( GLenum trg, uint tu ) { super( trg, tu ); }
-
-    @property
-    {
-        final override const pure nothrow @nogc
-        {
-            ///
-            Dim allocDim() { return Dim.THREE; }
-        }
-
-        uivec3 size() const pure nothrow { return _size; }
-
-        void size( uivec3 sz ) { setImage( sz, liformat, lformat, ltype, null, 0 ); }
-    }
-
-    void setImage( uivec3 sz, InternalFormat store_format, Format input_format,
-                   Type input_type, in void* data=null, uint level=0 )
-    {
-        _size = sz;
-
-        liformat = store_format;
-        lformat = input_format;
-        ltype = input_type;
-
-        bind();
-        checkGLCall!glTexImage3D( target, level, store_format, sz.x, sz.y, sz.z, 0,
-                                  input_format, input_type, data );
-
-        logger.Debug( "size %s, internal format [%s], format [%s], type [%s], with data [%s]",
-                sz, store_format, input_format, input_type, data?true:false );
-    }
-
-    void setImage( in Image!3 img, uint level=0 )
-    {
-        Type type = typeFromImageDataType( img.info.comp );
-        auto fmt = formatFromImageChanelsCount( img.info.channels );
-        setImage( uivec3( img.size ), fmt[0], fmt[1], type, img.data.ptr, level );
-    }
-
-    void getImage( ref Image!3 img, uint level=0 ) { getImage( img, ltype, level ); }
-
-    void getImage( ref Image!3 img, Type type, uint level=0 )
-    {
-        bind();
-        int w,h,d;
-        if( target == GL_TEXTURE_CUBE_MAP )
-        {
-            checkGLCall!glGetTexLevelParameteriv( GL_TEXTURE_CUBE_MAP_POSITIVE_X, level, GL_TEXTURE_WIDTH, &(w));
-            d = h = w;
-        }
+        static if( N == 1 )
+            checkGLCall!glTexImage1D( trg, level, store_format, sz, 0, input_format, input_type, data );
         else
         {
-            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_WIDTH, &(w));
-            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_HEIGHT, &(h));
-            checkGLCall!glGetTexLevelParameteriv( target, level, GL_TEXTURE_DEPTH, &(d));
+            mixin( format( q{
+                checkGLCall!glTexImage%1$dD( trg, level, store_format, %2$s, 0,
+                                            input_format, input_type, data );
+                }, N, accessComponents("sz") ) );
         }
+
+        logger.Debug( "to [%s], size %s, internal format [%s], format [%s], type [%s], with data [%s]",
+                toGLTextureTarget(trg), sz, store_format, input_format, input_type, data?true:false );
+    }
+
+    ///
+    void setImageTrg( GLenum trg, in Image!N img, uint level=0 )
+    in{ assertNotCubeMap(trg); } body
+    {
+        Type type = typeFromImageDataType( img.info.comp );
+        auto fmt = formatFromImageChanelsCount( img.info.channels );
+        texsize_t sz;
+        static if( N == 1 ) sz = cast(uint)( img.size[0] );
+        else sz = texsize_t( img.size );
+        setImageTrg( trg, sz, fmt[0], fmt[1], type, img.data.ptr, level );
+    }
+
+    ///
+    void getImageTrg( GLenum trg, ref Image!N img, Type type, uint level=0 )
+    in{ assertNotCubeMap(trg); } body
+    {
+        bind();
+        int[3] sz;
+
+        checkGLCall!glGetTexLevelParameteriv( trg, level, GL_TEXTURE_WIDTH,  sz.ptr+0 );
+        checkGLCall!glGetTexLevelParameteriv( trg, level, GL_TEXTURE_HEIGHT, sz.ptr+1 );
+        checkGLCall!glGetTexLevelParameteriv( trg, level, GL_TEXTURE_DEPTH,  sz.ptr+2 );
+
+        enforce( sz[0] > 0 );
+        static if( N > 1 ) enforce( sz[1] > 0 );
+        static if( N > 2 ) enforce( sz[2] > 0 );
 
         auto elemSize = formatElemCount(lformat) * sizeofType(type);
 
-        auto dsize = w * h * d * elemSize;
+        int cnt = sz[0];
+        static if( N > 1 ) cnt *= sz[1];
+        static if( N > 2 ) cnt *= sz[2];
 
-        if( img.size != uivec3(w,h,d) || img.info.bpe != elemSize )
+        auto dsize = cnt * elemSize;
+
+        if( img.size != CrdVector!N(sz[0..N]) || img.info.bpe != elemSize )
         {
-            img.size = uivec3(w,h,d);
+            img.size = CrdVector!N(sz[0..N]);
             img.info = imageElemInfo( lformat, type );
         }
 
-        glGetTexImage( target, level, lformat, type, img.data.ptr );
+        checkGLCall!glGetTexImage( trg, level, lformat, type, img.data.ptr );
 
-        unbind();
-
-        debug logger.trace( "size [%d,%d,%d], format [%s], type [%s]",
-                            w,h,d, lformat, type );
+        debug logger.trace( "from [%s], size %s, format [%s], type [%s]",
+                toGLTextureTarget(trg), sz.dup, lformat, type );
     }
+
+private:
+
+    static void assertNotCubeMap( GLenum trg ) pure nothrow
+    {
+        assert( trg != GL_TEXTURE_CUBE_MAP &&
+                trg != GL_TEXTURE_CUBE_MAP_ARRAY,
+                "is not cube map assert" );
+    }
+
+    static string accessComponents( string name ) pure
+    {
+        string[] ret;
+        foreach( i; 0 .. N ) ret ~= format( "%s[%d]", name, i );
+        return ret.join(",");
+    }
+}
+
+abstract class GLTextureImgBase(uint N) : GLTextureBase!N
+{
+    ///
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    void size( in texsize_t sz ) @property { setImage( sz, liformat, lformat, ltype, null, 0 ); }
+
+    ///
+    void setImage( in texsize_t sz, InternalFormat store_format,
+                   Format input_format, Type input_type, in void* data=null, uint level=0 )
+    { setImageTrg( target, sz, store_format, input_format, input_type, data, level ); }
+
+    ///
+    void setImage( in Image!N img, uint level=0 ) { setImageTrg( target, img, level ); }
+
+    ///
+    void getImage( ref Image!N img, Type type, uint level=0 )
+    { getImageTrg( target, img, type, level ); }
+
+    ///
+    void getImage( ref Image!N img, uint level=0 )
+    { getImageTrg( target, img, ltype, level ); }
 }
 
 ///
-class GLTexture1D : GLTexture1DBase
+class GLTexture1D : GLTextureImgBase!1
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_1D, tu ); }
@@ -798,7 +733,7 @@ class GLTexture1D : GLTexture1DBase
 }
 
 ///
-class GLTexture1DArray : GLTexture2DBase
+class GLTexture1DArray : GLTextureImgBase!2
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_1D_ARRAY, tu ); }
@@ -815,7 +750,7 @@ class GLTexture1DArray : GLTexture2DBase
 }
 
 ///
-class GLTexture2D : GLTexture2DBase
+class GLTexture2D : GLTextureImgBase!2
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_2D, tu ); }
@@ -832,7 +767,7 @@ class GLTexture2D : GLTexture2DBase
 }
 
 ///
-class GLTexture2DArray : GLTexture3DBase
+class GLTexture2DArray : GLTextureImgBase!3
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_2D_ARRAY, tu ); }
@@ -849,7 +784,7 @@ class GLTexture2DArray : GLTexture3DBase
 }
 
 ///
-class GLTextureRectangle : GLTexture2DBase
+class GLTextureRectangle : GLTextureImgBase!2
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_RECTANGLE, tu ); }
@@ -866,7 +801,7 @@ class GLTextureRectangle : GLTexture2DBase
 }
 
 ///
-class GLTexture3D : GLTexture3DBase
+class GLTexture3D : GLTextureImgBase!3
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_3D, tu ); }
@@ -882,8 +817,65 @@ class GLTexture3D : GLTexture3DBase
     }
 }
 
+abstract class GLTextureCubeBase(bool array) : GLTextureBase!(2+cast(uint)array)
+{
+    protected enum CubeDim = 2u + cast(uint)array;
+
+    ///
+    this( GLenum trg, uint tu ) { super( trg, tu ); }
+
+    ///
+    void setImage( Side side, in texsize_t sz, InternalFormat store_format,
+                   Format input_format, Type input_type, in void* data=null, uint level=0 )
+    { setImageTrg( side, sz, store_format, input_format, input_type, data, level ); }
+
+    ///
+    void setImage( Side side, in Image!CubeDim img, uint level=0 )
+    { setImageTrg( side, img, level ); }
+
+    ///
+    void setImages( in Image!CubeDim[6] imgs, uint level=0 )
+    {
+        setImage( Side.PX, imgs[0], level );
+        setImage( Side.NX, imgs[1], level );
+        setImage( Side.PY, imgs[2], level );
+        setImage( Side.NY, imgs[3], level );
+        setImage( Side.PZ, imgs[4], level );
+        setImage( Side.NZ, imgs[5], level );
+    }
+
+    ///
+    void setImages( in Image!CubeDim img, uint width, uivec2[6] pos,
+                    ImRepack[6] tr, uint level=0 )
+    {
+        auto getRegion( uivec2 p, uint w )
+        {
+            static if( CubeDim == 2 ) return Region!(2,uint)( p, uivec2(w) );
+            else return Region!(3,uint)( p, img.size.z, uivec2(w), img.size.z );
+        }
+
+        static if( CubeDim == 2 )
+        {
+        setImage( Side.PX, imRepackRegion( img, getRegion( pos[0], width ), tr[0] ), level );
+        setImage( Side.NX, imRepackRegion( img, getRegion( pos[1], width ), tr[1] ), level );
+        setImage( Side.PY, imRepackRegion( img, getRegion( pos[2], width ), tr[2] ), level );
+        setImage( Side.NY, imRepackRegion( img, getRegion( pos[3], width ), tr[3] ), level );
+        setImage( Side.PZ, imRepackRegion( img, getRegion( pos[4], width ), tr[4] ), level );
+        setImage( Side.NZ, imRepackRegion( img, getRegion( pos[5], width ), tr[5] ), level );
+        } else assert(0);
+    }
+
+    ///
+    void getImage( Side side, ref Image!CubeDim img, Type type, uint level=0 )
+    { getImageTrg( side, img, type, level ); }
+
+    ///
+    void getImage( Side side, ref Image!CubeDim img, uint level=0 )
+    { getImageTrg( side, img, ltype, level ); }
+}
+
 ///
-class GLTextureCubeMap : GLTexture2DBase
+class GLTextureCubeMap : GLTextureCubeBase!false
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_CUBE_MAP, tu ); }
@@ -900,7 +892,7 @@ class GLTextureCubeMap : GLTexture2DBase
 }
 
 ///
-class GLTextureCubeMapArray : GLTexture3DBase
+class GLTextureCubeMapArray : GLTextureCubeBase!true
 {
     ///
     this( uint tu ) { super( GL_TEXTURE_CUBE_MAP_ARRAY, tu ); }
@@ -919,6 +911,7 @@ class GLTextureCubeMapArray : GLTexture3DBase
 ///
 abstract class GLMultisampleTexture : GLTexture
 {
+    ///
     this( GLenum trg, uint tu ) { super( trg, tu ); }
 
     final override const pure nothrow @nogc @property
