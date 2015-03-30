@@ -31,7 +31,7 @@ public:
     GLTexture2D defaultDepth( uint unit )
     {
         auto tex = createDefaultTexture( unit );
-        tex.setImage( uivec2(1,1), GLTexture.InternalFormat.DEPTH32F,
+        tex.setImage( uivec3(1), GLTexture.InternalFormat.DEPTH32F,
             GLTexture.Format.DEPTH, GLTexture.Type.FLOAT );
         return tex;
     }
@@ -40,7 +40,7 @@ public:
     GLTexture2D defaultColor( uint unit )
     {
         auto tex = createDefaultTexture( unit );
-        tex.setImage( uivec2(1,1), GLTexture.InternalFormat.RGBA,
+        tex.setImage( uivec3(1), GLTexture.InternalFormat.RGBA,
             GLTexture.Format.RGBA, GLTexture.Type.FLOAT );
         return tex;
     }
@@ -96,8 +96,8 @@ public:
     void resize( uivec2 sz )
     {
         if( sz == buf_size ) return;
-        if( depth_buf ) depth_buf.size = sz;
-        foreach( col; color_bufs ) col.size = sz;
+        if( depth_buf ) depth_buf.size = uivec3( sz, 1 );
+        foreach( col; color_bufs ) col.size = uivec3( sz, 1 );
         buf_size = sz;
         logger.Debug( "[%d,%d]", sz.x, sz.y );
     }

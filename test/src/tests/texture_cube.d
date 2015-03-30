@@ -26,8 +26,8 @@ class TextureCubeTest : DesObject, Test
 
         texCM = newEMM!GLTextureCubeMap( 0 );
 
-        auto texImg = imLoad( appPath("..","data","textures","light_cube_map.png" ), false );
-        uint w = cast(uint)(texImg.size.h / 3);
+        auto texImg = imLoad( appPath( "..","data","textures","light_cube_map.png" ), false );
+        uint w = cast(uint)(texImg.size[1] / 3);
         texCM.setImages( texImg, w, [ uivec2(0,w), uivec2(2*w,w),
                                       uivec2(w,w), uivec2(3*w,w),
                                       uivec2(w,0), uivec2(w,2*w) ],
@@ -35,6 +35,9 @@ class TextureCubeTest : DesObject, Test
                                       ImRepack.ROT180, ImRepack.NONE,
                                       ImRepack.ROT180, ImRepack.NONE ]
                                      );
+
+        //Image testsave = texCM.getImages();
+        //imSave( testsave, appPath( "test_px.jpg" ) );
 
         texCM.setMinFilter( GLTexture.Filter.LINEAR );
         texCM.setMagFilter( GLTexture.Filter.LINEAR );

@@ -1,6 +1,6 @@
 module des.gl.simple.textout;
 
-import des.fonts.ftglyphrender;
+import des.fonts;
 
 import des.gl;
 
@@ -72,7 +72,7 @@ private:
         vec2[] uv_data;
 
         vec2 ch_offset;
-        auto fts = vec2( font.texture.size );
+        auto fts = vec2( font.image.size );
 
         rect = fRegion2(0);
 
@@ -91,8 +91,8 @@ private:
                 continue;
             }
 
-            auto chsz = vec2(font.info[c].size);
-            auto p = ch_offset + font.info[c].pos;
+            auto chsz = vec2(font.info[c].glyph.size);
+            auto p = ch_offset + font.info[c].glyph.pos;
             vert_data ~= computeRectPts( p, chsz );
 
             rect = rect.expand(p).expand(p+chsz);
@@ -102,7 +102,7 @@ private:
 
             uv_data ~= computeRectPts( uvoffset, uvsize );
 
-            ch_offset += font.info[c].next;
+            ch_offset += font.info[c].glyph.next;
         }
 
         vert.setData( vert_data );
@@ -133,10 +133,10 @@ public:
         tex.setMinFilter( GLTexture.Filter.NEAREST );
         tex.setMagFilter( GLTexture.Filter.NEAREST );
 
-        GlyphParam gparam;
+        FontRenderParam gparam;
         gparam.height = size;
 
-        auto grender = FTGlyphRender.get( font_name );
+        auto grender = FTFontRender.get( font_name );
 
         grender.setParams( gparam );
 
@@ -146,7 +146,7 @@ public:
 
         font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
-        tex.setImage( font.texture );
+        tex.setImage( font.image );
 
         text = "Default text";
     }
