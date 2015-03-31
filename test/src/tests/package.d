@@ -12,11 +12,11 @@ Test[] getAllTests()
 {
     Test[] ret;
 
-    ret ~= new BufferTest;
+    //ret ~= new BufferTest;
     ret ~= new BufferPRWCM;
-    ret ~= new MultiDrawElementsIndirectTest;
-    ret ~= new SSBOLightTest;
-    ret ~= new TextureCubeTest;
+    //ret ~= new MultiDrawElementsIndirectTest;
+    //ret ~= new SSBOLightTest;
+    //ret ~= new TextureCubeTest;
 
     return ret;
 }

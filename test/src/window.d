@@ -64,15 +64,15 @@ protected:
     void prepareTextOutput()
     {
         fps_output = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 16u );
-        fps_output.color = vec3(1);
+        fps_output.color = vec4(1);
 
         info = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 16u );
-        info.text = ""w;
-        info.color = vec3(1);
+        info.text = "info"w;
+        info.color = vec4(1);
 
-        info_log = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 14u );
-        info_log.text = ""w;
-        info_log.color = vec3(.5);
+        info_log = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 12u );
+        info_log.text = "info log"w;
+        info_log.color = vec4( vec3(.5), 1 );
 
         fps_counter = newEMM!FPSCounter( 300 );
 
@@ -90,8 +90,8 @@ protected:
         connect( mouse, &(tester.mouseReaction) );
         connect( event.resized, &(tester.resize) );
 
-        connect( tester.changeInfo, (wstring txt) { info.text = txt; });
-        connect( tester.changeInfoLog, (wstring txt) { info_log.text = txt; });
+        connect( tester.changeInfo, (wstring txt) { /+info.text = txt;+/ });
+        connect( tester.changeInfoLog, (wstring txt) { /+info_log.text = txt;+/ });
     }
 }
 

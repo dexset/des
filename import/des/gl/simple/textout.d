@@ -35,13 +35,13 @@ void main(void)
 //### frag
 #version 120
 uniform sampler2D ttu;
-uniform vec3 color;
+uniform vec4 color;
 
 varying vec2 ex_uv;
 
 void main(void)
 {
-    gl_FragColor = vec4( color, texture2D( ttu, ex_uv ).r );
+    gl_FragColor = vec4( 1,1,1, texture2D( ttu, ex_uv ).r ) * color;
 }`;
 
 class BaseLineTextBox : GLDrawObject
@@ -71,8 +71,8 @@ private:
         vec2[] vert_data;
         vec2[] uv_data;
 
-        vec2 ch_offset;
-        auto fts = vec2( font.image.size );
+        auto ch_offset = vec2(0);
+        auto fts = vec2( font.image.size[0], font.image.size[1] );
 
         rect = fRegion2(0);
 
@@ -91,7 +91,7 @@ private:
                 continue;
             }
 
-            auto chsz = vec2(font.info[c].glyph.size);
+            auto chsz = vec2( font.info[c].glyph.size );
             auto p = ch_offset + font.info[c].glyph.pos;
             vert_data ~= computeRectPts( p, chsz );
 
@@ -138,12 +138,11 @@ public:
 
         auto grender = FTFontRender.get( font_name );
 
-        grender.setParams( gparam );
-
         auto symbols = "!\"#$%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~^? "w;
         auto english = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"w;
         auto russian = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"w;
 
+        grender.setParams( gparam );
         font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
         tex.setImage( font.image );
@@ -180,7 +179,7 @@ public:
 
         vec2 position() const { return offset; }
 
-        void color( vec3 col ){ shader.setUniform!vec3( "color", col ); }
+        void color( vec4 col ){ shader.setUniform!vec4( "color", col ); }
 
         fRegion2 rectangle() const { return rect; }
     }

@@ -2,6 +2,7 @@ module des.fonts.ftrender;
 
 import des.math.linear;
 import des.il;
+import des.util.logsys;
 import des.util.arch.emm;
 import des.util.stdext;
 
@@ -98,11 +99,7 @@ public:
         return openRender[fontname];
     }
 
-    void setParams( in FontRenderParam p )
-    {
-        param = p;
-        checkFTCall!FT_Set_Pixel_Sizes( face, 0, p.height );
-    }
+    void setParams( in FontRenderParam p ) { param = p; }
 
     GlyphImage renderChar( wchar ch )
     {
@@ -128,7 +125,8 @@ public:
         return GlyphImage(
                    Glyph( ""w ~ ch,
                        ivec2( g.bitmap_left, -g.bitmap_top ),
-                       ivec2( g.advance.x >> 6, g.advance.y >> 6 )
+                       ivec2( g.advance.x >> 6, g.advance.y >> 6 ),
+                       sz
                    ),
                    Image.external( sz, imtype, img_data )
                );
@@ -136,6 +134,10 @@ public:
 
     BitmapFont generateBitmapFont( wstring chars )
     {
+        checkFTCall!FT_Set_Pixel_Sizes( face, 0, param.height );
+
+        logger.Debug( param.height );
+
         BitmapFont res;
         res.height = param.height;
 
@@ -146,23 +148,24 @@ public:
         uint maxh = 0;
         uint width = 0;
 
-        foreach( ref g; glyphs )
+        foreach( gi; glyphs )
         {
-            if( g.image.size[1] > maxh )
-                maxh = cast(uint)g.image.size[1];
-            width += g.image.size[0];
+            if( gi.image.size[1] > maxh )
+                maxh = cast(uint)(gi.image.size[1]);
+            width += gi.image.size[0];
         }
 
         res.image = Image( ivec2(width,maxh), imtype );
 
         auto offset = ivec2(0);
 
-        foreach( key, g; glyphs )
+        foreach( key, gi; glyphs )
         {
-            res.info[key] = BitmapGlyph( g.glyph, offset );
-            imCopy( res.image, offset, g.image );
-            offset += ivec2( g.image.size[0], 0 );
+            res.info[key] = BitmapGlyph( gi.glyph, offset );
+            imCopy( res.image, offset, gi.image );
+            offset += ivec2( gi.image.size[0], 0 );
         }
+
         return res;
     }
 }
