@@ -47,8 +47,8 @@ protected:
         {
             tester.idle();
 
-            fps_output.text = format( "fps: %5.1f\nres: %dx%d",
-                    fps_counter.update(), _size.x, _size.y );
+            //fps_output.text = format( "fps: %5.1f\nres: %dx%d",
+            //        fps_counter.update(), _size.x, _size.y );
 
             fps_output.position = vec2( _size.x - fps_output.rectangle.size.x - 10, 24 );
             info.position = vec2( 10, _size.y - info.rectangle.size.y - 4 );
@@ -65,13 +65,14 @@ protected:
     {
         fps_output = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 16u );
         fps_output.color = vec4(1);
+        fps_output.text = "fps not calculated"w;
 
         info = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 16u );
         info.text = "info"w;
         info.color = vec4(1);
 
-        info_log = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 12u );
-        info_log.text = "info log"w;
+        info_log = newEMM!BaseLineTextBox( appPath( "..", "data", "default.ttf" ), 24u );
+        info_log.text = "info log русский текст"w;
         info_log.color = vec4( vec3(.5), 1 );
 
         fps_counter = newEMM!FPSCounter( 300 );

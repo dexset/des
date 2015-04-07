@@ -17,14 +17,14 @@ wstring wformat(S,Args...)( S fmt, Args args )
 
 enum SS_WIN_TEXT =
 `//### vert
-#version 120
-attribute vec2 vert;
-attribute vec2 uv;
+#version 330
+in vec2 vert;
+in vec2 uv;
 
 uniform ivec2 win_size;
 uniform vec2 offset;
 
-varying vec2 ex_uv;
+out vec2 ex_uv;
 
 void main(void)
 {
@@ -33,15 +33,17 @@ void main(void)
     ex_uv = uv;
 }
 //### frag
-#version 120
-uniform sampler2D ttu;
+#version 330
+uniform sampler2DRect ttu;
 uniform vec4 color;
 
-varying vec2 ex_uv;
+in vec2 ex_uv;
+
+out vec4 result;
 
 void main(void)
 {
-    gl_FragColor = vec4( 1,1,1, texture2D( ttu, ex_uv ).r ) * color;
+    result = vec4( 1,1,1, texture( ttu, ivec2( ex_uv.x, ex_uv.y ) ).r ) * color;
 }`;
 
 class BaseLineTextBox : GLDrawObject
@@ -52,7 +54,7 @@ private:
 
     public GLArrayBuffer vert, uv;
 
-    GLTexture2D tex;
+    GLTextureRectangle tex;
 
     wstring output;
 
@@ -72,9 +74,11 @@ private:
         vec2[] uv_data;
 
         auto ch_offset = vec2(0);
-        auto fts = vec2( font.image.size[0], font.image.size[1] );
 
         rect = fRegion2(0);
+
+        std.stdio.writeln( font.height );
+        std.stdio.writeln( font.image.size );
 
         foreach( c; output )
         {
@@ -97,23 +101,30 @@ private:
 
             rect = rect.expand(p).expand(p+chsz);
 
-            auto uvoffset = vec2( font.info[c].offset ) / fts;
-            auto uvsize = chsz / fts;
+            auto buf = computeRectPts( vec2( font.info[c].offset ), chsz );
 
-            uv_data ~= computeRectPts( uvoffset, uvsize );
+            if( font.height != 16 )
+            std.stdio.writeln( buf );
+
+            uv_data ~= buf;
 
             ch_offset += font.info[c].glyph.next;
         }
+
+        std.stdio.writeln();
 
         vert.setData( vert_data );
         uv.setData( uv_data );
     }
 
-    vec2[] computeRectPts( vec2 v1, vec2 sz )
+    auto computeRectPts(T)( in Vector!(2,T) v1, in Vector!(2,T) sz )
     {
+        alias VV=Vector!(2,T);
         auto v2 = v1 + sz;
-        return [ vec2( v1.x, v2.y ), v1, vec2( v2.x, v1.y ),
-                 v2, vec2( v1.x, v2.y ), vec2( v2.x, v1.y ) ];
+        return [ v1, VV( v1.x, v2.y ), VV( v2.x, v1.y ),
+                 v2, VV( v2.x, v1.y ), VV( v1.x, v2.y ) ];
+        //return [ VV( v1.x, v2.y ), v1, VV( v2.x, v1.y ),
+        //         v2, VV( v1.x, v2.y ), VV( v2.x, v1.y ) ];
     }
 
 public:
@@ -128,7 +139,7 @@ public:
         uv = newEMM!GLArrayBuffer;
         setAttribPointer( uv, shader.getAttribLocation( "uv" ), 2, GLType.FLOAT );
 
-        tex = newEMM!GLTexture2D(0);
+        tex = newEMM!GLTextureRectangle(0);
 
         tex.setMinFilter( GLTexture.Filter.NEAREST );
         tex.setMagFilter( GLTexture.Filter.NEAREST );
@@ -146,8 +157,6 @@ public:
         font = grender.generateBitmapFont( symbols ~ english ~ russian );
 
         tex.setImage( font.image );
-
-        text = "Default text";
     }
 
     void draw( ivec2 win_size )

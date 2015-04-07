@@ -304,7 +304,7 @@ struct KeyboardEvent
     /// is key pressed
     bool pressed;
 
-    /// is this a repeat
+    /// is this event a repeat
     bool repeat;
 
     ///

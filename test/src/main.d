@@ -11,7 +11,11 @@ void main()
     logger.info( "app start" );
     auto app = new DesApp;
     app.addWindow({ return new MainWindow(); });
-    while( app.isRunning ) app.step();
+    while( app.isRunning )
+    {
+        app.step();
+        SDL_Delay(15);
+    }
     app.destroy();
     logger.info( "app finish" );
 }
