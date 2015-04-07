@@ -1,0 +1,19 @@
+{
+    "name": "test",
+    "description": "D Extended Set GUI test",
+    "authors": ["Oleg Butko(deviator)"],
+    "license": "MIT",
+    "targetPath": "bin",
+    "targetType": "executable",
+    "importPaths": [ "../import", "../../descore/import" ],
+    "sourcePaths": [ "src", "../import", "../../descore/import" ],
+    "stringImportPaths": [ "src/ctstr" ],
+    "dependencies":
+    {
+        "derelict-gl3": ">=1.0.12",
+        "derelict-assimp3": ">=1.0.0",
+        "derelict-sdl2": ">=1.2.8",
+        "derelict-ft": ">=1.0.0",
+        "derelict-il": ">=1.0.0"
+    }
+}
