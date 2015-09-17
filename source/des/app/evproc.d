@@ -3,11 +3,11 @@ module des.app.evproc;
 
 import std.conv : to;
 
-import des.util.arch;
+import des.arch;
 import derelict.sdl2.sdl;
 
-import des.util.logsys;
-import des.util.stdext.string;
+import des.log;
+import des.stdx.string;
 
 public import des.app.event;
 

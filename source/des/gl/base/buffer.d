@@ -6,7 +6,7 @@ import derelict.opengl3.gl3;
 
 import des.gl.base.type;
 
-import des.util.data.type;
+import des.stdx;
 
 ///
 class GLBufferException : DesGLException

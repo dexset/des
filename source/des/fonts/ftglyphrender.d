@@ -2,8 +2,8 @@ module des.fonts.ftglyphrender;
 
 import des.math.linear;
 import des.il;
-import des.util.arch.emm;
-import des.util.stdext;
+import des.arch.emm;
+import des.stdx;
 
 import derelict.freetype.ft;
 import derelict.freetype.types;
@@ -18,7 +18,7 @@ struct BitmapFont
     ivec2[wchar] size;
     ivec2[wchar] bearing;
 
-    Image!2 texture;
+    Image texture;
 }
 
 class FTGlyphRenderException: Exception
@@ -31,7 +31,7 @@ struct GlyphInfo
 {
     ivec2 pos, next;
     @property ivec2 size() const { return ivec2( img.size ); }
-    Image!2 img;
+    Image img;
 }
 
 struct GlyphParam
@@ -120,7 +120,7 @@ public:
         FT_Set_Pixel_Sizes( face, 0, p.height );
     }
 
-    @property ElemInfo imtype() const { return ElemInfo( DataType.FLOAT, 1 ); }
+    @property ElemInfo imtype() const { return ElemInfo( 1, DataType.FLOAT ); }
 
     GlyphInfo render( wchar ch )
     {
@@ -148,7 +148,7 @@ public:
         return GlyphInfo( ivec2( g.bitmap_left, -g.bitmap_top ), 
                                 ivec2( cast(int)( g.advance.x >> 6 ), 
                                        cast(int)( g.advance.y >> 6 ) ),
-                                Image!2( imsize_t(sz), imtype, img_data ) );
+                                Image( imsize_t(sz), imtype, img_data ) );
     }
 
     BitmapFont generateBitmapFont( wstring chars )
@@ -161,11 +161,11 @@ public:
         uint width = 0;
         foreach( ref g; glyphs )
         {
-            if( g.img.size.h > maxh )
-                maxh = cast( uint )g.img.size.h;
-            width += g.img.size.w;
+            if( g.img.size[1] > maxh )
+                maxh = cast( uint )g.img.size[1];
+            width += g.img.size[0];
         }
-        res.texture = Image!2( imsize_t( width, maxh ), imtype );
+        res.texture = Image( imsize_t( width, maxh ), imtype );
 
         uint offset = 0;
 
@@ -174,8 +174,8 @@ public:
             res.offset[ key ] = ivec2( offset, 0 ); 
             res.size[ key ] = ivec2( g.img.size );
             res.bearing[ key ] = ivec2( g.pos );
-            imPaste( res.texture, ivec2( offset, 0 ), g.img );
-            offset += g.img.size.w;
+            imCopy( res.texture, ivec2( offset, 0 ), g.img );
+            offset += g.img.size[0];
         }
         return res;
     }

@@ -6,14 +6,14 @@ import derelict.devil.il;
 import derelict.devil.ilu;
 
 public import des.il;
-import des.util.stdext.string;
+import des.stdx.string;
 
 import std.string;
 
 import std.conv : to;
 
 ///
-Image!2 imLoad( string fname, bool flip=true )
+Image imLoad( string fname, bool flip=true )
 {
     loadIL();
 
@@ -33,22 +33,18 @@ Image!2 imLoad( string fname, bool flip=true )
     if( flip ) iluFlipImage();
 
     ubyte* raw = ilGetData();
-    ubyte[] data;
-    data.length = w * h * c;
-    
-    foreach( i, ref d; data ) d = raw[i];
 
-    return Image!2( ivec2(w,h), DataType.UBYTE, cast(ubyte)(c), data );
+    return Image( ivec2(w,h), cast(ubyte)(c), DataType.UBYTE, raw[0..w*h*c] );
 }
 
 ///
-void imSave( in Image!2 img, string fname )
+void imSave( in Image img, string fname )
 {
     loadIL();
 
     ILenum format, type;
 
-    switch( img.info.channels )
+    switch( img.info.comp )
     {
         case 1: format = IL_COLOUR_INDEX; break;
         case 3: format = IL_RGB; break;
@@ -56,16 +52,16 @@ void imSave( in Image!2 img, string fname )
         default: throw new ImageException( "Bad image channels count for saving" );
     }
 
-    switch( img.info.comp )
+    switch( img.info.type )
     {
-        case DataType.BYTE:       type = IL_BYTE;           break;
-        case DataType.UBYTE:      type = IL_UNSIGNED_BYTE;  break;
-        case DataType.SHORT:      type = IL_SHORT;          break;
-        case DataType.USHORT:     type = IL_UNSIGNED_SHORT; break;
-        case DataType.INT:        type = IL_INT;            break;
-        case DataType.UINT:       type = IL_UNSIGNED_INT;   break;
-        case DataType.FLOAT:      type = IL_FLOAT;          break;
-        case DataType.DOUBLE:     type = IL_DOUBLE;         break;
+        case DataType.BYTE:   type = IL_BYTE;           break;
+        case DataType.UBYTE:  type = IL_UNSIGNED_BYTE;  break;
+        case DataType.SHORT:  type = IL_SHORT;          break;
+        case DataType.USHORT: type = IL_UNSIGNED_SHORT; break;
+        case DataType.INT:    type = IL_INT;            break;
+        case DataType.UINT:   type = IL_UNSIGNED_INT;   break;
+        case DataType.FLOAT:  type = IL_FLOAT;          break;
+        case DataType.DOUBLE: type = IL_DOUBLE;         break;
         default:
             throw new ImageException( "Bad image type for saving (" ~
                     to!string(img.info.comp) ~
@@ -77,14 +73,17 @@ void imSave( in Image!2 img, string fname )
     scope(exit) ilDeleteImages( 1, &im );
     ilBindImage( im );
 
-    if( IL_TRUE != ilTexImage( cast(uint)(img.size.w), cast(uint)(img.size.h), 
-                1, cast(ubyte)(img.info.channels), format, type, cast(void*)img.data.ptr ) )
+    uint h = 1;
+    foreach( i; 1 .. img.size.length ) h *= img.size[i];
+
+    if( IL_TRUE != ilTexImage( cast(uint)(img.size[0]), h, 1,
+                cast(ubyte)(img.info.comp), format, type, cast(void*)img.data.ptr ) )
         throw new ImageException( "ilTexImage fails: " ~ toDString( iluErrorString(ilGetError()) ) );
 
     iluFlipImage();
     
     import std.string;
-    if( IL_TRUE != ilSave( IL_JPG, fname.toStringz ) )
+    if( IL_TRUE != ilSave( IL_PNG, fname.toStringz ) )
         throw new ImageException( "ilSaveImage fails: " ~ toDString( iluErrorString(ilGetError()) ) );
 }
 

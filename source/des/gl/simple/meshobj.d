@@ -1,9 +1,9 @@
 module des.gl.simple.meshobj;
 
 import des.math.linear;
-import des.util.logsys;
+import des.log;
 import des.gl.simple.object;
-import des.util.stdext.algorithm;
+import des.stdx.algorithm;
 
 ///
 class MeshData

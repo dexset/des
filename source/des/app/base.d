@@ -8,10 +8,10 @@ public import derelict.sdl2.sdl;
 
 public import derelict.freetype.ft;
 
-public import des.util.arch;
-public import des.util.stdext.string;
+public import des.arch;
+public import des.stdx.string;
 
-import des.util.logsys;
+import des.log;
 
 import des.app.event;
 

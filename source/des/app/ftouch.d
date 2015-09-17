@@ -2,7 +2,7 @@ module des.app.ftouch;
 
 import derelict.sdl2.sdl;
 
-import des.util.arch;
+import des.arch;
 import des.app.evproc;
 
 /// finger touch event

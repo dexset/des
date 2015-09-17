@@ -4,8 +4,7 @@ import derelict.assimp3.assimp;
 import derelict.assimp3.types;
 
 import des.math.linear;
-import des.util.data.type;
-import des.util.stdext.string;
+import des.stdx;
 
 import des.gl.simple.meshobj;
 

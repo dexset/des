@@ -9,8 +9,8 @@ import std.traits;
 import std.conv;
 import std.string;
 
-import des.util.logsys;
-import des.util.arch.emm;
+import des.log;
+import des.arch.emm;
 
 wstring wformat(S,Args...)( S fmt, Args args )
     if( is( S == string ) || is( S == wstring ) )

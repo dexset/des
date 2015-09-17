@@ -6,8 +6,8 @@ import std.string;
 import derelict.opengl3.gl3;
 
 public import des.math.linear.vector;
-public import des.util.arch;
-public import des.util.logsys;
+public import des.arch;
+public import des.log;
 
 ///
 class DesGLException : Exception

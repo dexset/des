@@ -9,7 +9,7 @@ import des.gl.base.type;
 import des.il;
 
 import std.algorithm;
-import des.util.stdext.algorithm;
+import des.stdx;
 
 ///
 class GLTextureException : DesGLException
@@ -503,10 +503,10 @@ public:
     }
 
     /// ditto
-    final void image(size_t N)( in Image!N img ) if( N >= 1 && N <= 3 )
+    final void image( in Image img )
     in
     {
-        switch( N )
+        switch( img.size.length )
         {
             case 1: assert( target == Target.T1D ); break;
             case 2: assert( target == Target.T2D ); break;
@@ -516,18 +516,30 @@ public:
     }
     body
     {
-        Type type = typeFromImageDataType( img.info.comp );
-        auto fmt = formatFromImageChanelsCount( img.info.channels );
-        image( img.size, fmt[0], fmt[1], type, img.data.ptr );
+        Type type = typeFromImageDataType( img.info.type );
+        auto fmt = formatFromImageChanelsCount( img.info.comp );
+        switch( img.size.length )
+        {
+            case 1:
+                image( Vector!(1,int)( img.size ), fmt[0], fmt[1], type, img.data.ptr );
+                break;
+            case 2:
+                image( ivec2( img.size ), fmt[0], fmt[1], type, img.data.ptr );
+                break;
+            case 3:
+                image( ivec3( img.size ), fmt[0], fmt[1], type, img.data.ptr );
+                break;
+            default: throw new Exception( "bit image dimension" );
+        }
     }
 
     ///
-    final void getImage( ref Image!2 img )
+    final void getImage( ref Image img )
     in { assert( _target == Target.T2D ); } body
     { getImage( img, ltype ); }
 
     ///
-    final void getImage( ref Image!2 img, Type type )
+    final void getImage( ref Image img, Type type )
     in { assert( _target == Target.T2D ); } body
     {
         enum uint level = 0;
@@ -677,7 +689,7 @@ public:
             if( ict == DataType.RAWBYTE )
                 return ElemInfo( sizeofType(type) * cnt );
             else
-                return ElemInfo( ict, cnt );
+                return ElemInfo( cnt, ict );
         }
 
         ///

@@ -3,10 +3,8 @@ module des.assimp.loader;
 import derelict.assimp3.assimp;
 import derelict.assimp3.types;
 
-import des.util.helpers;
-import des.util.arch;
-import des.util.data.type;
-import des.util.stdext.string;
+import des.arch;
+import des.stdx;
 
 import des.assimp.mesh;
 
@@ -148,7 +146,7 @@ public:
     {
         scene_file_name = fname;
         scene = aiImportFile( fname.toStringz,
-                buildFlags( default_post_process ~ pp ) );
+                packFlags( default_post_process ~ pp ) );
     }
 
     ///

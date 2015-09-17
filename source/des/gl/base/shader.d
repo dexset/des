@@ -4,7 +4,7 @@ import std.conv;
 import std.exception;
 
 import des.math.linear;
-import des.util.stdext.string;
+import des.stdx.string;
 
 import derelict.opengl3.gl3;
 
