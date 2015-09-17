@@ -12,3 +12,4 @@
 bin
 doc
 dub.selections.json
+__test__library__
